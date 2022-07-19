@@ -15,9 +15,7 @@ import up42
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
 def authenticate():
-    project_id = "a964f36c-0108-4f23-9cd1-26e0c18dc55f"
-    project_api_key = "i3MbfNUB.F8j7xPj9e8D0MUZYs5YmS3VZVFhaghNrHko"
-    up42.authenticate(project_id=project_id, project_api_key=project_api_key)
+    up42.authenticate(cfg_file="config.json")
 
 
 def get_aoi_file():
