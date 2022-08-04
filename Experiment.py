@@ -7,10 +7,12 @@ from geopandas import GeoDataFrame
 import pandas as pd
 import up42
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import ProjectDataClasses
 from Strategies import IStrategy
 from DataMarketPlaces import Marketplace
 from typing import List
+import constants
 
 DATA_FILE_NAME_CSV = '20images_data.csv'
 DATA_FILE_NAME = '20images_data.geojson'
@@ -89,18 +91,26 @@ class Experiment(ABC):
         plt.savefig(path + '/' + image_name)
 
     def config_plot_images_and_aoi(self, images, legend_column="image_id"):
-        # TODO change this function to save images with the 20 specifics colors there are in constants.py
+        legend_elements = self.get_legend_elements(images, legend_column)
         fig_size = (12, 16)
         ax = images.plot(legend_column,
                          categorical=True,
                          figsize=fig_size,
-                         cmap="Set3",
                          legend=True,
                          alpha=0.7,
-                         legend_kwds=dict(loc="upper left", bbox_to_anchor=(1, 1)), )
+                         color=constants.COLORS_20)
         self.aoi.plot(color="r", ax=ax, fc="None", edgecolor="r", lw=1)
+        ax.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(1, 1))
         ax.set_axis_off()
-        # plt.show()
+
+    @staticmethod
+    def get_legend_elements(elements, legend_column="image_id"):
+        legend_elements = []
+        for i in range(len(elements)):
+            legend_element = mpatches.Circle((0.5, 0.5), facecolor=constants.COLORS_20[elements.loc[i][legend_column]],
+                                             label=elements.loc[i][legend_column])
+            legend_elements.append(legend_element)
+        return legend_elements
 
     def set_strategy(self, strategy: IStrategy):
         self.strategy = strategy
