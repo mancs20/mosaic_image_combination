@@ -68,41 +68,41 @@ def example_30s():
     return estimated_cost
 
 
-def run_tests(aoi_file, search_parameters, heuristic=constants.RANDOM):
-    authenticate()
-    catalog = up42.initialize_catalog()
-    # Search in the catalog with your search parameters
-    aoi = up42.read_vector_file(aoi_file)
-    search_parameters.aoi = aoi
-    search_parameters_up42 = catalog.construct_parameters(geometry=search_parameters.aoi,
-                                                          start_date=search_parameters.start_date,
-                                                          end_date=search_parameters.end_date,
-                                                          collections=search_parameters.collections,
-                                                          max_cloudcover=search_parameters.max_cloudcover,
-                                                          limit=search_parameters.limit)
-    search_results = catalog.search(search_parameters=search_parameters_up42)
-    aoi_geo = geopandas.GeoDataFrame.from_features(aoi)  # convert to GeoDataFram, so it can be plotted in coverage
-    # Plot all the images and the aoi
-    catalog.plot_coverage(search_results, aoi_geo)
-
-    all_images_union = search_results.unary_union  # convert all images (GeoSeries) in a single polygon
-    # check if GeoDataFrame is inside a Polygon
-    if len(aoi_geo.within(all_images_union)) == 0:
-        print("The images are not covering the whole aoi, try another search")
-        return
-    else:
-        if heuristic == constants.GREEDY_COVER_LARGER_AREA:
-            seleted_images = greedy_cover_larger_area(aoi_geo, search_results)
-        else:
-            seleted_images = random_cover(aoi_geo, search_results)
-    catalog.plot_coverage(seleted_images, aoi_geo)  # plot the selected images
-
-    # return optimization criteria, e.g. number of images, total area, etc
-    optimization_results = OptimizationResult()
-    optimization_results.number_of_images = len(seleted_images)
-    # TODO find out how to sum all the images area
-    optimization_results.total_area_of_images = 2
-    return optimization_results
+# def run_tests(aoi_file, search_parameters, heuristic=constants.RANDOM):
+#     authenticate()
+#     catalog = up42.initialize_catalog()
+#     # Search in the catalog with your search parameters
+#     aoi = up42.read_vector_file(aoi_file)
+#     search_parameters.aoi = aoi
+#     search_parameters_up42 = catalog.construct_parameters(geometry=search_parameters.aoi,
+#                                                           start_date=search_parameters.start_date,
+#                                                           end_date=search_parameters.end_date,
+#                                                           collections=search_parameters.collections,
+#                                                           max_cloudcover=search_parameters.max_cloudcover,
+#                                                           limit=search_parameters.limit)
+#     search_results = catalog.search(search_parameters=search_parameters_up42)
+#     aoi_geo = geopandas.GeoDataFrame.from_features(aoi)  # convert to GeoDataFram, so it can be plotted in coverage
+#     # Plot all the images and the aoi
+#     catalog.plot_coverage(search_results, aoi_geo)
+#
+#     all_images_union = search_results.unary_union  # convert all images (GeoSeries) in a single polygon
+#     # check if GeoDataFrame is inside a Polygon
+#     if len(aoi_geo.within(all_images_union)) == 0:
+#         print("The images are not covering the whole aoi, try another search")
+#         return
+#     else:
+#         if heuristic == constants.GREEDY_COVER_LARGER_AREA:
+#             seleted_images = greedy_cover_larger_area(aoi_geo, search_results)
+#         else:
+#             seleted_images = random_cover(aoi_geo, search_results)
+#     catalog.plot_coverage(seleted_images, aoi_geo)  # plot the selected images
+#
+#     # return optimization criteria, e.g. number of images, total area, etc
+#     optimization_results = OptimizationResult()
+#     optimization_results.number_of_images = len(seleted_images)
+#     # find out how to sum all the images area
+#     optimization_results.total_area_of_images = 2
+#     return optimization_results
 
 
 def intersecting_area(polygon1, polygon2):
