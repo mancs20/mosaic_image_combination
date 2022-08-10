@@ -138,9 +138,10 @@ class Experiment(ABC):
             os.makedirs(folder_strategy)
         self.strategy.path = folder_strategy
 
-    def run_experiment(self, aoi, images):
+    def run_experiment(self):
+        self.strategy.prepare_strategy(self.aoi, self.images)
         for i in range(self.strategy.number_of_runs):
-            self.selected_images_results.append(self.strategy.run_strategy(aoi, images))
+            self.selected_images_results.append(self.strategy.run_strategy())
         # Process results
         self.process_results()
         # Save results

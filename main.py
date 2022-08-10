@@ -28,7 +28,7 @@ def main():
 
     if not (experiment.prepare_experiment()):
         return
-    experiment.run_experiment(experiment.aoi, experiment.images)
+    experiment.run_experiment()
 
 
 if __name__ == '__main__':
