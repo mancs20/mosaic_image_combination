@@ -23,10 +23,6 @@ class Marketplace(ABC):
         pass
 
     @abstractmethod
-    def is_aoi_covered_by_searched_images(self):
-        pass
-
-    @abstractmethod
     def update_images_cost(self):
         pass
 

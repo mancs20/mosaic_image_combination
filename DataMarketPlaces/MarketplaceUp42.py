@@ -6,7 +6,6 @@ from up42 import catalog, Catalog
 
 import ProjectDataClasses
 from Experiment import Experiment
-from Strategies import IStrategy
 import up42
 from DataMarketPlaces.Marketplace import Marketplace
 
@@ -41,15 +40,6 @@ class MarketplaceUp42(Marketplace):
                                                                    max_cloudcover=self.search_parameters.max_cloudcover,
                                                                    limit=self.search_parameters.limit)
         return self.catalog.search(search_parameters=search_parameters_up42)
-
-    def is_aoi_covered_by_searched_images(self):
-        all_images_union = self.result_images.unary_union  # convert all images (GeoSeries) in a single polygon
-        # check if GeoDataFrame is inside a Polygon
-        if len(self.aoi.within(all_images_union)) == 0:
-            print("The images are not covering the whole aoi, try another search")
-            return False
-        else:
-            return True
 
     def update_images_cost(self):
         estimated_costs = []
