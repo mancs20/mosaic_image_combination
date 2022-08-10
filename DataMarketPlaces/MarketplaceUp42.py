@@ -33,6 +33,7 @@ class MarketplaceUp42(Marketplace):
 
     def search_results(self):
         # Search in the catalog with your search parameters
+        # collections could be E.g. Pleiades Neo (`pneo`), Pleiades (`phr`), Spot (`spot`)
         search_parameters_up42 = self.catalog.construct_parameters(geometry=self.search_parameters.aoi,
                                                                    start_date=self.search_parameters.start_date,
                                                                    end_date=self.search_parameters.end_date,
