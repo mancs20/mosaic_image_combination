@@ -14,8 +14,14 @@ def update_results_and_aoi(image_id: int, images: GeoDataFrame, results: GeoData
 
 class Strategy(ABC):
     @abstractmethod
-    def run_strategy(self, aoi_file, search_parameters):
+    def run_strategy(self, aoi, images):
         pass
+
+    @staticmethod
+    def change_projection_to_mts(aoi, images, crs=3857):
+        aoi = aoi.to_crs(crs)
+        images = images.to_crs(crs)
+        return aoi, images
 
     @property
     @abstractmethod

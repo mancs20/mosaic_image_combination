@@ -8,6 +8,9 @@ class GreedyCoverLargerArea(Strategy):
     number_of_runs = 1
 
     def run_strategy(self, aoi, images):
+        old_crs = aoi.crs
+        aoi, images = self.change_projection_to_mts(aoi, images)
+
         results = images[images.geom_type != "Polygon"]
 
         # Repeat until the aoi is covered
@@ -19,12 +22,14 @@ class GreedyCoverLargerArea(Strategy):
             results, aoi, images = update_results_and_aoi(image_id_max_intersection, images, results, aoi)
 
             # TODO delete, this is to see the algorithm
-            figsize = (12, 16)
-            ax = results.plot(alpha=0.7, figsize=figsize)
-            aoi.plot(color="r", alpha=0.7, ax=ax, fc="None", edgecolor="r", lw=1)
-            plt.show()
+            # figsize = (12, 16)
+            # ax = results.plot(alpha=0.7, figsize=figsize)
+            # aoi.plot(color="r", alpha=0.7, ax=ax, fc="None", edgecolor="r", lw=1)
+            # plt.show()
 
         # Return selected images
+        results.crs = images.crs
+        results = results.to_crs(old_crs)
         return results
 
     @staticmethod
