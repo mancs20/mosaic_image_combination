@@ -47,7 +47,7 @@ class Experiment(ABC):
             self.images = self.marketplace.get_data_from_marketplace()
             if not self.is_aoi_covered_by_searched_images():
                 return False
-            # TODO uncomment below after doing the random experiments and see they are different enough
+            # TODO uncomment below to get images marketplace cost
             # self.images = self.marketplace.update_images_cost()
             self.save_data()
         else:
@@ -110,7 +110,7 @@ class Experiment(ABC):
                          color=colors)
         self.aoi.plot(color="r", ax=ax, fc="None", edgecolor="r", lw=1)
         ax.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(1, 1))
-        ax.set_axis_off()
+        # ax.set_axis_off()
 
     @staticmethod
     def get_plot_colors(images, id_column='image_id'):
@@ -139,7 +139,6 @@ class Experiment(ABC):
         self.strategy.path = folder_strategy
 
     def run_experiment(self, aoi, images):
-        # selected_images_results = []
         for i in range(self.strategy.number_of_runs):
             self.selected_images_results.append(self.strategy.run_strategy(aoi, images))
         # Process results
@@ -148,7 +147,6 @@ class Experiment(ABC):
         self.save_results()
 
     def process_results(self):
-        # TODO write code
         for key, selected_result in enumerate(self.selected_images_results):
             images_id = ""
             images_id_sorted = ""
@@ -167,25 +165,16 @@ class Experiment(ABC):
             self.processed_results.append(result)
 
     def save_results(self):
-        # TODO write code
         self.save_results_csv()
         self.save_results_coverages()
 
     def save_results_csv(self):
-        # get all the fields name for OptimizationResult
-        # for results in selected_images_results:
         file_result_path = self.strategy.path + '/' + EXPERIMENT_RESULTS_FILE
-        # optimization_result_fields = []
         header = [field.name for field in fields(ProjectDataClasses.OptimizationResult)]
-        # header = []
-        # for field in optimization_result_fields:
-        #     header.append(field)
-        # header = ['name', 'area', 'country_code2', 'country_code3']
         data = []
         for result in self.processed_results:
             row = list(asdict(result).values())
             data.append(row)
-        # data = ['Afghanistan', 652090, 'AF', 'AFG']
 
         with open(file_result_path, 'w', encoding='UTF8', newline='') as f:
             writer = csv.writer(f)
