@@ -9,26 +9,32 @@ import up42
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import ProjectDataClasses
-from Strategies import IStrategy
+from Strategies import Strategy
 from DataMarketPlaces import Marketplace
 from typing import List
 import constants
+import numpy as np
+import csv
+from dataclasses import dataclass, fields, asdict
 
 DATA_FILE_NAME_CSV = '20images_data.csv'
 DATA_FILE_NAME = '20images_data.geojson'
 COVERAGE_IMAGE_NAME = 'coverage.png'
+EXPERIMENT_RESULTS_FILE = 'experiment_results.csv'
+EXPERIMENT_RESULTS_COVERAGE = 'experiment_result_coverage_'
 
 
 class Experiment(ABC):
     def __init__(self, aoi_file, search_parameters: ProjectDataClasses.SearchParameters):
         self.marketplace = None
-        self.strategy: IStrategy = None
+        self.strategy: Strategy = None
         processed_aoi_file = up42.read_vector_file(aoi_file)
         self.aoi: GeoDataFrame = geopandas.GeoDataFrame.from_features(processed_aoi_file)
         self.search_parameters = search_parameters
         self.search_parameters.aoi = processed_aoi_file
         self.images: Union[GeoDataFrame, dict] = None
-        self.folder_experiment_results = ""
+        self.processed_results = []
+        self.selected_images_results = []
         self.working_dir = ""
         self.check_create_working_dir(aoi_file)
 
@@ -48,6 +54,9 @@ class Experiment(ABC):
             self.images = geopandas.read_file(self.working_dir + '/' + DATA_FILE_NAME)
             self.config_plot_images_and_aoi(self.images)
         plt.show()
+        # set aoi with the same crs (projection system) as the images
+        self.aoi.crs = self.images.crs
+        self.aoi.to_crs(self.aoi.crs)
         return True
 
     def check_create_working_dir(self, aoi_file):
@@ -92,27 +101,36 @@ class Experiment(ABC):
 
     def config_plot_images_and_aoi(self, images, legend_column="image_id"):
         legend_elements = self.get_legend_elements(images, legend_column)
+        colors = self.get_plot_colors(images)
         fig_size = (12, 16)
-        ax = images.plot(legend_column,
-                         categorical=True,
+        ax = images.plot(categorical=True,
                          figsize=fig_size,
                          legend=True,
                          alpha=0.7,
-                         color=constants.COLORS_20)
+                         color=colors)
         self.aoi.plot(color="r", ax=ax, fc="None", edgecolor="r", lw=1)
         ax.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(1, 1))
         ax.set_axis_off()
 
     @staticmethod
-    def get_legend_elements(elements, legend_column="image_id"):
+    def get_plot_colors(images, id_column='image_id'):
+        colors = []
+        for id_element in images.index:
+            color = constants.COLORS_20[images[id_column][id_element]]
+            colors.append(color)
+        return colors
+
+    @staticmethod
+    def get_legend_elements(elements: GeoDataFrame, legend_column="image_id"):
         legend_elements = []
-        for i in range(len(elements)):
-            legend_element = mpatches.Circle((0.5, 0.5), facecolor=constants.COLORS_20[elements.loc[i][legend_column]],
-                                             label=elements.loc[i][legend_column])
+        for element in elements.index:
+            legend_element = mpatches.Circle((0.5, 0.5),
+                                             facecolor=constants.COLORS_20[elements[legend_column][element]],
+                                             label=elements[legend_column][element])
             legend_elements.append(legend_element)
         return legend_elements
 
-    def set_strategy(self, strategy: IStrategy):
+    def set_strategy(self, strategy: Strategy):
         self.strategy = strategy
         # create strategy folder
         folder_strategy = self.working_dir + '/' + strategy.name
@@ -121,19 +139,63 @@ class Experiment(ABC):
         self.strategy.path = folder_strategy
 
     def run_experiment(self, aoi, images):
-        selected_images_results = []
+        # selected_images_results = []
         for i in range(self.strategy.number_of_runs):
-            selected_images_results.append(self.strategy.run_strategy(aoi, images))
+            self.selected_images_results.append(self.strategy.run_strategy(aoi, images))
         # Process results
-        self.proccess_results(selected_images_results)
+        self.process_results()
         # Save results
-        self.save_results(selected_images_results)
+        self.save_results()
 
-    def process_results(self, selected_images_results):
+    def process_results(self):
         # TODO write code
-        a = 10
+        for key, selected_result in enumerate(self.selected_images_results):
+            images_id = ""
+            images_id_sorted = ""
+            list_to_sort = []
+            for image in selected_result.index:
+                list_to_sort.append(selected_result['image_id'][image])
+                images_id += str(selected_result['image_id'][image]) + '-'
+            images_id = images_id[:-1]
+            list_to_sort = np.sort(list_to_sort)
+            for ids in list_to_sort:
+                images_id_sorted += str(ids) + '-'
+            images_id_sorted = images_id_sorted[:-1]
+            result = ProjectDataClasses.OptimizationResult(experiment_id=key, images_id=images_id,
+                                                           images_id_sorted=images_id_sorted,
+                                                           number_of_images=len(selected_result))
+            self.processed_results.append(result)
 
-    def save_results(self, selected_images_results: List):
+    def save_results(self):
         # TODO write code
+        self.save_results_csv()
+        self.save_results_coverages()
+
+    def save_results_csv(self):
+        # get all the fields name for OptimizationResult
         # for results in selected_images_results:
-        a = 10
+        file_result_path = self.strategy.path + '/' + EXPERIMENT_RESULTS_FILE
+        # optimization_result_fields = []
+        header = [field.name for field in fields(ProjectDataClasses.OptimizationResult)]
+        # header = []
+        # for field in optimization_result_fields:
+        #     header.append(field)
+        # header = ['name', 'area', 'country_code2', 'country_code3']
+        data = []
+        for result in self.processed_results:
+            row = list(asdict(result).values())
+            data.append(row)
+        # data = ['Afghanistan', 652090, 'AF', 'AFG']
+
+        with open(file_result_path, 'w', encoding='UTF8', newline='') as f:
+            writer = csv.writer(f)
+            # write the header
+            writer.writerow(header)
+            # write the data
+            writer.writerows(data)
+
+    def save_results_coverages(self):
+        for key, result in enumerate(self.selected_images_results):
+            self.config_plot_images_and_aoi(result)
+            self.save_coverage_image(self.strategy.path, EXPERIMENT_RESULTS_COVERAGE + str(key) + '.png')
+        plt.show()
