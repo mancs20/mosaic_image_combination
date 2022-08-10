@@ -16,7 +16,10 @@ class SearchParameters:
 
 @dataclass
 class OptimizationResult:
-    number_of_images = 0
-    total_area_of_images = 0
-    overlapping_area_inside_aoi = 0
-    total_cost_of_images = 0
+    experiment_id: int = 1
+    images_id: str = '2-1-3'
+    images_id_sorted: str = '1-2-3'
+    number_of_images: int = 0
+    total_area_of_images: int = 0
+    overlapping_area_inside_aoi: int = 0
+    total_cost_of_images: int = 0
