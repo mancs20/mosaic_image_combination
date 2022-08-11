@@ -139,8 +139,8 @@ class Experiment(ABC):
         self.strategy.path = folder_strategy
 
     def run_experiment(self):
-        self.strategy.prepare_strategy(self.aoi, self.images)
         for i in range(self.strategy.number_of_runs):
+            self.strategy.prepare_strategy(self.aoi, self.images)
             self.selected_images_results.append(self.strategy.run_strategy())
         # Process results
         self.process_results()
@@ -188,4 +188,3 @@ class Experiment(ABC):
         for key, result in enumerate(self.selected_images_results):
             self.config_plot_images_and_aoi(result)
             self.save_coverage_image(self.strategy.path, EXPERIMENT_RESULTS_COVERAGE + str(key) + '.png')
-        plt.show()
