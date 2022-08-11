@@ -6,6 +6,7 @@ PLANAR_CRS = 3857
 
 
 class Strategy(ABC):
+    # noinspection PyTypeChecker
     def __init__(self):
         self.aoi: GeoDataFrame = None
         self.images: GeoDataFrame = None
@@ -14,6 +15,9 @@ class Strategy(ABC):
     @abstractmethod
     def run_strategy(self, aoi, images):
         pass
+
+    def initialize_result(self):
+        return self.images[self.images.geom_type != "Polygon"]
 
     def update_results_and_aoi(self, image_id: int, results: GeoDataFrame):
         selected_image = self.images.loc[image_id]
