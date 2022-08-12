@@ -81,11 +81,12 @@ class Experiment(ABC):
         pass
 
     def save_data(self):
+        # add field image_id and remove fields with lists
+        self.images = self.marketplace.prepare_data_to_save(self.images)
         # save data to csv, human readable
         self.images.to_csv(self.working_dir + '/' + DATA_FILE_NAME_CSV, index_label='image_id')
         # save to geojson, remove fields with lists, for shp is the same
-        images_without_list_fields = self.marketplace.prepare_data_to_save(self.images)
-        images_without_list_fields.to_file(self.working_dir + '/' + DATA_FILE_NAME, driver='GeoJSON')
+        self.images.to_file(self.working_dir + '/' + DATA_FILE_NAME, driver='GeoJSON')
         self.save_search_parameters()
         self.config_plot_images_and_aoi(self.images)
         self.save_coverage_image(self.working_dir, COVERAGE_IMAGE_NAME)
