@@ -110,7 +110,6 @@ class Experiment(ABC):
                          color=colors)
         self.aoi.plot(color="r", ax=ax, fc="None", edgecolor="r", lw=1)
         ax.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(1, 1))
-        # ax.set_axis_off()
 
     @staticmethod
     def get_plot_colors(images, id_column='image_id'):
