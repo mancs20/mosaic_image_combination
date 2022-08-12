@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 from geopandas import GeoDataFrame
 from pandas import Series
-
-PLANAR_CRS = 3857
+import constants
 
 
 class Strategy(ABC):
@@ -32,7 +31,7 @@ class Strategy(ABC):
         self.images = images
         self.change_projection_to_planar_crs()
 
-    def change_projection_to_planar_crs(self, crs=PLANAR_CRS):
+    def change_projection_to_planar_crs(self, crs=constants.PLANAR_CRS):
         self.original_projection = self.images.crs
         self.aoi = self.aoi.to_crs(crs)
         self.images = self.images.to_crs(crs)

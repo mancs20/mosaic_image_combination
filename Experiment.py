@@ -160,10 +160,23 @@ class Experiment(ABC):
             for ids in list_to_sort:
                 images_id_sorted += str(ids) + '-'
             images_id_sorted = images_id_sorted[:-1]
+            # geometric metrics
+            area_of_images_over_aoi = self.get_area_of_images_over_aoi(selected_result, self.aoi)
             result = ProjectDataClasses.OptimizationResult(experiment_id=key, images_id=images_id,
                                                            images_id_sorted=images_id_sorted,
-                                                           number_of_images=len(selected_result))
+                                                           number_of_images=len(selected_result),
+                                                           area_of_images_over_aoi=area_of_images_over_aoi)
             self.processed_results.append(result)
+
+    @staticmethod
+    def get_area_of_images_over_aoi(selected_result: GeoDataFrame, aoi: GeoDataFrame):
+        selected_result = selected_result.to_crs(constants.PLANAR_CRS)
+        aoi = aoi.to_crs(constants.PLANAR_CRS)
+        areas = selected_result.area
+        total_area = 0.0
+        for index, area in areas.items():
+            total_area += area
+        return total_area/aoi.area[0]
 
     def save_results(self):
         self.save_results_csv()

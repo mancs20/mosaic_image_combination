@@ -20,6 +20,6 @@ class OptimizationResult:
     images_id: str = '2-1-3'
     images_id_sorted: str = '1-2-3'
     number_of_images: int = 0
-    total_area_of_images: int = 0
-    overlapping_area_inside_aoi: int = 0
-    total_cost_of_images: int = 0
+    area_of_images_over_aoi: float = 0.0
+    overlapping_area_inside_aoi: float = 0.0
+    total_cost_of_images: float = 0.0
