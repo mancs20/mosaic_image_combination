@@ -16,6 +16,7 @@ import constants
 import numpy as np
 import csv
 from dataclasses import dataclass, fields, asdict
+import collections
 
 DATA_FILE_NAME_CSV = '20images_data.csv'
 DATA_FILE_NAME = '20images_data.geojson'
@@ -110,6 +111,7 @@ class Experiment(ABC):
                          color=colors)
         self.aoi.plot(color="r", ax=ax, fc="None", edgecolor="r", lw=1)
         ax.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(1, 1))
+        return ax
 
     @staticmethod
     def get_plot_colors(images, id_column='image_id'):
@@ -147,6 +149,8 @@ class Experiment(ABC):
         self.save_results()
 
     def process_results(self):
+        check_duplicates_exact = []
+        check_duplicates_after_sort = []
         for key, selected_result in enumerate(self.selected_images_results):
             images_id = ""
             images_id_sorted = ""
@@ -155,10 +159,12 @@ class Experiment(ABC):
                 list_to_sort.append(selected_result['image_id'][image])
                 images_id += str(selected_result['image_id'][image]) + '-'
             images_id = images_id[:-1]
+            check_duplicates_exact.append(images_id)
             list_to_sort = np.sort(list_to_sort)
             for ids in list_to_sort:
                 images_id_sorted += str(ids) + '-'
             images_id_sorted = images_id_sorted[:-1]
+            check_duplicates_after_sort.append(images_id_sorted)
             # geometric metrics
             area_of_images_over_aoi = self.get_area_of_images_over_aoi(selected_result, self.aoi)
             result = ProjectDataClasses.OptimizationResult(experiment_id=key, images_id=images_id,
@@ -166,6 +172,11 @@ class Experiment(ABC):
                                                            number_of_images=len(selected_result),
                                                            area_of_images_over_aoi=area_of_images_over_aoi)
             self.processed_results.append(result)
+        # detect if there are duplicate solutions
+        print('Duplicates exact for ' + self.working_dir + ' with strategy ' + self.strategy.name + ' :')
+        print([item for item, count in collections.Counter(check_duplicates_exact).items() if count > 1])
+        print('Duplicates after sort for ' + self.working_dir + ' with strategy ' + self.strategy.name + ' :')
+        print([item for item, count in collections.Counter(check_duplicates_after_sort).items() if count > 1])
 
     @staticmethod
     def get_area_of_images_over_aoi(selected_result: GeoDataFrame, aoi: GeoDataFrame):
@@ -198,5 +209,6 @@ class Experiment(ABC):
 
     def save_results_coverages(self):
         for key, result in enumerate(self.selected_images_results):
-            self.config_plot_images_and_aoi(result)
+            ax = self.config_plot_images_and_aoi(result)
             self.save_coverage_image(self.strategy.path, EXPERIMENT_RESULTS_COVERAGE + str(key) + '.png')
+            plt.close(ax.figure)
