@@ -3,11 +3,10 @@
 # Press ⌃R to execute it or replace it with your code.
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
 
-from ProjectDataClasses import SearchParameters
-from Experiment import Experiment
 from DataMarketPlaces.MarketplaceUp42 import MarketplaceUp42
-from Strategies.GreedyCoverLargerArea import GreedyCoverLargerArea
-from Strategies.RandomSelection import RandomSelection
+from Experiment import Experiment
+from ProjectDataClasses import SearchParameters
+from Strategies.GreedyRatioCoveredAoiImageArea import GreedyRatioCoveredAoiImageArea
 
 
 def get_aoi_file():
@@ -36,7 +35,8 @@ def main():
         experiment.set_marketplace(MarketplaceUp42(experiment.aoi, experiment.search_parameters))
         if not (experiment.prepare_experiment()):
             return
-        strategies = [GreedyCoverLargerArea(), RandomSelection()]
+        # strategies = [GreedyRatioCoveredAoiImageArea(), GreedyCoverLargerArea(), RandomSelection()]
+        strategies = [GreedyRatioCoveredAoiImageArea()]
         for strategy in strategies:
             experiment.set_strategy(strategy)
             experiment.run_experiment()

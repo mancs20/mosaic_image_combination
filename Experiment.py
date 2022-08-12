@@ -1,22 +1,23 @@
+import collections
+import csv
 import json
 import os
 import re
-from abc import ABC, abstractmethod
+from abc import ABC
+from dataclasses import fields, asdict
+from typing import Union
+
 import geopandas
-from geopandas import GeoDataFrame
-import pandas as pd
-import up42
-import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import ProjectDataClasses
-from Strategies import Strategy
-from DataMarketPlaces import Marketplace
-from typing import List, Union
-import constants
+import matplotlib.pyplot as plt
 import numpy as np
-import csv
-from dataclasses import dataclass, fields, asdict
-import collections
+import up42
+from geopandas import GeoDataFrame
+
+import ProjectDataClasses
+import constants
+from DataMarketPlaces import Marketplace
+from Strategies import Strategy
 
 DATA_FILE_NAME_CSV = '20images_data.csv'
 DATA_FILE_NAME = '20images_data.geojson'

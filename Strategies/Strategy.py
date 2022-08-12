@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+
 from geopandas import GeoDataFrame
-from pandas import Series
+
 import constants
 
 
@@ -12,7 +13,7 @@ class Strategy(ABC):
         self.original_projection: int = None
 
     @abstractmethod
-    def run_strategy(self, aoi, images):
+    def run_strategy(self):
         pass
 
     def initialize_result(self):

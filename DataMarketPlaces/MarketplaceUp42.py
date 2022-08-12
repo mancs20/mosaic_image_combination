@@ -1,12 +1,6 @@
-from typing import Union
-
-import geopandas
-from geopandas import GeoDataFrame
-from up42 import catalog, Catalog
-
-import ProjectDataClasses
-from Experiment import Experiment
 import up42
+from up42 import Catalog
+
 from DataMarketPlaces.Marketplace import Marketplace
 
 

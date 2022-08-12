@@ -1,5 +1,4 @@
 from Strategies.Strategy import Strategy
-import matplotlib.pyplot as plt
 
 
 class GreedyCoverLargerArea(Strategy):

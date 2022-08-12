@@ -1,6 +1,5 @@
-# Colors for 20 pictures
-
 PLANAR_CRS = 3857
+# Colors for 20 pictures
 COLORS_20 = [
     '#d3d3d3',
 

@@ -1,5 +1,6 @@
-from Strategies.Strategy import Strategy
 import random
+
+from Strategies.Strategy import Strategy
 
 
 class RandomSelection(Strategy):

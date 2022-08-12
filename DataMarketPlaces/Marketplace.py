@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+
 from geopandas import GeoDataFrame
+
 import ProjectDataClasses
 
 
