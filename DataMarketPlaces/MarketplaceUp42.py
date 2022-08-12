@@ -11,7 +11,7 @@ from DataMarketPlaces.Marketplace import Marketplace
 
 
 def authenticate():
-    up42.authenticate(cfg_file="config.json")
+    up42.authenticate(cfg_file='config.json')
 
 
 class MarketplaceUp42(Marketplace):

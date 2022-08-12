@@ -11,7 +11,7 @@ import matplotlib.patches as mpatches
 import ProjectDataClasses
 from Strategies import Strategy
 from DataMarketPlaces import Marketplace
-from typing import List
+from typing import List, Union
 import constants
 import numpy as np
 import csv
