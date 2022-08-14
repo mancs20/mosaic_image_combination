@@ -74,11 +74,11 @@ class Experiment(ABC):
     def is_aoi_covered_by_searched_images(self):
         all_images_union = self.images.unary_union  # convert all images (GeoSeries) in a single polygon
         # check if GeoDataFrame is inside a Polygon
-        if len(self.aoi.within(all_images_union)) == 0:
-            print("The images are not covering the whole aoi, try another search")
-            return False
-        else:
+        if self.aoi.within(all_images_union)[0]:
             return True
+        else:
+            print("The images are not covering the whole aoi for " + self.working_dir + " try another search")
+            return False
         pass
 
     def save_data(self):
