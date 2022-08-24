@@ -43,6 +43,12 @@ class Experiment(ABC):
     def set_marketplace(self, marketplace: Marketplace):
         self.marketplace = marketplace
 
+    def print_aoi_area(self):
+        # show aoi area
+        self.aoi.crs = 4326
+        temp_aoi = self.aoi.to_crs(constants.PLANAR_CRS)
+        print('Area of aoi ' + self.working_dir + ' is: ' + str(temp_aoi.area[0] / 1000000))
+
     def prepare_experiment(self):
         # Create or get folder for experiment results
         if not self.check_if_local_data():
