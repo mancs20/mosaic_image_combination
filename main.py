@@ -12,7 +12,6 @@ from Strategies.RandomSelection import RandomSelection
 
 def get_aoi_file():
     file = "aois/dakar.geojson"
-    file = "aois/paris.geojson"  # is not good
     return file
 
 
@@ -23,7 +22,7 @@ def get_aoi_files():
     #          'aois/rio_de_janeiro.geojson', 'aois/tokio_yokohama.geojson', 'aois/dakar.geojson']
     # files = ['aois/luxembourg_south.geojson', 'aois/lagos_nigeria.geojson', 'aois/mexico_city.geojson',
     #          'aois/rio_de_janeiro.geojson', 'aois/tokio_yokohama.geojson', 'aois/dakar.geojson']
-    files = ['aois/cairo.geojson']
+    files = ['aois/paris.geojson']
     return files
 
 
