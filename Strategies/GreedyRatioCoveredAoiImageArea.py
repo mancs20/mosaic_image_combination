@@ -11,6 +11,8 @@ class GreedyRatioCoveredAoiImageArea(Strategy):
         while self.aoi.area[0] > 0:
             image_id_max_intersection = self.get_image_id_max_ratio_cover_area()
             results = self.update_results_and_aoi(image_id_max_intersection, results)
+            # print results to debug the algorithm
+            # self.print_temp_results(results)
         return self.prepare_results_to_return(results)
 
     def get_image_id_max_ratio_cover_area(self):

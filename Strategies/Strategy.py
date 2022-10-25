@@ -1,14 +1,17 @@
 from abc import ABC, abstractmethod
 
+import matplotlib.pyplot as plt
 from geopandas import GeoDataFrame
 
+import Experiment
 import constants
-
+import matplotlib.pyplot as plt
 
 class Strategy(ABC):
     # noinspection PyTypeChecker
     def __init__(self):
         self.aoi: GeoDataFrame = None
+        self.original_aoi: GeoDataFrame = None
         self.images: GeoDataFrame = None
         self.original_projection: int = None
 
@@ -29,6 +32,7 @@ class Strategy(ABC):
 
     def prepare_strategy(self, aoi, images):
         self.aoi = aoi
+        self.original_aoi = aoi
         self.images = images
         self.change_projection_to_planar_crs()
 
@@ -38,9 +42,19 @@ class Strategy(ABC):
         self.images = self.images.to_crs(crs)
 
     def prepare_results_to_return(self, results):
-        results.crs = self.images.crs
-        results = results.to_crs(self.original_projection)
+        results = self.change_projection_to_original(results)
         return results
+
+    def change_projection_to_original(self, results):
+        results.crs = self.images.crs
+        temp_result = results.to_crs(self.original_projection)
+        results.crs = None
+        return temp_result
+
+    def print_temp_results(self, results):
+        plot_results = self.change_projection_to_original(results)
+        ax = Experiment.Experiment.config_plot_images_and_aoi(plot_results, self.original_aoi)
+        plt.show()
 
     @property
     @abstractmethod
