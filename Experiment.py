@@ -19,10 +19,11 @@ import constants
 from DataMarketPlaces import Marketplace
 from Strategies import Strategy
 
-DATA_FILE_NAME_CSV = '20images_data.csv'
-DATA_FILE_NAME = '20images_data.geojson'
+DATA_FILE_NAME_CSV = 'images_data.csv'
+DATA_FILE_NAME = 'images_data.geojson'
 COVERAGE_IMAGE_NAME = 'coverage.png'
 EXPERIMENT_RESULTS_FILE = 'experiment_results.csv'
+EXPERIMENT_RESULTS_GEOJSON = 'experiment_results_'
 EXPERIMENT_RESULTS_COVERAGE = 'experiment_result_coverage_'
 
 
@@ -60,7 +61,7 @@ class Experiment(ABC):
             self.save_data()
         else:
             self.images = geopandas.read_file(self.working_dir + '/' + DATA_FILE_NAME)
-            self.config_plot_images_and_aoi(self.images)
+            self.config_plot_images_and_aoi(self.images, self.aoi)
         plt.show()
         # set aoi with the same crs (projection system) as the images
         self.aoi.crs = self.images.crs
@@ -88,6 +89,8 @@ class Experiment(ABC):
         pass
 
     def save_data(self):
+        # donwload quicklooks
+        quicklooks = self.marketplace.get_quicklooks_from_marketplace(self.images, self.working_dir)
         # add field image_id and remove fields with lists
         self.images = self.marketplace.prepare_data_to_save(self.images)
         # save data to csv, human readable
@@ -95,7 +98,7 @@ class Experiment(ABC):
         # save to geojson, remove fields with lists, for shp is the same
         self.images.to_file(self.working_dir + '/' + DATA_FILE_NAME, driver='GeoJSON')
         self.save_search_parameters()
-        self.config_plot_images_and_aoi(self.images)
+        self.config_plot_images_and_aoi(self.images, self.aoi)
         self.save_coverage_image(self.working_dir, COVERAGE_IMAGE_NAME)
 
     def save_search_parameters(self):
@@ -108,16 +111,17 @@ class Experiment(ABC):
     def save_coverage_image(path, image_name):
         plt.savefig(path + '/' + image_name)
 
-    def config_plot_images_and_aoi(self, images, legend_column="image_id"):
-        legend_elements = self.get_legend_elements(images, legend_column)
-        colors = self.get_plot_colors(images)
+    @staticmethod
+    def config_plot_images_and_aoi(images, aoi, legend_column="image_id"):
+        legend_elements = Experiment.get_legend_elements(images, legend_column)
+        colors = Experiment.get_plot_colors(images)
         fig_size = (12, 16)
         ax = images.plot(categorical=True,
                          figsize=fig_size,
                          legend=True,
                          alpha=0.7,
                          color=colors)
-        self.aoi.plot(color="r", ax=ax, fc="None", edgecolor="r", lw=1)
+        aoi.plot(color="r", ax=ax, fc="None", edgecolor="r", lw=1)
         ax.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(1, 1))
         return ax
 
@@ -125,7 +129,7 @@ class Experiment(ABC):
     def get_plot_colors(images, id_column='image_id'):
         colors = []
         for id_element in images.index:
-            color = constants.COLORS_20[images[id_column][id_element]]
+            color = constants.COLORS_30[images[id_column][id_element]]
             colors.append(color)
         return colors
 
@@ -134,7 +138,7 @@ class Experiment(ABC):
         legend_elements = []
         for element in elements.index:
             legend_element = mpatches.Circle((0.5, 0.5),
-                                             facecolor=constants.COLORS_20[elements[legend_column][element]],
+                                             facecolor=constants.COLORS_30[elements[legend_column][element]],
                                              label=elements[legend_column][element])
             legend_elements.append(legend_element)
         return legend_elements
@@ -174,10 +178,12 @@ class Experiment(ABC):
             images_id_sorted = images_id_sorted[:-1]
             check_duplicates_after_sort.append(images_id_sorted)
             # geometric metrics
-            area_of_images_over_aoi = self.get_area_of_images_over_aoi(selected_result, self.aoi)
+            area_of_images = self.get_area_of_images(selected_result)
+            area_of_images_over_aoi = self.get_area_of_images_over_aoi(area_of_images, self.aoi)
             result = ProjectDataClasses.OptimizationResult(experiment_id=key, images_id=images_id,
                                                            images_id_sorted=images_id_sorted,
                                                            number_of_images=len(selected_result),
+                                                           area_of_images_km2=(area_of_images/1000000.0),
                                                            area_of_images_over_aoi=area_of_images_over_aoi)
             self.processed_results.append(result)
         # detect if there are duplicate solutions
@@ -187,18 +193,23 @@ class Experiment(ABC):
         print([item for item, count in collections.Counter(check_duplicates_after_sort).items() if count > 1])
 
     @staticmethod
-    def get_area_of_images_over_aoi(selected_result: GeoDataFrame, aoi: GeoDataFrame):
+    def get_area_of_images(selected_result: GeoDataFrame):
         selected_result = selected_result.to_crs(constants.PLANAR_CRS)
-        aoi = aoi.to_crs(constants.PLANAR_CRS)
         areas = selected_result.area
         total_area = 0.0
         for index, area in areas.items():
             total_area += area
+        return total_area
+
+    @staticmethod
+    def get_area_of_images_over_aoi(total_area: float, aoi: GeoDataFrame):
+        aoi = aoi.to_crs(constants.PLANAR_CRS)
         return total_area/aoi.area[0]
 
     def save_results(self):
         self.save_results_csv()
         self.save_results_coverages()
+        self.save_results_geojson()
 
     def save_results_csv(self):
         file_result_path = self.strategy.path + '/' + EXPERIMENT_RESULTS_FILE
@@ -217,6 +228,13 @@ class Experiment(ABC):
 
     def save_results_coverages(self):
         for key, result in enumerate(self.selected_images_results):
-            ax = self.config_plot_images_and_aoi(result)
+            ax = self.config_plot_images_and_aoi(result, self.aoi)
             self.save_coverage_image(self.strategy.path, EXPERIMENT_RESULTS_COVERAGE + str(key) + '.png')
             plt.close(ax.figure)
+
+    def save_results_geojson(self):
+        file_result_path_root = self.strategy.path + '/' + EXPERIMENT_RESULTS_GEOJSON
+        for key, result in enumerate(self.selected_images_results):
+            file_result_path = file_result_path_root + str(key) + '.geojson'
+            result.to_file(file_result_path, driver='GeoJSON')
+

@@ -78,3 +78,125 @@ COLORS_20 = [
     # deeppink
     #
     '#ff1493']
+
+COLORS_30 = [
+    # darkslategray
+    #
+    '#2f4f4f',
+    #
+    # saddlebrown
+    #
+    '#8b4513',
+    #
+    # olive
+    #
+    '#808000',
+    #
+    # darkslateblue
+    #
+    '#483d8b',
+    #
+    # green
+    #
+    '#008000',
+    #
+    # rosybrown
+    #
+    '#bc8f8f',
+    #
+    # steelblue
+    #
+    '#4682b4',
+    #
+    # darkblue
+    #
+    '#00008b',
+    #
+    # darkseagreen
+    #
+    '#8fbc8f',
+    #
+    # purple
+    #
+    '#800080',
+    #
+    # maroon3
+    #
+    '#b03060',
+    #
+    # orangered
+    #
+    '#ff4500',
+    #
+    # darkorange
+    #
+    '#ff8c00',
+    #
+    # yellow
+    #
+    '#ffff00',
+    #
+    # lime
+    #
+    '#00ff00',
+    #
+    # blueviolet
+    #
+    '#8a2be2',
+    #
+    # springgreen
+    #
+    '#00ff7f',
+    #
+    # crimson
+    #
+    '#dc143c',
+    #
+    # aqua
+    #
+    '#00ffff',
+    #
+    # sandybrown
+    #
+    '#f4a460',
+    #
+    # blue
+    #
+    '#0000ff',
+    #
+    # greenyellow
+    #
+    '#adff2f',
+    #
+    # fuchsia
+    #
+    '#ff00ff',
+    #
+    # dodgerblue
+    #
+    '#1e90ff',
+    #
+    # plum
+    #
+    '#dda0dd',
+    #
+    # lightgreen
+    #
+    '#90ee90',
+    #
+    # lightblue
+    #
+    '#add8e6',
+    #
+    # deeppink
+    #
+    '#ff1493',
+    #
+    # mediumslateblue
+    #
+    '#7b68ee',
+    #
+    # moccasin
+    #
+    '#ffe4b5',
+]
