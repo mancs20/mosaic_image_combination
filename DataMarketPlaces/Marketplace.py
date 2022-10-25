@@ -25,6 +25,10 @@ class Marketplace(ABC):
         pass
 
     @abstractmethod
+    def get_quicklooks_from_marketplace(self):
+        pass
+
+    @abstractmethod
     def update_images_cost(self):
         pass
 

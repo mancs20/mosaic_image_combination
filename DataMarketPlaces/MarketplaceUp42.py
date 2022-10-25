@@ -45,6 +45,16 @@ class MarketplaceUp42(Marketplace):
         self.result_images['Cost'] = estimated_costs
         return self.result_images
 
+    def get_quicklooks_from_marketplace(self, images, directory):
+        if self.result_images is None:
+            self.get_data_from_marketplace()
+        image_ids = list(images.id)
+        sensor = "pleiades"
+        output_directory = directory + "/quicklooks"
+        self.catalog.download_quicklooks(image_ids, sensor, output_directory)
+        self.catalog.plot_quicklooks()
+        self.catalog.map_quicklooks()
+
     def convert_search_parameters_without_aoi_to_json(self):
         temp_json = self.search_parameters.to_json()
         images_collections = self.search_parameters.collections
