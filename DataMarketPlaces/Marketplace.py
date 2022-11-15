@@ -17,7 +17,7 @@ class Marketplace(ABC):
         pass
 
     @abstractmethod
-    def get_data_from_marketplace(self):
+    def get_data_from_marketplace(self, max_number_images: int):
         pass
 
     @abstractmethod

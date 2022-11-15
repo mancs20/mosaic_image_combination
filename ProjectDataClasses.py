@@ -11,7 +11,7 @@ class SearchParameters:
     end_date: str = "2022-10-01"
     collections = ["phr"]
     max_cloudcover: float = 100
-    limit: int = 30
+    limit: int = 100
 
 
 @dataclass

@@ -15,7 +15,7 @@ class MarketplaceUp42(Marketplace):
     def __init__(self, aoi, search_parameters):
         super(MarketplaceUp42, self).__init__(aoi, search_parameters)
 
-    def get_data_from_marketplace(self):
+    def get_data_from_marketplace(self, max_number_images=30):
         self.api_initialization()
         # noinspection PyAttributeOutsideInit
         self.result_images = self.search_results()
@@ -45,15 +45,11 @@ class MarketplaceUp42(Marketplace):
         self.result_images['Cost'] = estimated_costs
         return self.result_images
 
-    def get_quicklooks_from_marketplace(self, images, directory):
+    def get_quicklooks_from_marketplace(self, images, directory, sensor="pleiades"):
         if self.result_images is None:
             self.get_data_from_marketplace()
         image_ids = list(images.id)
-        sensor = "pleiades"
-        output_directory = directory + "/quicklooks"
-        self.catalog.download_quicklooks(image_ids, sensor, output_directory)
-        self.catalog.plot_quicklooks()
-        self.catalog.map_quicklooks()
+        self.catalog.download_quicklooks(image_ids, sensor, directory)
 
     def convert_search_parameters_without_aoi_to_json(self):
         temp_json = self.search_parameters.to_json()
@@ -75,5 +71,5 @@ class MarketplaceUp42(Marketplace):
 
     @staticmethod
     def add_id_fields(images):
-        images_id = list(images.index)
+        images_id = list(range(len(images.index)))
         images['image_id'] = images_id

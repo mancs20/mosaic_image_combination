@@ -8,9 +8,11 @@ from dataclasses import fields, asdict
 from typing import Union
 
 import geopandas
+import contextily as cx
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 import up42
 from geopandas import GeoDataFrame
 
@@ -52,21 +54,59 @@ class Experiment(ABC):
 
     def prepare_experiment(self):
         # Create or get folder for experiment results
+        failed_experiment = False
         if not self.check_if_local_data():
-            self.images = self.marketplace.get_data_from_marketplace()
-            if not self.is_aoi_covered_by_searched_images():
-                return False
-            # TODO uncomment below to get images marketplace cost
-            # self.images = self.marketplace.update_images_cost()
-            self.save_data()
+            raw_images = self.marketplace.get_data_from_marketplace()
+            if self.is_aoi_covered_by_searched_images(raw_images):
+                self.images = self.select_required_images_from_total_to_cover(raw_images, number_images=30)
+                self.images.crs = raw_images.crs
+                self.images.to_crs(self.images.crs)
+                if not self.is_aoi_covered_by_searched_images(self.images):
+                    failed_experiment = True
+                else:
+                    # TODO uncomment below to get images marketplace cost
+                    # self.images = self.marketplace.update_images_cost()
+                    self.save_data()
+            else:
+                self.images = raw_images
+                failed_experiment = True
+            if failed_experiment:
+                # to plot the images and see why the cover is failling
+                self.images = self.marketplace.prepare_data_to_save(self.images)
         else:
             self.images = geopandas.read_file(self.working_dir + '/' + DATA_FILE_NAME)
-            self.config_plot_images_and_aoi(self.images, self.aoi)
+        self.config_plot_images_and_aoi(self.images, self.aoi)
         plt.show()
+        if failed_experiment is True:
+            return False
         # set aoi with the same crs (projection system) as the images
         self.aoi.crs = self.images.crs
         self.aoi.to_crs(self.aoi.crs)
         return True
+
+    def select_required_images_from_total_to_cover(self, all_images, number_images=30):
+        if len(all_images.index) > number_images:
+            number_of_tries = max(100, 2 ** len(all_images.index))
+            cover = False
+            while number_of_tries > 0 and cover is False:
+                selected_images = self.random_select_images_from_total(all_images, number_images)
+                cover = self.is_aoi_covered_by_searched_images(selected_images)
+                number_of_tries -= 1
+
+            return selected_images
+        else:
+            return all_images
+
+    def random_select_images_from_total(self, all_images, number_images=30):
+        random_arr = list(range(len(all_images.index)))
+        selected_images = all_images[all_images.geom_type != "Polygon"]
+        for i in range(number_images):
+            id_arr = random.randint(0, len(random_arr) - 1)
+            id_image = random_arr[id_arr]
+            del random_arr[id_arr]
+            selected_image = all_images.loc[id_image]
+            selected_images = selected_images.append(selected_image)
+        return selected_images
 
     def check_create_working_dir(self, aoi_file):
         current_dir = os.path.dirname(__file__)
@@ -78,8 +118,8 @@ class Experiment(ABC):
     def check_if_local_data(self):
         return os.path.exists(self.working_dir + '/' + DATA_FILE_NAME)
 
-    def is_aoi_covered_by_searched_images(self):
-        all_images_union = self.images.unary_union  # convert all images (GeoSeries) in a single polygon
+    def is_aoi_covered_by_searched_images(self, images):
+        all_images_union = images.unary_union  # convert all images (GeoSeries) in a single polygon
         # check if GeoDataFrame is inside a Polygon
         if self.aoi.within(all_images_union)[0]:
             return True
@@ -90,7 +130,7 @@ class Experiment(ABC):
 
     def save_data(self):
         # donwload quicklooks
-        quicklooks = self.marketplace.get_quicklooks_from_marketplace(self.images, self.working_dir)
+        quicklooks = self.marketplace.get_quicklooks_from_marketplace(self.images, self.working_dir + "/quicklooks")
         # add field image_id and remove fields with lists
         self.images = self.marketplace.prepare_data_to_save(self.images)
         # save data to csv, human readable
@@ -112,17 +152,29 @@ class Experiment(ABC):
         plt.savefig(path + '/' + image_name)
 
     @staticmethod
-    def config_plot_images_and_aoi(images, aoi, legend_column="image_id"):
+    def config_plot_images_and_aoi(images, aoi, legend_column="image_id", basemap=True):
         legend_elements = Experiment.get_legend_elements(images, legend_column)
-        colors = Experiment.get_plot_colors(images)
-        fig_size = (12, 16)
-        ax = images.plot(categorical=True,
-                         figsize=fig_size,
-                         legend=True,
-                         alpha=0.7,
-                         color=colors)
+        fig_size = (10, 10)
+        if len(legend_elements) > 0:
+            colors = Experiment.get_plot_colors(images)
+            ax = images.plot(categorical=True,
+                             figsize=fig_size,
+                             legend=True,
+                             alpha=0.7,
+                             color=colors)
+            ax.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(1, 1))
+        else:
+            ax = images.plot(legend_column,
+                             categorical=True,
+                             figsize=fig_size,
+                             legend=True,
+                             alpha=0.7,
+                             cmap="Set3",
+                             legend_kwds=dict(loc="upper left", bbox_to_anchor=(1, 1)))
         aoi.plot(color="r", ax=ax, fc="None", edgecolor="r", lw=1)
-        ax.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(1, 1))
+        if basemap:
+            cx.add_basemap(ax, crs=images.crs)
+
         return ax
 
     @staticmethod
@@ -136,11 +188,13 @@ class Experiment(ABC):
     @staticmethod
     def get_legend_elements(elements: GeoDataFrame, legend_column="image_id"):
         legend_elements = []
-        for element in elements.index:
-            legend_element = mpatches.Circle((0.5, 0.5),
-                                             facecolor=constants.COLORS_30[elements[legend_column][element]],
-                                             label=elements[legend_column][element])
-            legend_elements.append(legend_element)
+        legend_colors = constants.COLORS_30
+        if len(elements.index) <= len(legend_colors):
+            for element in elements.index:
+                legend_element = mpatches.Circle((0.5, 0.5),
+                                                 facecolor=legend_colors[elements[legend_column][element]],
+                                                 label=elements[legend_column][element])
+                legend_elements.append(legend_element)
         return legend_elements
 
     def set_strategy(self, strategy: Strategy):
@@ -183,7 +237,7 @@ class Experiment(ABC):
             result = ProjectDataClasses.OptimizationResult(experiment_id=key, images_id=images_id,
                                                            images_id_sorted=images_id_sorted,
                                                            number_of_images=len(selected_result),
-                                                           area_of_images_km2=(area_of_images/1000000.0),
+                                                           area_of_images_km2=(area_of_images / 1000000.0),
                                                            area_of_images_over_aoi=area_of_images_over_aoi)
             self.processed_results.append(result)
         # detect if there are duplicate solutions
@@ -204,7 +258,7 @@ class Experiment(ABC):
     @staticmethod
     def get_area_of_images_over_aoi(total_area: float, aoi: GeoDataFrame):
         aoi = aoi.to_crs(constants.PLANAR_CRS)
-        return total_area/aoi.area[0]
+        return total_area / aoi.area[0]
 
     def save_results(self):
         self.save_results_csv()
@@ -237,4 +291,3 @@ class Experiment(ABC):
         for key, result in enumerate(self.selected_images_results):
             file_result_path = file_result_path_root + str(key) + '.geojson'
             result.to_file(file_result_path, driver='GeoJSON')
-
