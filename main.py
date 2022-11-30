@@ -12,17 +12,22 @@ from Strategies.RandomSelection import RandomSelection
 
 def get_aoi_file():
     file = "aois/dakar.geojson"
+    # Working
+    # file = ['aois/paris.geojson']
+    # file = ['aois/tokyo_bay.geojson']
+    # file = ['aois/lagos_nigeria.geojson']
+    # file = ['aois/mexico_city.geojson']
+    # file = ['aois/rio_de_janeiro.geojson']
     return file
 
 
 def get_aoi_files():
     # Test with only 1 file
-    files = [get_aoi_file()]
-    # files = ['aois/lagos_nigeria.geojson', 'aois/mexico_city.geojson',
-    #          'aois/rio_de_janeiro.geojson', 'aois/tokio_yokohama.geojson', 'aois/dakar.geojson']
-    # files = ['aois/luxembourg_south.geojson', 'aois/lagos_nigeria.geojson', 'aois/mexico_city.geojson',
-    #          'aois/rio_de_janeiro.geojson', 'aois/tokio_yokohama.geojson', 'aois/dakar.geojson']
-    files = ['aois/paris.geojson']
+    # files = [get_aoi_file()]
+
+    files = ['aois/paris.geojson', 'aois/tokyo_bay.geojson',
+             'aois/lagos_nigeria.geojson', 'aois/mexico_city.geojson', 'aois/rio_de_janeiro.geojson']
+
     return files
 
 
@@ -34,18 +39,20 @@ def get_search_parameters():
 def main():
     aoi_files = get_aoi_files()
     search_parameters = get_search_parameters()
-    for aoi_file in aoi_files:
-        experiment = Experiment(search_parameters=search_parameters, aoi_file=aoi_file)
-        experiment.set_marketplace(MarketplaceUp42(experiment.aoi, experiment.search_parameters))
+    # for aoi_file in aoi_files:
+    #     experiment = Experiment(search_parameters=search_parameters, aoi_file=aoi_file)
+    #     experiment.set_marketplace(MarketplaceUp42(experiment.aoi, experiment.search_parameters))
+    #
+    #     experiment.print_aoi_area()
+    #
+    #     strategies = [GreedyRatioCoveredAoiImageArea(), RandomSelection()]
+    #     if experiment.prepare_experiment():
+    #         for strategy in strategies:
+    #             experiment.set_strategy(strategy)
+    #             experiment.run_experiment()
 
-        experiment.print_aoi_area()
-
-        # strategies = [GreedyRatioCoveredAoiImageArea(), GreedyCoverLargerArea(), RandomSelection()]
-        strategies = [GreedyRatioCoveredAoiImageArea(), RandomSelection()]
-        if experiment.prepare_experiment():
-            for strategy in strategies:
-                experiment.set_strategy(strategy)
-                experiment.run_experiment()
+    aois = Experiment.process_several_aois(aoi_files)
+    Experiment.plot_aois(aois)
 
 
 if __name__ == '__main__':

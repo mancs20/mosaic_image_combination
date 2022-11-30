@@ -15,6 +15,7 @@ import numpy as np
 import random
 import up42
 from geopandas import GeoDataFrame
+import shapely.geometry
 
 import ProjectDataClasses
 import constants
@@ -176,6 +177,42 @@ class Experiment(ABC):
             cx.add_basemap(ax, crs=images.crs)
 
         return ax
+
+    @staticmethod
+    def process_several_aois(aoi_files):
+        aois = []
+        for aoi_file in aoi_files:
+            processed_aoi_file = up42.read_vector_file(aoi_file)
+            aoi: GeoDataFrame = geopandas.GeoDataFrame.from_features(processed_aoi_file)
+
+            # show aoi area
+            aoi.crs = 4326
+            temp_aoi = aoi.to_crs(constants.PLANAR_CRS)
+            print('Area of aoi ' + aoi_file + ' is: ' + str(temp_aoi.area[0] / 1000000))
+            # get the aoi with planar projection
+            aoi = aoi.to_crs(4326)
+            aois.append(aoi)
+        return aois
+
+    @staticmethod
+    def plot_aois(aois):
+        #Blue map whole world map
+        fig_size = (50, 30)
+        world = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+        ax = world.plot(figsize=fig_size)
+        for i in range(0, len(aois)):
+            aois[i].plot(color="r", ax=ax, fc="None", edgecolor="r", lw=45)
+            # aois[i].plot(color="r", ax=ax, fc="None", edgecolor="r", lw=25)
+
+        # Terrain map, not the whole world
+        # fig_size = (30, 10)
+        # ax = aois[0].plot(figsize=fig_size, color="r", fc="None", edgecolor="r", lw=25)
+        # for i in range(1, len(aois)):
+        #     aois[i].plot(color="r", ax=ax, fc="None", edgecolor="r", lw=25)
+        # cx.add_basemap(ax, crs=aois[0].crs)
+
+        # ax.set_axis_off()
+        plt.show()
 
     @staticmethod
     def get_plot_colors(images, id_column='image_id'):
