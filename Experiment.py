@@ -23,7 +23,7 @@ from Strategies import Strategy
 
 DATA_FILE_NAME_CSV = 'images_data.csv'
 DATA_FILE_NAME = 'images_data.geojson'
-COVERAGE_IMAGE_NAME = 'coverage.png'
+COVERAGE_IMAGE_NAME = 'coverage.svg'
 EXPERIMENT_RESULTS_FILE = 'experiment_results.csv'
 EXPERIMENT_RESULTS_GEOJSON = 'experiment_results_'
 EXPERIMENT_RESULTS_COVERAGE = 'experiment_result_coverage_'
@@ -42,6 +42,7 @@ class Experiment(ABC):
         self.selected_images_results = []
         self.working_dir = ""
         self.check_create_working_dir(aoi_file)
+        self.plot_max_coords = [0] * 4
 
     def set_marketplace(self, marketplace: Marketplace):
         self.marketplace = marketplace
@@ -75,13 +76,17 @@ class Experiment(ABC):
                 self.images = self.marketplace.prepare_data_to_save(self.images)
         else:
             self.images = geopandas.read_file(self.working_dir + '/' + DATA_FILE_NAME)
-        self.config_plot_images_and_aoi(self.images, self.aoi)
+        # set aoi with the same crs (projection system) as the images
+        self.aoi.crs = self.images.crs
+        self.aoi.to_crs(self.aoi.crs)
+        # plot images
+        self.config_plot_images_and_aoi(self.images, self.aoi, legend_column="image_id", get_max_coords=True)
         plt.show()
         if failed_experiment is True:
             return False
         # set aoi with the same crs (projection system) as the images
-        self.aoi.crs = self.images.crs
-        self.aoi.to_crs(self.aoi.crs)
+        # self.aoi.crs = self.images.crs
+        # self.aoi.to_crs(self.aoi.crs)
         return True
 
     def select_required_images_from_total_to_cover(self, all_images, number_images=30):
@@ -92,7 +97,6 @@ class Experiment(ABC):
                 selected_images = self.random_select_images_from_total(all_images, number_images)
                 cover = self.is_aoi_covered_by_searched_images(selected_images)
                 number_of_tries -= 1
-
             return selected_images
         else:
             return all_images
@@ -149,10 +153,15 @@ class Experiment(ABC):
 
     @staticmethod
     def save_coverage_image(path, image_name):
-        plt.savefig(path + '/' + image_name)
+        plt.savefig(path + '/' + image_name, bbox_inches='tight')
 
-    @staticmethod
-    def config_plot_images_and_aoi(images, aoi, legend_column="image_id", basemap=True):
+    def config_plot_images_and_aoi(self, images, aoi, legend_column="image_id", get_max_coords=False, basemap=True):
+        if get_max_coords:
+            minx, miny, maxx, maxy = images.total_bounds
+            x_margin = (maxx - minx)*0.05
+            y_margin = (maxy - miny)*0.05
+            self.plot_max_coords = [minx - x_margin, miny - y_margin, maxx + x_margin, maxy + y_margin]
+
         legend_elements = Experiment.get_legend_elements(images, legend_column)
         fig_size = (10, 10)
         if len(legend_elements) > 0:
@@ -172,6 +181,12 @@ class Experiment(ABC):
                              cmap="Set3",
                              legend_kwds=dict(loc="upper left", bbox_to_anchor=(1, 1)))
         aoi.plot(color="r", ax=ax, fc="None", edgecolor="r", lw=1)
+
+        # set the same coords for all images
+        minx, miny, maxx, maxy = self.plot_max_coords
+        ax.set_xlim(minx, maxx)
+        ax.set_ylim(miny, maxy)
+
         if basemap:
             cx.add_basemap(ax, crs=images.crs)
 
@@ -196,6 +211,28 @@ class Experiment(ABC):
                                                  label=elements[legend_column][element])
                 legend_elements.append(legend_element)
         return legend_elements
+
+    def plot_all_images_and_solutions(self, solutions):
+        # add all images as a solution
+        self.selected_images_results.append(self.images)
+        # convert solutions
+        for solution in solutions:
+            converted_solution = self.convert_solution(solution)
+            self.selected_images_results.append(converted_solution)
+        # plot results
+        self.save_results_coverages(close_plot=False)
+
+    def convert_solution(self, code_solution):
+        solution_geodataframe = self.images[self.images.geom_type != "Polygon"]
+        code_solution = code_solution.split("-")
+        for image_id in code_solution:
+            selected_image = self.images.loc[int(image_id)]
+            solution_geodataframe = solution_geodataframe.append(selected_image)
+
+        solution_geodataframe.crs = self.images.crs
+        solution_geodataframe.to_crs(self.images.crs)
+
+        return solution_geodataframe
 
     def set_strategy(self, strategy: Strategy):
         self.strategy = strategy
@@ -280,14 +317,31 @@ class Experiment(ABC):
             # write the data
             writer.writerows(data)
 
-    def save_results_coverages(self):
+    def save_results_coverages(self, close_plot=True):
         for key, result in enumerate(self.selected_images_results):
             ax = self.config_plot_images_and_aoi(result, self.aoi)
-            self.save_coverage_image(self.strategy.path, EXPERIMENT_RESULTS_COVERAGE + str(key) + '.png')
-            plt.close(ax.figure)
+            if self.strategy is None:
+                path = self.working_dir + "/plots_specific_solutions"
+                if not os.path.exists(path):
+                    os.makedirs(path)
+                file_lastname = self.encode_solution(result)
+            else:
+                path = self.strategy.path
+                file_lastname = str(key)
+            self.save_coverage_image(path, EXPERIMENT_RESULTS_COVERAGE + file_lastname + '.svg')
+            if close_plot:
+                plt.close(ax.figure)
+            else:
+                plt.show()
 
     def save_results_geojson(self):
         file_result_path_root = self.strategy.path + '/' + EXPERIMENT_RESULTS_GEOJSON
         for key, result in enumerate(self.selected_images_results):
             file_result_path = file_result_path_root + str(key) + '.geojson'
             result.to_file(file_result_path, driver='GeoJSON')
+
+    @staticmethod
+    def encode_solution(solution_geodataframe):
+        solution_list = solution_geodataframe['image_id'].tolist()
+        solution_coded = '-'.join(str(e) for e in solution_list)
+        return solution_coded
