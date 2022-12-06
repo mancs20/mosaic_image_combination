@@ -53,7 +53,7 @@ class Strategy(ABC):
 
     def print_temp_results(self, results):
         plot_results = self.change_projection_to_original(results)
-        ax = Experiment.Experiment.config_plot_images_and_aoi(plot_results, self.original_aoi)
+        # ax = Experiment.Experiment.config_plot_images_and_aoi(plot_results, self.original_aoi)
         plt.show()
 
     @property
