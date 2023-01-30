@@ -48,12 +48,6 @@ class Experiment(ABC):
     def set_marketplace(self, marketplace: Marketplace):
         self.marketplace = marketplace
 
-    def print_aoi_area(self):
-        # show aoi area
-        self.aoi.crs = 4326
-        temp_aoi = self.aoi.to_crs(constants.PLANAR_CRS)
-        print('Area of aoi ' + self.working_dir + ' is: ' + str(temp_aoi.area[0] / 1000000))
-
     def prepare_experiment(self):
         # Create or get folder for experiment results
         failed_experiment = False
@@ -138,6 +132,8 @@ class Experiment(ABC):
         quicklooks = self.marketplace.get_quicklooks_from_marketplace(self.images, self.working_dir + "/quicklooks")
         # add field image_id and remove fields with lists
         self.images = self.marketplace.prepare_data_to_save(self.images)
+        # add the area of each image
+        self.add_images_area()
         # save data to csv, human readable
         self.images.to_csv(self.working_dir + '/' + DATA_FILE_NAME_CSV, index_label='image_id')
         # save to geojson, remove fields with lists, for shp is the same
@@ -382,3 +378,15 @@ class Experiment(ABC):
         solution_list = solution_geodataframe['image_id'].tolist()
         solution_coded = '-'.join(str(e) for e in solution_list)
         return solution_coded
+
+    def print_aoi_area(self):
+        # show aoi area
+        self.aoi.crs = 4326
+        temp_aoi1 = self.aoi.to_crs({'proj': 'cea'})
+        print('Area of aoi ' + self.working_dir + ' is: ' + str(temp_aoi1.area[0] / 10 ** 6))
+
+    def add_images_area(self):
+        temp_images = self.images.to_crs({'proj': 'cea'})
+        images_area_series = temp_images.area / 10 ** 6
+        images_area = images_area_series.tolist()
+        self.images['area'] = images_area
