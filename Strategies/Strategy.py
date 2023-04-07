@@ -6,6 +6,7 @@ from geopandas import GeoDataFrame
 import Experiment
 import constants
 import matplotlib.pyplot as plt
+import contextily as cx
 
 class Strategy(ABC):
     # noinspection PyTypeChecker
@@ -53,8 +54,35 @@ class Strategy(ABC):
 
     def print_temp_results(self, results):
         plot_results = self.change_projection_to_original(results)
-        # ax = Experiment.Experiment.config_plot_images_and_aoi(plot_results, self.original_aoi)
-        plt.show()
+        # ax = Experiment.Experiment.config_plot_images_and_aoi(images=plot_results, aoi=self.original_aoi)
+
+        #TODO delete this after tests
+        # legend_column = "image_id"
+        # images = plot_results
+        # aoi = self.original_aoi
+        # basemap = True
+        # legend_elements = Experiment.Experiment.get_legend_elements(images, legend_column)
+        # fig_size = (10, 10)
+        # if len(legend_elements) > 0:
+        #     colors = Experiment.Experiment.get_plot_colors(images)
+        #     ax = images.plot(categorical=True,
+        #                      figsize=fig_size,
+        #                      legend=True,
+        #                      alpha=0.7,
+        #                      color=colors)
+        #     ax.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(1, 1))
+        # else:
+        #     ax = images.plot(legend_column,
+        #                      categorical=True,
+        #                      figsize=fig_size,
+        #                      legend=True,
+        #                      alpha=0.7,
+        #                      cmap="Set3",
+        #                      legend_kwds=dict(loc="upper left", bbox_to_anchor=(1, 1)))
+        # aoi.plot(color="r", ax=ax, fc="None", edgecolor="r", lw=1)
+        # if basemap:
+        #     cx.add_basemap(ax, crs=images.crs)
+        # plt.show()
 
     @property
     @abstractmethod

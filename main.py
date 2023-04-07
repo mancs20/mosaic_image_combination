@@ -8,6 +8,7 @@ from Experiment import Experiment
 from ProjectDataClasses import SearchParameters
 from Strategies.GreedyRatioCoveredAoiImageArea import GreedyRatioCoveredAoiImageArea
 from Strategies.RandomSelection import RandomSelection
+from Strategies.StrategyDiscrete.CPWithouyClouds import CPWithoutClouds
 
 
 def get_aoi_file():
@@ -36,6 +37,8 @@ def get_search_parameters():
 
 def get_solutions():
     solutions = []
+    # all images and the aoi
+    # solutions.append("0-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-25-26-27-28-29")
     # solutions for a certain aoi
     # solutions.append("17-12-7-23-5-11-1-4")  # Greedy
     # solutions.append("13-11-19-17-29-12-1")  # Best random
@@ -58,7 +61,8 @@ def main():
         # experiment.print_aoi_area()
 
         # strategies = [GreedyRatioCoveredAoiImageArea(), GreedyCoverLargerArea(), RandomSelection()]
-        strategies = [GreedyRatioCoveredAoiImageArea(), RandomSelection()]
+        # strategies = [GreedyRatioCoveredAoiImageArea(), RandomSelection()]
+        strategies = [CPWithoutClouds()]
         if experiment.prepare_experiment():
             # to plot certain solutions and all the images of one aoi uncomment below, it works if len(aoi_file) = 1
             if len(get_solutions()) != 0:
