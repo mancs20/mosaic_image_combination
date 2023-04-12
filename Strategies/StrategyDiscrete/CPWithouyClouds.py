@@ -1,35 +1,29 @@
 from Strategies.StrategyDiscrete.StrategyDiscrete import StrategyDiscrete
-
+from minizinc import Instance, Model, Result, Solver, Status
+import multiprocessing
 
 class CPWithoutClouds(StrategyDiscrete):
     path = ""
+    model_path = "./model/mosaic_no_cloud.mzn"
     name = "Constraint_Programming_Discrete_Without_Clouds"
     number_of_runs = 1
+
     def run_strategy(self):
         super().discretize()
-        self.export_set_images_universe_to_dzn(self.sets_images, self.universe)
-        # self.call_cp_solver(self.sets_images, self.universe)
+        solver = Solver.lookup("gecode")
+        model = Model(self.model_path)
+        instance = Instance(solver, model)
+        self.initialize_model_parameters(instance)
+        self.call_cp_solver(instance)
 
-    def export_set_images_universe_to_dzn(self, sets_images, universe):
-        with open(self.path + "/CPWithoutClouds.dzn", "w") as f:
-            f.write("images = " + str(len(sets_images)) + ";\n")
-            f.write("universe = " + str(universe) + ";\n")
-            f.write("sets = [")
-            for i in range(len(sets_images)):
-                f.write("{")
-                for j in range(len(sets_images[i].list_of_regions)):
-                    f.write(str(sets_images[i].list_of_regions[j]))
-                    if j < len(sets_images[i].list_of_regions) - 1:
-                        f.write(", ")
-                f.write("}")
-                if i < len(sets_images) - 1:
-                    f.write(", ")
-            f.write("];\n")
-            f.write("costs = [")
-            for i in range(len(sets_images)):
-                f.write(str(sets_images[i].weight))
-                if i < len(sets_images) - 1:
-                    f.write(", ")
-            f.write("];\n")
-    def call_cp_solver(self):
-        result = 1;
+    def initialize_model_parameters(self, instance):
+        instance["images"] = len(self.sets_images)
+        instance["universe"] = self.universe
+        instance["sets"] = [set(x.list_of_regions) for x in self.sets_images]
+        instance["costs"] = [x.weight for x in self.sets_images]
+
+    def call_cp_solver(self, instance):
+        cores = multiprocessing.cpu_count() * 2
+        solution = instance.solve(optimisation_level=3, free_search=True, processes=cores)
+        cover = [image_idx+1 for image_idx, take_image in enumerate(solution["taken"]) if take_image]
+        print(cover)

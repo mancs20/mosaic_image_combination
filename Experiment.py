@@ -76,7 +76,7 @@ class Experiment(ABC):
         self.aoi.to_crs(self.aoi.crs)
         # plot images
         self.config_plot_images_and_aoi(self.images, self.aoi, legend_column="image_id", get_max_coords=True)
-        plt.show()
+        # plt.show()
         if failed_experiment is True:
             return False
         # set aoi with the same crs (projection system) as the images
