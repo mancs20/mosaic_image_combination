@@ -31,37 +31,40 @@ EXPERIMENT_RESULTS_COVERAGE = 'experiment_result_coverage_'
 
 
 class Experiment(ABC):
-    def __init__(self, aoi_file, search_parameters: ProjectDataClasses.SearchParameters):
+    def __init__(self, aoi_file, search_parameters: ProjectDataClasses.SearchParameters, number_images_per_aoi=30):
         self.marketplace = None
         self.strategy: Strategy = None
         processed_aoi_file = up42.read_vector_file(aoi_file)
         self.aoi: GeoDataFrame = geopandas.GeoDataFrame.from_features(processed_aoi_file)
         self.search_parameters = search_parameters
         self.search_parameters.aoi = processed_aoi_file
+        self.number_images_per_aoi = number_images_per_aoi
         self.images: Union[GeoDataFrame, dict] = None
         self.processed_results = []
         self.selected_images_results = []
-        self.working_dir = ""
-        self.check_create_working_dir(aoi_file)
+        self.working_dir = Experiment.check_create_working_dir(aoi_file, number_images_per_aoi)
         self.plot_max_coords = [0] * 4
 
     def set_marketplace(self, marketplace: Marketplace):
         self.marketplace = marketplace
 
-    def prepare_experiment(self):
+    def prepare_experiment(self, get_images_from_marketplace=True):
         # Create or get folder for experiment results
         failed_experiment = False
         if not self.check_if_local_data():
             raw_images = self.marketplace.get_data_from_marketplace()
+            self.aoi.crs = raw_images.crs
+            self.aoi.to_crs(self.aoi.crs)
             if self.is_aoi_covered_by_searched_images(raw_images):
-                self.images = self.select_required_images_from_total_to_cover(raw_images, number_images=30)
+                self.images = self.select_required_images_from_total_to_cover(raw_images,
+                                                                              remove_images_covering_less_than25km2=True)
                 self.images.crs = raw_images.crs
                 self.images.to_crs(self.images.crs)
                 if not self.is_aoi_covered_by_searched_images(self.images):
                     failed_experiment = True
                 else:
                     # TODO uncomment below to get images marketplace cost
-                    # self.images = self.marketplace.update_images_cost()
+                    self.images = self.marketplace.update_images_cost(self.images)
                     self.save_data()
             else:
                 self.images = raw_images
@@ -79,24 +82,36 @@ class Experiment(ABC):
         # plt.show()
         if failed_experiment is True:
             return False
-        # set aoi with the same crs (projection system) as the images
-        # self.aoi.crs = self.images.crs
-        # self.aoi.to_crs(self.aoi.crs)
         return True
 
-    def select_required_images_from_total_to_cover(self, all_images, number_images=30):
-        if len(all_images.index) > number_images:
+    def select_required_images_from_total_to_cover(self, all_images, remove_images_covering_less_than25km2=False):
+        if remove_images_covering_less_than25km2:
+            all_images = self.remove_images_covering_less_than25km2(all_images)
+        if self.number_images_per_aoi != 0 and len(all_images.index) > self.number_images_per_aoi:
             number_of_tries = max(100, 2 ** len(all_images.index))
             cover = False
             while number_of_tries > 0 and cover is False:
-                selected_images = self.random_select_images_from_total(all_images, number_images)
+                selected_images = self.random_select_images_from_total(all_images, self.number_images_per_aoi)
                 cover = self.is_aoi_covered_by_searched_images(selected_images)
                 number_of_tries -= 1
             return selected_images
         else:
             return all_images
 
-    def random_select_images_from_total(self, all_images, number_images=30):
+    def remove_images_covering_less_than25km2(self, all_images):
+        # return all images which intersect with aoi and cover more than 25km2
+        original_crs = all_images.crs
+        all_images = all_images.to_crs(constants.PLANAR_CRS)
+        self.aoi = self.aoi.to_crs(constants.PLANAR_CRS)
+
+        all_images_intersection_area = all_images.intersection(self.aoi.unary_union).area
+        all_images = all_images[all_images_intersection_area > 25000000]
+
+        all_images = all_images.to_crs(original_crs)
+        self.aoi = self.aoi.to_crs(original_crs)
+        return all_images
+
+    def random_select_images_from_total(self, all_images, number_images):
         random_arr = list(range(len(all_images.index)))
         selected_images = all_images[all_images.geom_type != "Polygon"]
         for i in range(number_images):
@@ -107,12 +122,16 @@ class Experiment(ABC):
             selected_images = selected_images.append(selected_image)
         return selected_images
 
-    def check_create_working_dir(self, aoi_file):
+    @staticmethod
+    def check_create_working_dir(aoi_file, number_images_per_aoi):
         current_dir = os.path.dirname(__file__)
-        dir_name = re.search('/(.*).geojson', aoi_file).group(1)
-        self.working_dir = os.path.join(current_dir, 'results', dir_name)
-        if not os.path.exists(self.working_dir):
-            os.makedirs(self.working_dir)
+        aoi_name = re.search('/(.*).geojson', aoi_file).group(1)
+        working_dir = os.path.join(current_dir, 'results', aoi_name, ProjectDataClasses.SearchParameters.start_date
+                                        + '-' + ProjectDataClasses.SearchParameters.end_date,
+                                        str(number_images_per_aoi))
+        if not os.path.exists(working_dir):
+            os.makedirs(working_dir)
+        return working_dir
 
     def check_if_local_data(self):
         return os.path.exists(self.working_dir + '/' + DATA_FILE_NAME)
@@ -128,8 +147,6 @@ class Experiment(ABC):
         pass
 
     def save_data(self):
-        # donwload quicklooks
-        quicklooks = self.marketplace.get_quicklooks_from_marketplace(self.images, self.working_dir + "/quicklooks")
         # add field image_id and remove fields with lists
         self.images = self.marketplace.prepare_data_to_save(self.images)
         # add the area of each image
@@ -141,6 +158,10 @@ class Experiment(ABC):
         self.save_search_parameters()
         self.config_plot_images_and_aoi(self.images, self.aoi)
         self.save_coverage_image(self.working_dir, COVERAGE_IMAGE_NAME)
+        # donwload quicklooks
+        # self.get_quicklooks()
+    def get_quicklooks(self):
+        quicklooks = self.marketplace.get_quicklooks_from_marketplace(self.images, self.working_dir + "/quicklooks")
 
     def save_search_parameters(self):
         params_json = self.marketplace.convert_search_parameters_without_aoi_to_json()

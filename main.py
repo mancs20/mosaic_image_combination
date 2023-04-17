@@ -14,9 +14,9 @@ from Strategies.StrategyDiscrete.CPWithouyClouds import CPWithoutClouds
 def get_aoi_file():
     # file = "aois/mexico_city.geojson"
     # file = "aois/rio_de_janeiro.geojson"
-    # file = "aois/paris.geojson"
+    file = "aois/paris.geojson"
     # file = "aois/lagos_nigeria.geojson"
-    file = "aois/tokyo_bay.geojson"
+    # file = "aois/tokyo_bay.geojson"
     # file = "aois/dakar.geojson"
     return file
 
@@ -27,6 +27,9 @@ def get_aoi_files():
 
     # files = ['aois/mexico_city.geojson', 'aois/rio_de_janeiro.geojson',
     #          'aois/paris.geojson', 'aois/lagos_nigeria.geojson', 'aois/tokyo_bay.geojson']
+
+    # files = ['aois/mexico_city.geojson', 'aois/rio_de_janeiro.geojson',
+    #          'aois/lagos_nigeria.geojson', 'aois/tokyo_bay.geojson']
     return files
 
 
@@ -54,7 +57,7 @@ def main():
     # Experiment.plot_aois(aois)
 
     for aoi_file in aoi_files:
-        experiment = Experiment(search_parameters=search_parameters, aoi_file=aoi_file)
+        experiment = Experiment(search_parameters=search_parameters, aoi_file=aoi_file, number_images_per_aoi=0)
         experiment.set_marketplace(MarketplaceUp42(experiment.aoi, experiment.search_parameters))
 
         # To know the area of the aoi, uncomment below
@@ -63,6 +66,7 @@ def main():
         # strategies = [GreedyRatioCoveredAoiImageArea(), GreedyCoverLargerArea(), RandomSelection()]
         # strategies = [GreedyRatioCoveredAoiImageArea(), RandomSelection()]
         strategies = [CPWithoutClouds()]
+        # strategies = []
         if experiment.prepare_experiment():
             # to plot certain solutions and all the images of one aoi uncomment below, it works if len(aoi_file) = 1
             if len(get_solutions()) != 0:

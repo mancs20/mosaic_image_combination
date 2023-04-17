@@ -11,6 +11,7 @@ class Marketplace(ABC):
         self.aoi = aoi
         self.search_parameters = search_parameters
         self.result_images = None
+        self.collections = []
 
     @abstractmethod
     def api_initialization(self):
@@ -29,7 +30,7 @@ class Marketplace(ABC):
         pass
 
     @abstractmethod
-    def update_images_cost(self):
+    def update_images_cost(self, images):
         pass
 
     @abstractmethod
