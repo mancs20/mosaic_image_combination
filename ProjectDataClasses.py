@@ -7,11 +7,11 @@ from dataclasses_json import dataclass_json
 @dataclass
 class SearchParameters:
     aoi = None
-    start_date: str = "2020-01-01"
-    end_date: str = "2022-10-01"
-    collections = ["phr"]
+    start_date: str = "2021-01-01"
+    end_date: str = "2023-01-01"
+    collections = ["phr", "spot", "pneo"]
     max_cloudcover: float = 100
-    limit: int = 100
+    limit: int = 500
 
 
 @dataclass

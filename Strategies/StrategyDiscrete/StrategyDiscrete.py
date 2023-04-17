@@ -27,7 +27,7 @@ class StrategyDiscrete(Strategy):
     def initialize_set_images(self):
         for i in range(len(self.contained_images)):
             image_set = ImageSet(image_id=self.contained_images.loc[i, 'image_id'],
-                                 weight=self.contained_images.loc[i, 'area'], list_of_regions=[])
+                                 weight=self.contained_images.loc[i, 'cost'], list_of_regions=[])
             self.sets_images.append(image_set)
 
     def get_intersections_with_shapely(self):
