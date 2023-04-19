@@ -65,13 +65,17 @@ class Marketplace(ABC):
         return all_images
 
     def random_select_images_from_total(self, all_images, number_images):
-        random_arr = list(range(len(all_images.index)))
+        # TODO delete this is for having smaller images, we are considering only images les than 1.0m2 resolution
+        if number_images < len(all_images[all_images['resolution'] < 1.0]):
+            all_images = all_images[all_images['resolution'] < 1.0]
+
+        random_arr = all_images['image_id'].tolist()
         selected_images = all_images[all_images.geom_type != "Polygon"]
         for i in range(number_images):
             id_arr = random.randint(0, len(random_arr) - 1)
             id_image = random_arr[id_arr]
             del random_arr[id_arr]
-            selected_image = all_images.loc[id_image]
+            selected_image = all_images[all_images['image_id'] == id_image]
             selected_images = selected_images.append(selected_image)
         selected_images.crs = all_images.crs
         selected_images = selected_images.to_crs(all_images.crs)
