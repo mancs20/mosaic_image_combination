@@ -39,11 +39,11 @@ class StrategyDiscrete(Strategy):
         self.associate_resulting_polygons_to_images(resulting_polygons)
 
     def associate_resulting_polygons_to_images(self, resulting_polygons):
-        for i in range(len(self.sets_images)):
-            for j in range(len(resulting_polygons)):
-                polygon_centroid = resulting_polygons[j].centroid
-                if self.contained_images.loc[i, 'geometry'].contains(polygon_centroid):
-                    self.sets_images[i].list_of_regions.append(j + 1)
+        for i in range(len(resulting_polygons)):
+            polygon_centroid = resulting_polygons[i].centroid
+            for index, row in self.contained_images.iterrows():
+                if row['geometry'].contains(polygon_centroid):
+                    self.sets_images[row['image_id']].list_of_regions.append(i + 1)
 
     @staticmethod
     def plot_polygons(polygons):
