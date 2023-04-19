@@ -11,7 +11,7 @@ class SearchParameters:
     end_date: str = "2023-01-01"
     collections = ["phr", "spot", "pneo"]
     max_cloudcover: float = 100
-    limit: int = 500
+    limit: int = 50
 
 
 @dataclass

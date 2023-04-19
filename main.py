@@ -1,5 +1,5 @@
 # This is a sample Python script.
-
+from DataMarketPlaces.MarketplaceLocal import MarketplaceLocal
 # Press ⌃R to execute it or replace it with your code.
 # Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
 
@@ -57,8 +57,9 @@ def main():
     # Experiment.plot_aois(aois)
 
     for aoi_file in aoi_files:
-        experiment = Experiment(search_parameters=search_parameters, aoi_file=aoi_file, number_images_per_aoi=0)
-        experiment.set_marketplace(MarketplaceUp42(experiment.aoi, experiment.search_parameters))
+        experiment = Experiment(search_parameters=search_parameters, aoi_file=aoi_file)
+        # experiment.set_marketplace(MarketplaceUp42(experiment.aoi, experiment.search_parameters))
+        experiment.set_marketplace(MarketplaceLocal(experiment.aoi, experiment.search_parameters))
 
         # To know the area of the aoi, uncomment below
         # experiment.print_aoi_area()
