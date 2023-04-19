@@ -16,6 +16,7 @@ import random
 import up42
 from geopandas import GeoDataFrame
 import shapely.geometry
+from matplotlib.colors import ListedColormap
 
 import ProjectDataClasses
 import constants
@@ -75,7 +76,7 @@ class Experiment(ABC):
             self.aoi.to_crs(self.aoi.crs)
             # plot images
             self.config_plot_images_and_aoi(self.images, self.aoi, legend_column="image_id", get_max_coords=True)
-            # plt.show()
+            plt.show()
 
         return covered
 
@@ -142,9 +143,9 @@ class Experiment(ABC):
             y_margin = (maxy - miny)*0.05
             self.plot_max_coords = [minx - x_margin, miny - y_margin, maxx + x_margin, maxy + y_margin]
 
-        legend_elements = Experiment.get_legend_elements(images, legend_column)
         fig_size = (10, 10)
-        if len(legend_elements) > 0:
+        if self.search_parameters.limit <= 30:
+            legend_elements = Experiment.get_legend_elements(images, legend_column)
             colors = Experiment.get_plot_colors(images)
             ax = images.plot(categorical=True,
                              figsize=fig_size,
@@ -154,13 +155,14 @@ class Experiment(ABC):
             ax.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(1, 1))
         else:
             # Create a ListedColormap with the colors
+            cmap = Experiment.create_listed_colormap(len(images))
             ax = images.plot(legend_column,
                              categorical=True,
                              figsize=fig_size,
                              legend=True,
                              alpha=0.7,
-                             cmap="Set3",
-                             legend_kwds=dict(loc="upper left", bbox_to_anchor=(1, 1)))
+                             cmap=cmap,
+                             legend_kwds=dict(loc="upper left", bbox_to_anchor=(1, 1), ncol=2))
         aoi.plot(color="r", ax=ax, fc="None", edgecolor="r", lw=1)
 
         # set the same coords for all images
@@ -172,6 +174,12 @@ class Experiment(ABC):
             cx.add_basemap(ax, crs=images.crs)
 
         return ax
+
+    @staticmethod
+    def create_listed_colormap(number_of_colors):
+        colors = np.random.rand(number_of_colors, 3)
+        cmap = ListedColormap(colors)
+        return cmap
 
     @staticmethod
     def process_several_aois(aoi_files):
