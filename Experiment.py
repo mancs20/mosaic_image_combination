@@ -22,105 +22,66 @@ import constants
 from DataMarketPlaces import Marketplace
 from Strategies import Strategy
 
-DATA_FILE_NAME_CSV = 'images_data.csv'
-DATA_FILE_NAME = 'images_data.geojson'
-COVERAGE_IMAGE_NAME = 'coverage.svg'
-EXPERIMENT_RESULTS_FILE = 'experiment_results.csv'
-EXPERIMENT_RESULTS_GEOJSON = 'experiment_results_'
-EXPERIMENT_RESULTS_COVERAGE = 'experiment_result_coverage_'
+# DATA_FILE_NAME_CSV = 'images_data.csv'
+# DATA_FILE_NAME = 'images_data.geojson'
+# COVERAGE_IMAGE_NAME = 'coverage.svg'
+# EXPERIMENT_RESULTS_FILE = 'experiment_results.csv'
+# EXPERIMENT_RESULTS_GEOJSON = 'experiment_results_'
+# EXPERIMENT_RESULTS_COVERAGE = 'experiment_result_coverage_'
 
 
 class Experiment(ABC):
-    def __init__(self, aoi_file, search_parameters: ProjectDataClasses.SearchParameters, number_images_per_aoi=30):
+    def __init__(self, aoi_file, search_parameters: ProjectDataClasses.SearchParameters):
         self.marketplace = None
         self.strategy: Strategy = None
         processed_aoi_file = up42.read_vector_file(aoi_file)
-        self.aoi: GeoDataFrame = geopandas.GeoDataFrame.from_features(processed_aoi_file)
+        self.aoi: GeoDataFrame = Experiment.convert_aoi_feature_collection_to_geodataframe(aoi_file, processed_aoi_file)
         self.search_parameters = search_parameters
         self.search_parameters.aoi = processed_aoi_file
-        self.number_images_per_aoi = number_images_per_aoi
         self.images: Union[GeoDataFrame, dict] = None
         self.processed_results = []
         self.selected_images_results = []
-        self.working_dir = Experiment.check_create_working_dir(aoi_file, number_images_per_aoi)
+        self.working_dir = Experiment.check_create_working_dir(aoi_file, self.search_parameters.limit)
         self.plot_max_coords = [0] * 4
+
+    @staticmethod
+    def convert_aoi_feature_collection_to_geodataframe(aoi_file, processed_aoi_file):
+        aoi_geopdtf = geopandas.GeoDataFrame.from_features(processed_aoi_file)
+        aoi_geopdtf['name'] = aoi_file
+        return aoi_geopdtf
 
     def set_marketplace(self, marketplace: Marketplace):
         self.marketplace = marketplace
 
     def prepare_experiment(self, get_images_from_marketplace=True):
         # Create or get folder for experiment results
-        failed_experiment = False
+        covered = True
         if not self.check_if_local_data():
-            raw_images = self.marketplace.get_data_from_marketplace()
-            self.aoi.crs = raw_images.crs
+            [self.images, covered] = self.marketplace.get_data_from_marketplace()
+            self.aoi.crs = self.images.crs
             self.aoi.to_crs(self.aoi.crs)
-            if self.is_aoi_covered_by_searched_images(raw_images):
-                self.images = self.select_required_images_from_total_to_cover(raw_images,
-                                                                              remove_images_covering_less_than25km2=True)
-                self.images.crs = raw_images.crs
-                self.images.to_crs(self.images.crs)
-                if not self.is_aoi_covered_by_searched_images(self.images):
-                    failed_experiment = True
-                else:
-                    # TODO uncomment below to get images marketplace cost
-                    self.images = self.marketplace.update_images_cost(self.images)
-                    self.save_data()
-            else:
-                self.images = raw_images
-                failed_experiment = True
-            if failed_experiment:
+            if not covered:
                 # to plot the images and see why the cover is failling
                 self.images = self.marketplace.prepare_data_to_save(self.images)
+            else:
+                # TODO uncomment below to get images marketplace cost
+                self.images = self.marketplace.update_images_cost(self.images)
+                self.save_data()
         else:
-            self.images = geopandas.read_file(self.working_dir + '/' + DATA_FILE_NAME)
-        # set aoi with the same crs (projection system) as the images
-        self.aoi.crs = self.images.crs
-        self.aoi.to_crs(self.aoi.crs)
-        # plot images
-        self.config_plot_images_and_aoi(self.images, self.aoi, legend_column="image_id", get_max_coords=True)
-        # plt.show()
-        if failed_experiment is True:
-            return False
-        return True
+            self.images = Experiment.get_local_images_data_from_file(self.working_dir)
+        if not self.images.empty:
+            # set aoi with the same crs (projection system) as the images
+            self.aoi.crs = self.images.crs
+            self.aoi.to_crs(self.aoi.crs)
+            # plot images
+            self.config_plot_images_and_aoi(self.images, self.aoi, legend_column="image_id", get_max_coords=True)
+            # plt.show()
 
-    def select_required_images_from_total_to_cover(self, all_images, remove_images_covering_less_than25km2=False):
-        if remove_images_covering_less_than25km2:
-            all_images = self.remove_images_covering_less_than25km2(all_images)
-        if self.number_images_per_aoi != 0 and len(all_images.index) > self.number_images_per_aoi:
-            number_of_tries = max(100, 2 ** len(all_images.index))
-            cover = False
-            while number_of_tries > 0 and cover is False:
-                selected_images = self.random_select_images_from_total(all_images, self.number_images_per_aoi)
-                cover = self.is_aoi_covered_by_searched_images(selected_images)
-                number_of_tries -= 1
-            return selected_images
-        else:
-            return all_images
+        return covered
 
-    def remove_images_covering_less_than25km2(self, all_images):
-        # return all images which intersect with aoi and cover more than 25km2
-        original_crs = all_images.crs
-        all_images = all_images.to_crs(constants.PLANAR_CRS)
-        self.aoi = self.aoi.to_crs(constants.PLANAR_CRS)
-
-        all_images_intersection_area = all_images.intersection(self.aoi.unary_union).area
-        all_images = all_images[all_images_intersection_area > 25000000]
-
-        all_images = all_images.to_crs(original_crs)
-        self.aoi = self.aoi.to_crs(original_crs)
-        return all_images
-
-    def random_select_images_from_total(self, all_images, number_images):
-        random_arr = list(range(len(all_images.index)))
-        selected_images = all_images[all_images.geom_type != "Polygon"]
-        for i in range(number_images):
-            id_arr = random.randint(0, len(random_arr) - 1)
-            id_image = random_arr[id_arr]
-            del random_arr[id_arr]
-            selected_image = all_images.loc[id_image]
-            selected_images = selected_images.append(selected_image)
-        return selected_images
+    @staticmethod
+    def get_local_images_data_from_file(working_dir):
+        return geopandas.read_file(working_dir + '/' + constants.DATA_FILE_NAME)
 
     @staticmethod
     def check_create_working_dir(aoi_file, number_images_per_aoi):
@@ -134,7 +95,7 @@ class Experiment(ABC):
         return working_dir
 
     def check_if_local_data(self):
-        return os.path.exists(self.working_dir + '/' + DATA_FILE_NAME)
+        return os.path.exists(self.working_dir + '/' + constants.DATA_FILE_NAME)
 
     def is_aoi_covered_by_searched_images(self, images):
         all_images_union = images.unary_union  # convert all images (GeoSeries) in a single polygon
@@ -152,16 +113,17 @@ class Experiment(ABC):
         # add the area of each image
         self.add_images_area()
         # save data to csv, human readable
-        self.images.to_csv(self.working_dir + '/' + DATA_FILE_NAME_CSV, index_label='image_id')
+        self.images.to_csv(self.working_dir + '/' + constants.DATA_FILE_NAME_CSV, index_label='image_id')
         # save to geojson, remove fields with lists, for shp is the same
-        self.images.to_file(self.working_dir + '/' + DATA_FILE_NAME, driver='GeoJSON')
+        self.images.to_file(self.working_dir + '/' + constants.DATA_FILE_NAME, driver='GeoJSON')
         self.save_search_parameters()
         self.config_plot_images_and_aoi(self.images, self.aoi)
-        self.save_coverage_image(self.working_dir, COVERAGE_IMAGE_NAME)
+        self.save_coverage_image(self.working_dir, constants.COVERAGE_IMAGE_NAME)
         # donwload quicklooks
         # self.get_quicklooks()
     def get_quicklooks(self):
-        quicklooks = self.marketplace.get_quicklooks_from_marketplace(self.images, self.working_dir + "/quicklooks")
+        quicklooks = self.marketplace.get_quicklooks_from_marketplace(self.images, self.working_dir + "/" +
+                                                                      constants.QUICKLOOKS_FOLDER_NAME)
 
     def save_search_parameters(self):
         params_json = self.marketplace.convert_search_parameters_without_aoi_to_json()
@@ -191,6 +153,7 @@ class Experiment(ABC):
                              color=colors)
             ax.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(1, 1))
         else:
+            # Create a ListedColormap with the colors
             ax = images.plot(legend_column,
                              categorical=True,
                              figsize=fig_size,
@@ -259,6 +222,11 @@ class Experiment(ABC):
         legend_elements = []
         legend_colors = constants.COLORS_30
         if len(elements.index) <= len(legend_colors):
+            for index, element in elements.iterrows():
+                legend_element = mpatches.Circle((0.5, 0.5),
+                                                 facecolor=legend_colors[element[legend_column]],
+                                                 label=element[legend_column])
+                legend_elements.append(legend_element)
             for element in elements.index:
                 legend_element = mpatches.Circle((0.5, 0.5),
                                                  facecolor=legend_colors[elements[legend_column][element]],
@@ -357,7 +325,7 @@ class Experiment(ABC):
         self.save_results_geojson()
 
     def save_results_csv(self):
-        file_result_path = self.strategy.path + '/' + EXPERIMENT_RESULTS_FILE
+        file_result_path = self.strategy.path + '/' + constants.EXPERIMENT_RESULTS_FILE
         header = [field.name for field in fields(ProjectDataClasses.OptimizationResult)]
         data = []
         for result in self.processed_results:
@@ -382,14 +350,14 @@ class Experiment(ABC):
             else:
                 path = self.strategy.path
                 file_lastname = str(key)
-            self.save_coverage_image(path, EXPERIMENT_RESULTS_COVERAGE + file_lastname + '.svg')
+            self.save_coverage_image(path, constants.EXPERIMENT_RESULTS_COVERAGE + file_lastname + '.svg')
             if close_plot:
                 plt.close(ax.figure)
             else:
                 plt.show()
 
     def save_results_geojson(self):
-        file_result_path_root = self.strategy.path + '/' + EXPERIMENT_RESULTS_GEOJSON
+        file_result_path_root = self.strategy.path + '/' + constants.EXPERIMENT_RESULTS_GEOJSON
         for key, result in enumerate(self.selected_images_results):
             file_result_path = file_result_path_root + str(key) + '.geojson'
             result.to_file(file_result_path, driver='GeoJSON')
