@@ -15,9 +15,9 @@ class MarketplaceUp42(Marketplace):
     def __init__(self, aoi, search_parameters):
         super(MarketplaceUp42, self).__init__(aoi, search_parameters)
         self.data_products = None
-
-    def get_data_from_marketplace(self, max_number_images=30):
         self.api_initialization()
+
+    def get_data_from_marketplace(self):
         # noinspection PyAttributeOutsideInit
         self.result_images = self.search_results(self.collections[0])
         i = 1
@@ -25,7 +25,18 @@ class MarketplaceUp42(Marketplace):
             images = self.search_results(self.collections[i])
             self.result_images.append(images)
             i += 1
-        return self.result_images
+        covered_aoi = True
+        if self.search_parameters.limit < 500 and not self.is_aoi_covered_by_searched_images(self.result_images):
+            original_limit = self.search_parameters.limit
+            self.search_parameters.limit = 500
+            [self.result_images, covered_aoi] = self.get_data_from_marketplace()
+            if self.is_aoi_covered_by_searched_images(self.result_images):
+                self.search_parameters.limit = original_limit
+                # random select images to reach the limit and cover the aoi
+                self.result_images = self.select_required_images_from_total_to_cover(self.result_images)
+            else:
+                covered_aoi = False
+        return [self.result_images, covered_aoi]
 
     def api_initialization(self):
         authenticate()
@@ -85,31 +96,38 @@ class MarketplaceUp42(Marketplace):
         images['cost'] = estimated_costs
         return images
 
-    def get_quicklooks_from_marketplace(self, images, directory, sensor="pleiades"):
+    def get_quicklooks_from_marketplace(self, images, directory):
         if self.result_images is None:
             self.get_data_from_marketplace()
-        image_ids = list(images.id)
-        self.catalog.download_quicklooks(image_ids, sensor, directory)
+        # TODO for each tyope of sensor donwload the quicklook
+        sensor = {}
+        # get all types of sensors in geodataframe images
+        for index, row in images.iterrows():
+            image = row
+            if image['collection'] in sensor:
+                sensor[image['collection']].append(image['id'])
+            else:
+                sensor[image['collection']] = [image['id']]
+        # download quicklooks for each type of sensor
+        for sensor_type in sensor:
+            self.catalog.download_quicklooks(sensor[sensor_type], sensor_type, directory)
+        # image_ids = list(images.id)
+        # self.catalog.download_quicklooks(image_ids, sensor, directory)
 
-    def convert_search_parameters_without_aoi_to_json(self):
-        temp_json = self.search_parameters.to_json()
-        images_collections = self.search_parameters.collections
-        string_images_collections = ", \"collections\": \""
-        for image_collection in images_collections:
-            string_images_collections += (image_collection + '-')
-        params_json = temp_json[:-1] + string_images_collections[:-1] + '\"}'
-        return params_json
+    # def convert_search_parameters_without_aoi_to_json(self):
+    #     temp_json = self.search_parameters.to_json()
+    #     images_collections = self.search_parameters.collections
+    #     string_images_collections = ", \"collections\": \""
+    #     for image_collection in images_collections:
+    #         string_images_collections += (image_collection + '-')
+    #     params_json = temp_json[:-1] + string_images_collections[:-1] + '\"}'
+    #     return params_json
 
     def prepare_data_to_save(self, images):
         images = self.remove_lists_fields(images)
-        self.add_id_fields(images)
+        images = Marketplace.add_id_fields(images)
         return images
 
     @staticmethod
     def remove_lists_fields(images):
         return images.drop(columns="up42:usageType")
-
-    @staticmethod
-    def add_id_fields(images):
-        images_id = list(range(len(images.index)))
-        images['image_id'] = images_id
