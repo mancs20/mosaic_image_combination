@@ -13,8 +13,8 @@ class CPWithoutClouds(StrategyDiscrete):
         super().discretize()
         results = self.initialize_result()
         selected_image_id = self.get_solution_from_minizinc_solver(self.get_minizinc_instance_model())
-        for image_id in selected_image_id:
-            results = results.append(self.images.loc[self.images["image_id"] == image_id])
+        for image_set_id in selected_image_id:
+            results = results.append(self.images[self.images["image_id"] == self.sets_images[image_set_id].image_id])
         return self.prepare_results_to_return(results)
 
     def initialize_model_parameters(self, instance):

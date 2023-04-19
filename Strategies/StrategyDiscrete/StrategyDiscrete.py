@@ -25,9 +25,9 @@ class StrategyDiscrete(Strategy):
             self.get_intersections_with_shapely()
 
     def initialize_set_images(self):
-        for i in range(len(self.contained_images)):
-            image_set = ImageSet(image_id=self.contained_images.loc[i, 'image_id'],
-                                 weight=self.contained_images.loc[i, 'cost'], list_of_regions=[])
+        # iterate over geoDataFrame self.contained_images
+        for index, row in self.contained_images.iterrows():
+            image_set = ImageSet(image_id=row['image_id'], weight=row['cost'], list_of_regions=[])
             self.sets_images.append(image_set)
 
     def get_intersections_with_shapely(self):
