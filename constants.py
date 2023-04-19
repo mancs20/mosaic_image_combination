@@ -1,4 +1,16 @@
 PLANAR_CRS = 3857
+
+# file names
+DATA_FILE_NAME_CSV = 'images_data.csv'
+DATA_FILE_NAME = 'images_data.geojson'
+COVERAGE_IMAGE_NAME = 'coverage.svg'
+EXPERIMENT_RESULTS_FILE = 'experiment_results.csv'
+EXPERIMENT_RESULTS_GEOJSON = 'experiment_results_'
+EXPERIMENT_RESULTS_COVERAGE = 'experiment_result_coverage_'
+
+# folder names
+QUICKLOOKS_FOLDER_NAME = 'quicklooks'
+
 # Colors for 20 pictures
 COLORS_20 = [
     '#d3d3d3',
