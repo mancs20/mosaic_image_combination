@@ -8,6 +8,7 @@ from Experiment import Experiment
 from ProjectDataClasses import SearchParameters
 from Strategies.GreedyRatioCoveredAoiImageArea import GreedyRatioCoveredAoiImageArea
 from Strategies.RandomSelection import RandomSelection
+from Strategies.StrategyDiscrete.CPClouds import CPClouds
 from Strategies.StrategyDiscrete.CPWithouyClouds import CPWithoutClouds
 
 
@@ -66,7 +67,8 @@ def main():
 
         # strategies = [GreedyRatioCoveredAoiImageArea(), GreedyCoverLargerArea(), RandomSelection()]
         # strategies = [GreedyRatioCoveredAoiImageArea(), RandomSelection()]
-        strategies = [CPWithoutClouds()]
+        # strategies = [CPWithoutClouds()]
+        strategies = [CPClouds()]
         # strategies = []
         if experiment.prepare_experiment():
             # to plot certain solutions and all the images of one aoi uncomment below, it works if len(aoi_file) = 1
