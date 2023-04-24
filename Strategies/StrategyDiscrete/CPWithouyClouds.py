@@ -1,3 +1,5 @@
+import time
+
 from Strategies.StrategyDiscrete.StrategyDiscrete import StrategyDiscrete
 from minizinc import Instance, Model, Result, Solver, Status
 import multiprocessing
@@ -12,9 +14,15 @@ class CPWithoutClouds(StrategyDiscrete):
     def run_strategy(self):
         super().discretize()
         results = self.initialize_result()
+        # save the time that the self.get_solution_from_minizinc_solver takes to run
+        start_time = time.time()
         selected_image_id = self.get_solution_from_minizinc_solver(self.get_minizinc_instance_model())
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print("Time to run the solver in seconds: ", execution_time)
         for image_set_id in selected_image_id:
             results = results.append(self.images[self.images["image_id"] == self.sets_images[image_set_id].image_id])
+        results["time_in_seconds"] = execution_time
         return self.prepare_results_to_return(results)
 
     def initialize_model_parameters(self, instance):

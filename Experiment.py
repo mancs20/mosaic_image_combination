@@ -12,24 +12,14 @@ import contextily as cx
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
-import random
 import up42
 from geopandas import GeoDataFrame
-import shapely.geometry
 from matplotlib.colors import ListedColormap
 
 import ProjectDataClasses
 import constants
 from DataMarketPlaces import Marketplace
 from Strategies import Strategy
-
-# DATA_FILE_NAME_CSV = 'images_data.csv'
-# DATA_FILE_NAME = 'images_data.geojson'
-# COVERAGE_IMAGE_NAME = 'coverage.svg'
-# EXPERIMENT_RESULTS_FILE = 'experiment_results.csv'
-# EXPERIMENT_RESULTS_GEOJSON = 'experiment_results_'
-# EXPERIMENT_RESULTS_COVERAGE = 'experiment_result_coverage_'
-
 
 class Experiment(ABC):
     def __init__(self, aoi_file, search_parameters: ProjectDataClasses.SearchParameters):
@@ -54,7 +44,7 @@ class Experiment(ABC):
     def set_marketplace(self, marketplace: Marketplace):
         self.marketplace = marketplace
 
-    def prepare_experiment(self, get_images_from_marketplace=True):
+    def prepare_experiment(self):
         # Create or get folder for experiment results
         covered = True
         if not self.check_if_local_data():
@@ -288,9 +278,11 @@ class Experiment(ABC):
             images_id = ""
             images_id_sorted = ""
             list_to_sort = []
+            total_cost = 0
             for image in selected_result.index:
                 list_to_sort.append(selected_result['image_id'][image])
                 images_id += str(selected_result['image_id'][image]) + '-'
+                total_cost += selected_result['cost'][image]
             images_id = images_id[:-1]
             check_duplicates_exact.append(images_id)
             list_to_sort = np.sort(list_to_sort)
@@ -305,7 +297,9 @@ class Experiment(ABC):
                                                            images_id_sorted=images_id_sorted,
                                                            number_of_images=len(selected_result),
                                                            area_of_images_km2=(area_of_images / 1000000.0),
-                                                           area_of_images_over_aoi=area_of_images_over_aoi)
+                                                           area_of_images_over_aoi=area_of_images_over_aoi,
+                                                           total_cost_of_images=total_cost,
+                                                           run_time_seconds=selected_result.iloc[0]['time_in_seconds'])
             self.processed_results.append(result)
         # detect if there are duplicate solutions
         print('Duplicates exact for ' + self.working_dir + ' with strategy ' + self.strategy.name + ' :')
