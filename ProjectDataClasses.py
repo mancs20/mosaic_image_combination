@@ -11,7 +11,7 @@ class SearchParameters:
     end_date: str = "2023-01-01"
     collections = ["phr", "spot", "pneo"]
     max_cloudcover: float = 100
-    limit: int = 500
+    limit: int = 50
 
 
 @dataclass
@@ -25,3 +25,5 @@ class OptimizationResult:
     overlapping_area_inside_aoi: float = 0.0
     total_cost_of_images: float = 0.0
     run_time_seconds: float = 0.0
+    size_universe: int = 0
+    solution_status: str = "unknown"

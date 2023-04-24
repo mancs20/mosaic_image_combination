@@ -1,3 +1,5 @@
+import copy
+
 from shapely.geometry import LineString
 from shapely.ops import unary_union, polygonize
 
@@ -5,6 +7,7 @@ from Strategies.Strategy import Strategy
 from abc import abstractmethod
 
 from Strategies.StrategyDiscrete.ImageSet import ImageSet
+from Strategies.StrategyDiscrete.Region import Region
 
 
 class StrategyDiscrete(Strategy):
@@ -12,7 +15,7 @@ class StrategyDiscrete(Strategy):
         super().__init__()
         self.contained_images = None
         self.sets_images = []
-        self.universe = []
+        self.universe = 0
 
     @abstractmethod
     def run_strategy(self):
@@ -41,9 +44,18 @@ class StrategyDiscrete(Strategy):
     def associate_resulting_polygons_to_images(self, resulting_polygons):
         for i in range(len(resulting_polygons)):
             polygon_centroid = resulting_polygons[i].centroid
+            region = Region()
+            region.id = i + 1
+            region.area = resulting_polygons[i].area
+            images_index = []
             for index, row in self.contained_images.iterrows():
                 if row['geometry'].contains(polygon_centroid):
-                    self.sets_images[row['image_id']].list_of_regions.append(i + 1)
+                    region.list_of_belonging_image_set.append(row['image_id'])
+                    images_index.append(index)
+            for belonging_image in region.list_of_belonging_image_set:
+                region_copy = copy.deepcopy(region)  # every region has to be a different object because the penalized
+                # attribute can be different for each image
+                self.sets_images[belonging_image].list_of_regions.append(region_copy)
 
     @staticmethod
     def plot_polygons(polygons):
