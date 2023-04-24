@@ -20,6 +20,8 @@ import ProjectDataClasses
 import constants
 from DataMarketPlaces import Marketplace
 from Strategies import Strategy
+from Utilities import Utilities
+
 
 class Experiment(ABC):
     def __init__(self, aoi_file, search_parameters: ProjectDataClasses.SearchParameters):
@@ -66,7 +68,7 @@ class Experiment(ABC):
             self.aoi.to_crs(self.aoi.crs)
             # plot images
             self.config_plot_images_and_aoi(self.images, self.aoi, legend_column="image_id", get_max_coords=True)
-            plt.show()
+            # plt.show()
 
         return covered
 
@@ -293,13 +295,25 @@ class Experiment(ABC):
             # geometric metrics
             area_of_images = self.get_area_of_images(selected_result)
             area_of_images_over_aoi = self.get_area_of_images_over_aoi(area_of_images, self.aoi)
+            # if field time_in_seconds is not present, add it
+            run_time_seconds = 0.0
+            if 'time_in_seconds' in selected_result.columns:
+                run_time_seconds = selected_result.iloc[0]['time_in_seconds']
+            size_universe = 0
+            if 'size_universe' in selected_result.columns:
+                size_universe = selected_result.iloc[0]['size_universe']
+            solution_status = "unknown"
+            if 'solution_status' in selected_result.columns:
+                solution_status = selected_result.iloc[0]['solution_status']
             result = ProjectDataClasses.OptimizationResult(experiment_id=key, images_id=images_id,
                                                            images_id_sorted=images_id_sorted,
                                                            number_of_images=len(selected_result),
                                                            area_of_images_km2=(area_of_images / 1000000.0),
                                                            area_of_images_over_aoi=area_of_images_over_aoi,
                                                            total_cost_of_images=total_cost,
-                                                           run_time_seconds=selected_result.iloc[0]['time_in_seconds'])
+                                                           run_time_seconds=run_time_seconds,
+                                                           size_universe=size_universe,
+                                                           solution_status=solution_status)
             self.processed_results.append(result)
         # detect if there are duplicate solutions
         print('Duplicates exact for ' + self.working_dir + ' with strategy ' + self.strategy.name + ' :')
@@ -377,7 +391,7 @@ class Experiment(ABC):
         print('Area of aoi ' + self.working_dir + ' is: ' + str(temp_aoi1.area[0] / 10 ** 6))
 
     def add_images_area(self):
-        temp_images = self.images.to_crs({'proj': 'cea'})
-        images_area_series = temp_images.area / 10 ** 6
+        images_area_series = Utilities.calculate_area_of_images_in_km2_with_projection(self.images)
         images_area = images_area_series.tolist()
         self.images['area'] = images_area
+
