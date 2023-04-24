@@ -1,0 +1,2 @@
+experiment_id,images_id,images_id_sorted,number_of_images,area_of_images_km2,area_of_images_over_aoi,overlapping_area_inside_aoi,total_cost_of_images,run_time
+0,7-15-22,7-15-22,3,13303.823562415535,2.6966512128253934,0.0,2669540,7.301632881164551

@@ -1,2 +1,2 @@
 experiment_id,images_id,images_id_sorted,number_of_images,area_of_images_km2,area_of_images_over_aoi,overlapping_area_inside_aoi,total_cost_of_images,run_time_seconds,size_universe,solution_status
-0,1-7-12-26-38-41-44,1-7-12-26-38-41-44,7,11955.35152112245,2.423319358373628,0.0,3509806,45.3661208152771,970,OPTIMAL_SOLUTION
+0,1-7-12-26-38-41-44,1-7-12-26-38-41-44,7,11955.35152112245,2.423319358373628,0.0,3509806,4.590723037719727,970,OPTIMAL_SOLUTION
