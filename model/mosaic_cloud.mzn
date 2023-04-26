@@ -17,11 +17,11 @@ array[IMAGES] of var bool: taken;
 constraint forall(u in UNIVERSE)(
   exists(i in IMAGES)(taken[i] /\ u in images[i]));
 
-array[IMAGES] of var int: sums;
+array[IMAGES] of var float: sums;
 
 constraint
-  forall(i in IMAGES where taken[i])(
-    sums[i] = sum(u in images[i] where u in clouds[i])(
+  forall(i in IMAGES)(
+    sums[i] = taken[i] * sum(u in images[i] where u in clouds[i])(
       areas[u] * (
         forall(j in IMAGES where i != j /\ u in images[j] /\ not (u in clouds[j]))(
           not taken[j]
@@ -29,9 +29,9 @@ constraint
       )
     )
   );
-
-constraint sum(i in IMAGES where taken[i])(sums[i]) <= max_cloud_area;
+  
+constraint sum(i in IMAGES)(sums[i]) <= max_cloud_area;
 
 var float: obj = sum(i in IMAGES)(costs[i] * taken[i]);
-solve :: bool_search(taken, dom_w_deg, indomain_random) minimize obj;
+solve minimize obj;
 % output ["taken = \(taken);\n"];
