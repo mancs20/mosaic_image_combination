@@ -1,8 +1,11 @@
 from numpy import random
-from Strategies.StrategyDiscrete.CPWithouyClouds import CPWithoutClouds
+
+import constants
+from Strategies.StrategyDiscrete.StrategyDiscrete import StrategyDiscrete
+from Strategies.StrategyDiscrete.SolverMinizinc import SolverMinizinc
 
 
-class CPClouds(CPWithoutClouds):
+class CPClouds(StrategyDiscrete, SolverMinizinc):
     path = ""
     name = "Constraint_Programming_Discrete_With_Clouds"
     number_of_runs = 1
@@ -11,16 +14,72 @@ class CPClouds(CPWithoutClouds):
     def model_path(self):
         return "./model/mosaic_cloud.mzn"
 
-    def __init__(self, max_cloud_cover=0.2):
+    def __init__(self, clouds:constants.Clouds, max_cloud_cover=0.2):
         super().__init__()
+        self.with_clouds = True
+        self.cloud_name = clouds.value
+        self.name = "Discrete_Constraint_Programming_" + self.cloud_name
+        if clouds.name == clouds.NO_CLOUDS.name:
+            self.with_clouds = False
         self.clouds = []
         self.areas = []
         self.max_cloud_cover = max_cloud_cover
 
     def run_strategy(self):
-        super().discretize()
-        self.deal_with_clouds()
-        return self.get_results_from_cp_solver()
+        dzn_filename = SolverMinizinc.dzn_filename(self.aoi.iloc[0]["name"], len(self.images),
+                                                   cloud_name=self.cloud_name)
+        dzn_file_exists = SolverMinizinc.dzn_file_exists(dzn_filename)
+        results = self.initialize_result()
+        if not dzn_file_exists:
+            super().discretize()
+            if self.with_clouds:
+                self.deal_with_clouds()
+            minizinc_parameters = self.solver_minizinc_parameters()
+            SolverMinizinc.write_dzn_file(dzn_filename, minizinc_parameters)
+            # TODO uncomment below to get results from minizinc
+            #----------------------------------------------
+            # results = self.get_transformed_solutions(results=results, images=self.images, sets_images=self.sets_images,
+            #                                          universe=self.universe,
+            #                                          minizinc_parameters=minizinc_parameters)
+            #----------------------------------------------
+        else:
+            # TODO process dzn file
+            a = 1
+        return self.prepare_results_to_return(results)
+
+
+
+    def solver_minizinc_parameters(self) -> dict:
+        solver_parameters = {"num_images": len(self.sets_images),
+                             "universe": self.universe,
+                             "images": self.get_image_sets(),
+                             "costs": [x.weight for x in self.sets_images]}
+        if self.with_clouds:
+            solver_parameters = self.add_clouds_to_solver_parameters(solver_parameters)
+        return solver_parameters
+
+    def add_clouds_to_solver_parameters(self, solver_parameters: dict) -> dict:
+        solver_parameters["clouds"] = self.clouds
+        solver_parameters["areas"] = self.areas
+        max_cloud_area = self.calculate_max_cloud_cover_area()
+        solver_parameters["max_cloud_area"] = max_cloud_area
+        return solver_parameters
+
+    def get_results_from_cp_solver(self, minizinc_parameters: dict = None):
+        results = self.initialize_result()
+        results = self.get_transformed_solutions(results=results, images=self.images, sets_images=self.sets_images,
+                                                 universe=self.universe,
+                                                 minizinc_parameters=minizinc_parameters)
+        return self.prepare_results_to_return(results)
+
+    def get_image_sets(self):
+        sets = []
+        for x in self.sets_images:
+            regions_ids = []
+            for region in x.list_of_regions:
+                regions_ids.append(region.id)
+            sets.append(set(regions_ids))
+        return sets
 
     def deal_with_clouds(self):
         self.detect_clouds()
@@ -49,9 +108,13 @@ class CPClouds(CPWithoutClouds):
     def build_cloud_sets_from_penalized_regions(self):
         for image in self.sets_images:
             cloud_set = set()
+            # cloud_set.add(self.universe + 1)
             for region in image.list_of_regions:
                 if region.penalized:
                     cloud_set.add(region.id)
+            # check if the cloud set is not empty
+            if len(cloud_set) == 0:
+                cloud_set = {}
             self.clouds.append(cloud_set)
 
     def build_area_array(self):
@@ -61,13 +124,6 @@ class CPClouds(CPWithoutClouds):
                 if region.id not in region_already_added_set:
                     region_already_added_set.add(region.id)
                     self.areas.append(region.area)
-
-    def initialize_model_parameters(self, instance):
-        super().initialize_model_parameters(instance)
-        # TODO add the cloud parameters
-        # instance["clouds"] = self.clouds
-        # instance["areas"] = self.areas
-        # instance["max_cloud_area"] = self.calculate_max_cloud_cover_area
 
     def calculate_max_cloud_cover_area(self):
         return self.aoi.area.iloc[0] * self.max_cloud_cover
