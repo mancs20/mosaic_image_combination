@@ -1,3 +1,5 @@
+from enum import Enum
+
 PLANAR_CRS = 3857
 
 # file names
@@ -10,6 +12,13 @@ EXPERIMENT_RESULTS_COVERAGE = 'experiment_result_coverage_'
 
 # folder names
 QUICKLOOKS_FOLDER_NAME = 'quicklooks'
+
+# type of clouds
+class Clouds(Enum):
+    NO_CLOUDS = "No_Clouds"
+    ARTIFICIAL_CLOUDS_COVERING_WHOLE_INTERSECTION = "Artificial_Clouds_Covering_Whole_Intersection"
+    REAL_CLOUDS = "Real_Clouds"
+
 
 # Colors for 20 pictures
 COLORS_20 = [

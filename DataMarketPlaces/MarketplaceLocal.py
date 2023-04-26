@@ -26,7 +26,8 @@ class MarketplaceLocal(Marketplace):
         return [self.result_images, covered_aoi]
 
     def search_results(self, collection=""):
-        working_dir = Experiment.check_create_working_dir(aoi_file=self.aoi.loc[0]['name'],number_images_per_aoi=self.search_parameters.limit)
+        working_dir = Experiment.check_create_working_dir(aoi_file=self.aoi.loc[0]['name'],
+                                                          number_images_per_aoi=self.search_parameters.limit)
         working_dir = working_dir[:working_dir.rfind('/')]
         working_dir = os.path.join(working_dir, str(500))
         if not os.path.exists(working_dir):

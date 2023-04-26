@@ -79,13 +79,20 @@ class Experiment(ABC):
     @staticmethod
     def check_create_working_dir(aoi_file, number_images_per_aoi):
         current_dir = os.path.dirname(__file__)
-        aoi_name = re.search('/(.*).geojson', aoi_file).group(1)
-        working_dir = os.path.join(current_dir, 'results', aoi_name, ProjectDataClasses.SearchParameters.start_date
-                                        + '-' + ProjectDataClasses.SearchParameters.end_date,
-                                        str(number_images_per_aoi))
+        aoi_name, range_dates, number_images_per_aoi = Experiment.define_unique_name_for_file_folder(aoi_file,
+                                                                                                     number_images_per_aoi)
+        working_dir = os.path.join(current_dir, 'results', aoi_name, range_dates, number_images_per_aoi)
         if not os.path.exists(working_dir):
             os.makedirs(working_dir)
         return working_dir
+
+    @staticmethod
+    def define_unique_name_for_file_folder(aoi_file, number_images_per_aoi):
+        aoi_name = re.search('/(.*).geojson', aoi_file).group(1)
+        range_dates = ProjectDataClasses.SearchParameters.start_date + '-' + \
+                      ProjectDataClasses.SearchParameters.end_date
+        number_images_per_aoi = str(number_images_per_aoi)
+        return aoi_name, range_dates, number_images_per_aoi
 
     def check_if_local_data(self):
         return os.path.exists(self.working_dir + '/' + constants.DATA_FILE_NAME)
@@ -278,11 +285,16 @@ class Experiment(ABC):
     def run_experiment(self):
         for i in range(self.strategy.number_of_runs):
             self.strategy.prepare_strategy(self.aoi, self.images)
-            self.selected_images_results.append(self.strategy.run_strategy())
+            results = self.strategy.run_strategy()
+            if not results.empty:
+                self.selected_images_results.append(results)
         # Process results
-        self.process_results()
-        # Save results
-        self.save_results()
+        if len(self.selected_images_results) > 0:
+            self.process_results()
+            # Save results
+            self.save_results()
+        else:
+            print("No results to save")
 
     def process_results(self):
         check_duplicates_exact = []
