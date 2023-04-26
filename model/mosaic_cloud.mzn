@@ -33,5 +33,5 @@ constraint
 constraint sum(i in IMAGES where taken[i])(sums[i]) <= max_cloud_area;
 
 var float: obj = sum(i in IMAGES)(costs[i] * taken[i]);
-solve minimize obj;
+solve :: bool_search(taken, dom_w_deg, indomain_random) minimize obj;
 % output ["taken = \(taken);\n"];
