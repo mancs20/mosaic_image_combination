@@ -15,8 +15,8 @@ from Strategies.StrategyDiscrete.CPWithouyClouds import CPWithoutClouds
 def get_aoi_file():
     # file = "aois/mexico_city.geojson"
     # file = "aois/rio_de_janeiro.geojson"
-    file = "aois/paris.geojson"
-    # file = "aois/lagos_nigeria.geojson"
+    # file = "aois/paris.geojson"
+    file = "aois/lagos_nigeria.geojson"
     # file = "aois/tokyo_bay.geojson"
     # file = "aois/dakar.geojson"
     return file
@@ -42,11 +42,17 @@ def get_search_parameters():
 def get_solutions():
     solutions = []
     # all images and the aoi
-    # solutions.append("0-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-25-26-27-28-29")
+    solutions.append("0-1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-21-22-23-24-25-26-27-28-29")
     # solutions for a certain aoi
     # solutions.append("17-12-7-23-5-11-1-4")  # Greedy
     # solutions.append("13-11-19-17-29-12-1")  # Best random
     # solutions.append("12-23-29-4-5-25-13-28-1-0-24-22-6-7-11-10")  # Worst random
+    # nigeria cp solution
+    # solutions.append("4-6-8-11-15-16-20-26")
+    # tokyo bay cp solution
+    # solutions.append("1-17-4-11")
+    # Rio de Janeiro cp solution
+    # solutions.append("2-5-9-12-13-24-26-29")
     return solutions
 
 
@@ -73,7 +79,7 @@ def main():
         if experiment.prepare_experiment():
             # to plot certain solutions and all the images of one aoi uncomment below, it works if len(aoi_file) = 1
             if len(get_solutions()) != 0:
-                experiment.plot_all_images_and_solutions(get_solutions())
+                experiment.plot_all_images_and_solutions(solutions=get_solutions(), plot_quicklooks=False)
             else:
                 for strategy in strategies:
                     experiment.set_strategy(strategy)

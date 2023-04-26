@@ -1,5 +1,7 @@
 import random
 from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Optional
 
 from geopandas import GeoDataFrame
 
@@ -83,6 +85,19 @@ class Marketplace(ABC):
 
     @abstractmethod
     def get_quicklooks_from_marketplace(self, images, directory):
+        pass
+
+    @abstractmethod
+    def map_quicklooks(
+            self,
+            scenes: GeoDataFrame,
+            aoi: [GeoDataFrame] = None,
+            show_images: bool = True,
+            show_features: bool = False,
+            filepaths: [list] = None,
+            name_column: str = "id",
+            save_html: Optional[Path] = None,
+    ) -> "folium.Map":
         pass
 
     @abstractmethod

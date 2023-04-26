@@ -1,4 +1,8 @@
+from pathlib import Path
+from typing import Optional
+
 import up42
+from geopandas import GeoDataFrame
 from up42 import Catalog
 
 from DataMarketPlaces.Marketplace import Marketplace
@@ -113,6 +117,11 @@ class MarketplaceUp42(Marketplace):
             self.catalog.download_quicklooks(sensor[sensor_type], sensor_type, directory)
         # image_ids = list(images.id)
         # self.catalog.download_quicklooks(image_ids, sensor, directory)
+
+    def map_quicklooks(self, scenes: GeoDataFrame, aoi: [GeoDataFrame] = None, show_images: bool = True,
+                       show_features: bool = False, filepaths: [list] = None, name_column: str = "id",
+                       save_html: Optional[Path] = None) -> "folium.Map":
+        return self.catalog.map_quicklooks(scenes, aoi, show_images, show_features, filepaths, name_column, save_html)
 
     # def convert_search_parameters_without_aoi_to_json(self):
     #     temp_json = self.search_parameters.to_json()

@@ -118,6 +118,15 @@ class Experiment(ABC):
         quicklooks = self.marketplace.get_quicklooks_from_marketplace(self.images, self.working_dir + "/" +
                                                                       constants.QUICKLOOKS_FOLDER_NAME)
 
+    def plot_quicklooks(self, images, filepath_base:str, quicklooks_plot_html:str):
+        filepaths = []
+        for row, image in images.iterrows():
+            filepath = filepath_base + "/quicklook_" + str(image.id) + ".jpg"
+            filepaths.append(filepath)
+        quicklooks = self.marketplace.map_quicklooks(scenes=images, aoi=self.aoi, show_images=True,
+                                                     show_features=False, filepaths=filepaths, name_column="image_id",
+                                                     save_html=filepath_base + "/" + quicklooks_plot_html + ".html")
+
     def save_search_parameters(self):
         params_json = self.marketplace.convert_search_parameters_without_aoi_to_json()
         file_name = self.working_dir + '/search_parameters.json'
@@ -227,14 +236,9 @@ class Experiment(ABC):
                                                  facecolor=legend_colors[element[legend_column]],
                                                  label=element[legend_column])
                 legend_elements.append(legend_element)
-            for element in elements.index:
-                legend_element = mpatches.Circle((0.5, 0.5),
-                                                 facecolor=legend_colors[elements[legend_column][element]],
-                                                 label=elements[legend_column][element])
-                legend_elements.append(legend_element)
         return legend_elements
 
-    def plot_all_images_and_solutions(self, solutions):
+    def plot_all_images_and_solutions(self, solutions, plot_quicklooks=False):
         # add all images as a solution
         self.selected_images_results.append(self.images)
         # convert solutions
@@ -243,6 +247,13 @@ class Experiment(ABC):
             self.selected_images_results.append(converted_solution)
         # plot results
         self.save_results_coverages(close_plot=False)
+        # plot quicklooks
+        if plot_quicklooks:
+            images = self.selected_images_results[1]
+            encode_solution = self.encode_solution(images)
+            self.plot_quicklooks(images=images,
+                                 filepath_base=self.working_dir + "/" + constants.QUICKLOOKS_FOLDER_NAME,
+                                 quicklooks_plot_html=encode_solution)
 
     def convert_solution(self, code_solution):
         solution_geodataframe = self.images[self.images.geom_type != "Polygon"]

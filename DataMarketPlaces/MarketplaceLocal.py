@@ -1,9 +1,12 @@
 import os.path
+from pathlib import Path
+from typing import Optional
 
 import geopandas
+from geopandas import GeoDataFrame
 
-import constants
 from DataMarketPlaces.Marketplace import Marketplace
+from DataMarketPlaces.MarketplaceUp42 import MarketplaceUp42
 from Experiment import Experiment
 
 
@@ -22,7 +25,7 @@ class MarketplaceLocal(Marketplace):
             covered_aoi = self.is_aoi_covered_by_searched_images(self.result_images)
         return [self.result_images, covered_aoi]
 
-    def search_results(self):
+    def search_results(self, collection=""):
         working_dir = Experiment.check_create_working_dir(aoi_file=self.aoi.loc[0]['name'],number_images_per_aoi=self.search_parameters.limit)
         working_dir = working_dir[:working_dir.rfind('/')]
         working_dir = os.path.join(working_dir, str(500))
@@ -48,6 +51,14 @@ class MarketplaceLocal(Marketplace):
             quicklook_name = "quicklook_" + str(index) + ".jpg"
             list_of_quicklooks.append(quicklook_name)
         return list_of_quicklooks
+
+    def map_quicklooks(self, scenes: GeoDataFrame, aoi: [GeoDataFrame] = None, show_images: bool = True,
+                       show_features: bool = False, filepaths: [list] = None, name_column: str = "id",
+                       save_html: Optional[Path] = None) -> "folium.Map":
+        marketplace_up42 = MarketplaceUp42(aoi, self.search_parameters)
+        return marketplace_up42.map_quicklooks(scenes, aoi, show_images, show_features, filepaths, name_column, save_html)
+
+
 
     def update_images_cost(self, images):
         return images
