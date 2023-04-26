@@ -12,6 +12,11 @@ class SearchParameters:
     collections = ["phr", "spot", "pneo"]
     max_cloudcover: float = 100
     limit: int = 50
+    # start_date: str = "2020-01-01"
+    # end_date: str = "2022-10-01"
+    # collections = ["phr", "spot", "pneo"]
+    # max_cloudcover: float = 100
+    # limit: int = 30
 
 
 @dataclass
