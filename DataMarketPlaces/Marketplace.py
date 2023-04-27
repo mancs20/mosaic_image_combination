@@ -104,6 +104,10 @@ class Marketplace(ABC):
     def update_images_cost(self, images) -> GeoDataFrame:
         pass
 
+    @abstractmethod
+    def update_images_incidence_angle(self, images) -> GeoDataFrame:
+        pass
+
     def convert_search_parameters_without_aoi_to_json(self):
         temp_json = self.search_parameters.to_json()
         images_collections = self.search_parameters.collections

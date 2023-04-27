@@ -30,7 +30,8 @@ class StrategyDiscrete(Strategy):
     def initialize_set_images(self):
         # iterate over geoDataFrame self.contained_images
         for index, row in self.contained_images.iterrows():
-            image_set = ImageSet(image_id=row['image_id'], weight=row['cost'], list_of_regions=[])
+            image_set = ImageSet(image_id=row['image_id'], weight=row['cost'], resolution=row['resolution'],
+                                 incidence_angle=row['incidence_angle'],list_of_regions=[])
             self.sets_images.append(image_set)
 
     def get_intersections_with_shapely(self):

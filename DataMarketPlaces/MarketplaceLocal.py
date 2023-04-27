@@ -64,6 +64,16 @@ class MarketplaceLocal(Marketplace):
     def update_images_cost(self, images):
         return images
 
+    def update_images_incidence_angle(self, images):
+        incidence_angles = []
+        for index, row in images.iterrows():
+            provider_properties = row['providerProperties']
+            incidence_angle = provider_properties['incidenceAngle']
+            incidence_angles.append(incidence_angle)
+        images['incidence_angle'] = incidence_angles
+
+        return images
+
     def prepare_data_to_save(self, images):
         images['local_image_id'] = images['image_id']
         images = Marketplace.add_id_fields(images)

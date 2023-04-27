@@ -35,16 +35,24 @@ class CPClouds(StrategyDiscrete, SolverMinizinc):
             if self.with_clouds:
                 self.deal_with_clouds()
             minizinc_parameters = self.solver_minizinc_parameters()
-            SolverMinizinc.write_dzn_file(dzn_filename, minizinc_parameters)
-            # TODO uncomment below to get results from minizinc
-            #----------------------------------------------
-            # results = self.get_transformed_solutions(results=results, images=self.images, sets_images=self.sets_images,
-            #                                          universe=self.universe,
-            #                                          minizinc_parameters=minizinc_parameters)
-            #----------------------------------------------
+            # TODO set this to False after saving the dzn files
+            just_save_dzn_file = True
+            if just_save_dzn_file:
+                print("*************************************Saving dzn file name:" + dzn_filename+"*************************************")
+                SolverMinizinc.write_dzn_file(dzn_filename, minizinc_parameters)
+            else:
+                results = self.get_transformed_solutions(results=results, images=self.images, sets_images=self.sets_images,
+                                                     universe=self.universe,
+                                                     minizinc_parameters=minizinc_parameters)
         else:
-            # TODO process dzn file
-            a = 1
+            # TODO set this to False after processing the dzn file
+            modify_dzn_file = False
+            if modify_dzn_file:
+                self.modify_dzn_file(dzn_filename)
+            else:
+                # TODO uncomment below to get results from minizinc
+                #----------------------------------------------
+                a = 2
         return self.prepare_results_to_return(results)
 
 
@@ -53,7 +61,9 @@ class CPClouds(StrategyDiscrete, SolverMinizinc):
         solver_parameters = {"num_images": len(self.sets_images),
                              "universe": self.universe,
                              "images": self.get_image_sets(),
-                             "costs": [x.weight for x in self.sets_images]}
+                             "costs": [x.weight for x in self.sets_images],
+                             "resolution": [x.resolution for x in self.sets_images],
+                             "incidence_angle": [x.incidence_angle for x in self.sets_images]}
         if self.with_clouds:
             solver_parameters = self.add_clouds_to_solver_parameters(solver_parameters)
         return solver_parameters
@@ -127,3 +137,17 @@ class CPClouds(StrategyDiscrete, SolverMinizinc):
 
     def calculate_max_cloud_cover_area(self):
         return self.aoi.area.iloc[0] * self.max_cloud_cover
+
+    def modify_dzn_file(self, dzn_filename):
+        print("***************Modifying dzn file***************")
+        print("File name: " + dzn_filename)
+        print("*************************************************")
+        # build the sets of images
+        self.remove_image_area_outside_aoi()
+        self.initialize_set_images()
+
+        # add parameters to the dzn file
+        extraparameters = {'resolution': [x.resolution for x in self.sets_images],
+                           "incidence_angle": [x.incidence_angle for x in self.sets_images]}
+        SolverMinizinc.add_new_parameter_to_dzn_file(dzn_filename, extraparameters)
+

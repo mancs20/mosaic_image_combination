@@ -76,3 +76,9 @@ class SolverMinizinc(ABC):
         with open(dzn_file, 'w') as f:
             for key, value in dict_parameters.items():
                 f.write(key + " = " + str(value) + ";\n")
+
+    @staticmethod
+    def add_new_parameter_to_dzn_file(dzn_file, dict_parameters: dict):
+        with open(dzn_file, 'a') as f:
+            for key, value in dict_parameters.items():
+                f.write(key + " = " + str(value) + ";\n")

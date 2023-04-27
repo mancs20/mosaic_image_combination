@@ -100,6 +100,15 @@ class MarketplaceUp42(Marketplace):
         images['cost'] = estimated_costs
         return images
 
+    def update_images_incidence_angle(self, images):
+        incidence_angles = []
+        for index, row in images.iterrows():
+            provider_properties = row['providerProperties']
+            incidence_angle = provider_properties['incidenceAngle']
+            incidence_angles.append(incidence_angle)
+        images['incidence_angle'] = incidence_angles
+        return images
+
     def get_quicklooks_from_marketplace(self, images, directory):
         if self.result_images is None:
             self.get_data_from_marketplace()

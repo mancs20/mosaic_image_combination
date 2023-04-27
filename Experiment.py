@@ -59,17 +59,23 @@ class Experiment(ABC):
             else:
                 # TODO uncomment below to get images marketplace cost
                 self.images = self.marketplace.update_images_cost(self.images)
+                self.images = self.marketplace.update_images_incidence_angle(self.images)
                 self.save_data()
         else:
             self.images = Experiment.get_local_images_data_from_file(self.working_dir)
         if not self.images.empty:
-            # set aoi with the same crs (projection system) as the images
-            self.aoi.crs = self.images.crs
-            self.aoi.to_crs(self.aoi.crs)
-            # plot images
-            self.config_plot_images_and_aoi(self.images, self.aoi, legend_column="image_id", get_max_coords=True)
-            # plt.show()
-
+            # Set this to true if you want to update the csv and geojson files
+            update_csv_and_geojson = False
+            if update_csv_and_geojson:
+                self.update_csv_and_geojson()
+                return False
+            else:
+                # set aoi with the same crs (projection system) as the images
+                self.aoi.crs = self.images.crs
+                self.aoi.to_crs(self.aoi.crs)
+                # plot images
+                self.config_plot_images_and_aoi(self.images, self.aoi, legend_column="image_id", get_max_coords=True)
+                # plt.show()
         return covered
 
     @staticmethod
@@ -418,3 +424,18 @@ class Experiment(ABC):
         images_area = images_area_series.tolist()
         self.images['area'] = images_area
 
+    def update_csv_and_geojson(self):
+        print('Updating csv and geojson for ' + self.working_dir + ' with search parameters ' +
+              str(self.search_parameters))
+
+        # update images with desired features
+        # ---------------------------------------------------------------------
+        # self.images = self.marketplace.update_images_incidence_angle(self.images)
+        # rename field incident_angle to incidence_angle in geodataframe self.images
+        self.images = self.images.rename(columns={'incident_angle': 'incidence_angle'})
+        # ---------------------------------------------------------------------
+
+        # save data to csv, human readable
+        self.images.to_csv(self.working_dir + '/' + constants.DATA_FILE_NAME_CSV, index_label='image_id')
+        # save to geojson, remove fields with lists, for shp is the same
+        self.images.to_file(self.working_dir + '/' + constants.DATA_FILE_NAME, driver='GeoJSON')
