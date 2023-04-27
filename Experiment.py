@@ -46,21 +46,15 @@ class Experiment(ABC):
     def set_marketplace(self, marketplace: Marketplace):
         self.marketplace = marketplace
 
-    def prepare_experiment(self):
+    def prepare_experiment(self, just_download_images=False):
+        if just_download_images:
+            print("**********************************Just download images**********************************")
+            self.get_images_from_external_marketplace()
+            return False
         # Create or get folder for experiment results
         covered = True
         if not self.check_if_local_data():
-            [self.images, covered] = self.marketplace.get_data_from_marketplace()
-            self.aoi.crs = self.images.crs
-            self.aoi.to_crs(self.aoi.crs)
-            if not covered:
-                # to plot the images and see why the cover is failling
-                self.images = self.marketplace.prepare_data_to_save(self.images)
-            else:
-                # TODO uncomment below to get images marketplace cost
-                self.images = self.marketplace.update_images_cost(self.images)
-                self.images = self.marketplace.update_images_incidence_angle(self.images)
-                self.save_data()
+            covered = self.get_images_from_external_marketplace()
         else:
             self.images = Experiment.get_local_images_data_from_file(self.working_dir)
         if not self.images.empty:
@@ -76,6 +70,20 @@ class Experiment(ABC):
                 # plot images
                 self.config_plot_images_and_aoi(self.images, self.aoi, legend_column="image_id", get_max_coords=True)
                 # plt.show()
+        return covered
+
+    def get_images_from_external_marketplace(self):
+        [self.images, covered] = self.marketplace.get_data_from_marketplace()
+        self.aoi.crs = self.images.crs
+        self.aoi.to_crs(self.aoi.crs)
+        if not covered:
+            # to plot the images and see why the cover is failling
+            self.images = self.marketplace.prepare_data_to_save(self.images)
+        else:
+            # TODO uncomment below to get images marketplace cost
+            self.images = self.marketplace.update_images_cost(self.images)
+            self.images = self.marketplace.update_images_incidence_angle(self.images)
+            self.save_data()
         return covered
 
     @staticmethod
