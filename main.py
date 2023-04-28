@@ -28,15 +28,20 @@ def get_aoi_files():
 
     # files = ['aois/mexico_city.geojson', 'aois/rio_de_janeiro.geojson',
     #          'aois/paris.geojson', 'aois/lagos_nigeria.geojson', 'aois/tokyo_bay.geojson']
+    #
+    files = ['aois/mexico_city.geojson', 'aois/rio_de_janeiro.geojson',
+             'aois/lagos_nigeria.geojson', 'aois/tokyo_bay.geojson']
 
-    # files = ['aois/mexico_city.geojson', 'aois/rio_de_janeiro.geojson']
+    files = ['aois/mexico_city.geojson', 'aois/rio_de_janeiro.geojson',
+             'aois/tokyo_bay.geojson']
     return files
 
 
 def get_search_parameters():
     # List of images per aoi
     images_per_aoi = [30, 50, 100, 150, 200, 250, 500]
-    images_per_aoi = [500]
+    images_per_aoi = [30, 50, 100, 500]
+    images_per_aoi = [150, 200, 250]
     # Set to false when running the experiment for just one aoi
     experiments_with_all_images_per_aoi = True
     if experiments_with_all_images_per_aoi:
@@ -75,8 +80,8 @@ def main():
     for aoi_file in aoi_files:
         for search_parameter in search_parameters:
             experiment = Experiment(search_parameters=search_parameter, aoi_file=aoi_file)
-            experiment.set_marketplace(MarketplaceUp42(experiment.aoi, experiment.search_parameters))
-            # experiment.set_marketplace(MarketplaceLocal(experiment.aoi, experiment.search_parameters))
+            # experiment.set_marketplace(MarketplaceUp42(experiment.aoi, experiment.search_parameters))
+            experiment.set_marketplace(MarketplaceLocal(experiment.aoi, experiment.search_parameters))
 
             # To know the area of the aoi, uncomment below
             # experiment.print_aoi_area()
@@ -86,8 +91,8 @@ def main():
             # strategies = [CPWithoutClouds()]
             strategies = [CPClouds(constants.Clouds.ARTIFICIAL_CLOUDS_COVERING_WHOLE_INTERSECTION, max_cloud_cover=0.3)]
             # strategies = []
-            # if experiment.prepare_experiment(just_download_images=False):
-            if experiment.prepare_experiment(just_download_images=True):
+            if experiment.prepare_experiment(just_download_images=False):
+            # if experiment.prepare_experiment(just_download_images=True):
                 # to plot certain solutions and all the images of one aoi uncomment below, it works if len(aoi_file) = 1
                 if len(get_solutions()) != 0:
                     experiment.plot_all_images_and_solutions(solutions=get_solutions(), plot_quicklooks=False)

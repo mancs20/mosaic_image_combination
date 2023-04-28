@@ -68,7 +68,11 @@ class Experiment(ABC):
                 self.aoi.crs = self.images.crs
                 self.aoi.to_crs(self.aoi.crs)
                 # plot images
-                self.config_plot_images_and_aoi(self.images, self.aoi, legend_column="image_id", get_max_coords=True)
+                ax = self.config_plot_images_and_aoi(self.images, self.aoi, legend_column="image_id", get_max_coords=True)
+                plot_show = False
+                if plot_show:
+                    plt.show()
+                plt.close(ax.figure)
                 # plt.show()
         return covered
 
@@ -131,8 +135,9 @@ class Experiment(ABC):
         # save to geojson, remove fields with lists, for shp is the same
         self.images.to_file(self.working_dir + '/' + constants.DATA_FILE_NAME, driver='GeoJSON')
         self.save_search_parameters()
-        self.config_plot_images_and_aoi(self.images, self.aoi)
+        ax = self.config_plot_images_and_aoi(self.images, self.aoi)
         self.save_coverage_image(self.working_dir, constants.COVERAGE_IMAGE_NAME)
+        plt.close(ax.figure)
         # donwload quicklooks
         # self.get_quicklooks()
     def get_quicklooks(self):
@@ -189,8 +194,10 @@ class Experiment(ABC):
 
         # set the same coords for all images
         minx, miny, maxx, maxy = self.plot_max_coords
-        ax.set_xlim(minx, maxx)
-        ax.set_ylim(miny, maxy)
+        if minx != maxx:
+            ax.set_xlim(minx , maxx)
+        if miny != maxy:
+            ax.set_ylim(miny, maxy)
 
         if basemap:
             cx.add_basemap(ax, crs=images.crs)
