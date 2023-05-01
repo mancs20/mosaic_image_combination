@@ -15,9 +15,9 @@ from Strategies.StrategyDiscrete.CPClouds import CPClouds
 def get_aoi_file():
     # file = "aois/mexico_city.geojson"
     # file = "aois/rio_de_janeiro.geojson"
-    file = "aois/paris.geojson"
+    # file = "aois/paris.geojson"
     # file = "aois/lagos_nigeria.geojson"
-    # file = "aois/tokyo_bay.geojson"
+    file = "aois/tokyo_bay.geojson"
     # file = "aois/dakar.geojson"
     return file
 
@@ -29,21 +29,14 @@ def get_aoi_files():
     # files = ['aois/mexico_city.geojson', 'aois/rio_de_janeiro.geojson',
     #          'aois/paris.geojson', 'aois/lagos_nigeria.geojson', 'aois/tokyo_bay.geojson']
     #
-    files = ['aois/mexico_city.geojson', 'aois/rio_de_janeiro.geojson',
-             'aois/lagos_nigeria.geojson', 'aois/tokyo_bay.geojson']
-
-    files = ['aois/mexico_city.geojson', 'aois/rio_de_janeiro.geojson',
-             'aois/tokyo_bay.geojson']
     return files
 
 
 def get_search_parameters():
     # List of images per aoi
     images_per_aoi = [30, 50, 100, 150, 200, 250, 500]
-    images_per_aoi = [30, 50, 100, 500]
-    images_per_aoi = [150, 200, 250]
     # Set to false when running the experiment for just one aoi
-    experiments_with_all_images_per_aoi = True
+    experiments_with_all_images_per_aoi = False
     if experiments_with_all_images_per_aoi:
         search_parameters = []
         for images in images_per_aoi:

@@ -67,7 +67,7 @@ class Marketplace(ABC):
         return all_images
 
     def random_select_images_from_total(self, all_images, number_images):
-        # TODO delete this is for having smaller images, we are considering only images les than 1.0m2 resolution
+        # TODO delete this is for having smaller images, we are considering only images less than 1.0m2 resolution
         if number_images < len(all_images[all_images['resolution'] < 1.0]):
             all_images = all_images[all_images['resolution'] < 1.0]
 

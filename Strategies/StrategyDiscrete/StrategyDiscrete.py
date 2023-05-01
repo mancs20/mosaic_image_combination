@@ -41,6 +41,8 @@ class StrategyDiscrete(Strategy):
         resulting_polygons = [geom for geom in polygonize(union)]
         self.universe = len(resulting_polygons)
         self.associate_resulting_polygons_to_images(resulting_polygons)
+        # plot resulting polygons
+        # self.plot_polygons(resulting_polygons)
 
     def associate_resulting_polygons_to_images(self, resulting_polygons):
         for i in range(len(resulting_polygons)):
@@ -61,20 +63,21 @@ class StrategyDiscrete(Strategy):
     @staticmethod
     def plot_polygons(polygons):
         from matplotlib import pyplot as plt
+        from Experiment import Experiment
 
+        cmap = Experiment.create_listed_colormap(len(polygons))
         fig, ax = plt.subplots()
-        # for linestring in linestrings:
-        #     # extract the x and y coordinates of the line segments
-        #     x, y = linestring.xy
-        #
-        #     # plot the line segments
-        #     ax.plot(x, y, color='red', linewidth=2, solid_capstyle='round')
-
-        for polygon in polygons:
+        ax.set_aspect('equal')
+        for i in range(len(polygons)):
+            polygon = polygons[i]
             x, y = polygon.exterior.xy
-            ax.fill(x, y, alpha=0.5, edgecolor="black")
+            ax.fill(x, y, alpha=0.5, edgecolor="black", color=cmap(i))
             centroid = polygon.centroid
-            ax.scatter(centroid.x, centroid.y, color='red')
+            # ax.scatter(centroid.x, centroid.y, color='red')
+        plt.axis('off')
+        # save image, it is always the same name
+        image_name = "polygons.svg"
+        plt.savefig(image_name, bbox_inches='tight')
         plt.show()
 
     def remove_image_area_outside_aoi(self):
