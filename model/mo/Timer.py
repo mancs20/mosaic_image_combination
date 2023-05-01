@@ -13,4 +13,6 @@ class Timer:
 
   def pause(self):
     end_time = datetime.now()
-    self.time_budget_sec -= (end_time - self.start_time).total_seconds()
+    dur = (end_time - self.start_time).total_seconds()
+    self.time_budget_sec -= dur
+    return dur

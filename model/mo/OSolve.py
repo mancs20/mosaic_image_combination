@@ -62,8 +62,8 @@ class OSolve:
           except minizinc.error.MiniZincError:
             print("The solver crashed... Retrying...") # It can happen with GeCode in parallel mode.
       if self.timer != None:
-        self.timer.pause()
-      self.update_statistics(res)
+        cp_sec = self.timer.pause()
+      self.update_statistics(res, cp_sec)
       if res.status == Status.SATISFIED or res.status == Status.ALL_SOLUTIONS:
         yield res
       elif res.status == Status.UNKNOWN: # timeout
@@ -83,7 +83,9 @@ class OSolve:
     if constraint != "true":
       self.instance.add_string("constraint " + constraint + ";\n")
 
-  def update_statistics(self, res):
+  def update_statistics(self, res, cp_sec):
+    if len(res.statistics) == 0:
+      self.statistics["time_cp_sec"] += cp_sec
     if "nodes" in res.statistics:
       self.statistics["cp_total_nodes"] += res.statistics["nodes"]
     if "initTime" in res.statistics:
