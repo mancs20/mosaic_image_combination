@@ -1,2 +1,2 @@
-minimize_objs = [true, true, false, true];
-ref_point = [10000000.0, 10000000.0, 0.0, 101.0];
+minimize_objs = [true, true, true, true];
+ref_point = [2806134080.0, 163164708.0, 400.0, 15000.0];

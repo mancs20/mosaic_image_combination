@@ -35,14 +35,14 @@ constraint forall(u in UNIVERSE)(cloudy[u] = (num_clear_images[u] == 0));
 var float: cloudy_area = sum(u in UNIVERSE)(cloudy[u] * areas[u]);
 
 var float: total_cost = sum(i in IMAGES)(costs[i] * taken[i]);
-var float: max_resolution = sum(u in UNIVERSE)(max(i in IMAGES where u in images[i])(taken[i] * resolution[i]));
+var float: max_resolution = sum(u in UNIVERSE)(min(i in IMAGES where u in images[i] /\ taken[i])(resolution[i]));
 var float: max_incidence = max(i in IMAGES)(taken[i] * incidence_angle[i]);
 
 array[1..4] of var float: objs;
-constraint objs[1] = cloudy_area;
-constraint objs[2] = total_cost;
-constraint objs[3] = max_resolution;
-constraint objs[4] = max_incidence;
+constraint objs[1] = -cloudy_area;
+constraint objs[2] = -total_cost;
+constraint objs[3] = -max_resolution;
+constraint objs[4] = -max_incidence;
 
 array[1..4] of bool: minimize_objs;
 array[1..4] of float: ref_point;

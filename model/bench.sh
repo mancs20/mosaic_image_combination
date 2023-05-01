@@ -1,6 +1,6 @@
 cd mo/
 cp_strategy="free_search"
-cp_timeout_sec=120
+cp_timeout_sec=30
 solver="gecode"
 summary="../summary.csv"
 
