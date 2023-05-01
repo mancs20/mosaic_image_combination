@@ -11,6 +11,8 @@ array[IMAGES] of set of int: images;
 array[IMAGES] of set of int: clouds;
 array[IMAGES] of float: costs;
 array[UNIVERSE] of float: areas;
+array[IMAGES] of float: resolution;
+array[IMAGES] of float: incidence_angle;
 
 array[IMAGES] of var bool: taken;
 

@@ -11,6 +11,8 @@ array[IMAGES] of set of int: images;
 array[IMAGES] of set of int: clouds;
 array[IMAGES] of float: costs;
 array[UNIVERSE] of float: areas;
+array[IMAGES] of float: resolution;
+array[IMAGES] of float: incidence_angle;
 
 array[IMAGES] of var bool: taken;
 
@@ -31,9 +33,21 @@ constraint forall(u in UNIVERSE)(
 constraint forall(u in UNIVERSE)(cloudy[u] = (num_clear_images[u] == 0));
 
 var float: cloudy_area = sum(u in UNIVERSE)(cloudy[u] * areas[u]);
-constraint cloudy_area <= max_cloud_area;
+% constraint cloudy_area <= max_cloud_area;
 
 var float: total_cost = sum(i in IMAGES)(costs[i] * taken[i]);
+var float: max_resolution = sum(u in UNIVERSE)(max(i in IMAGES where u in images[i])(taken[i] * resolution[i]));
+var float: max_incidence = max(i in IMAGES)(taken[i] * incidence_angle[i]);
+
+array[1..4] of var float: objs;
+constraint objs[1] = cloudy_area;
+constraint objs[2] = total_cost;
+constraint objs[3] = max_resolution;
+constraint objs[4] = max_incidence;
+
+array[1..4] of bool: minimize_objs;
+array[1..4] of float: ref_point;
+
 
 % These variables are for the search strategy, reflecting the greedy strategy for set cover.
 
@@ -55,4 +69,4 @@ var float: total_cost = sum(i in IMAGES)(costs[i] * taken[i]);
 
 solve
 %   ::int_search(covered, anti_first_fail, indomain_max)
-minimize total_cost;
+satisfy;
