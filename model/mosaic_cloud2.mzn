@@ -18,7 +18,7 @@ array[IMAGES] of var bool: taken;
 
 % Which images have a universe `u` without cloud?
 % That is, uclear[u] = {i1, i2, ..} means that the images numbered i1, i2, ... contains `u` without clouds.
-array[UNIVERSE] of set of int: uclear = [{ i | i in IMAGES where not (u in clouds[i]) } | u in UNIVERSE];
+array[UNIVERSE] of set of int: uclear = [{ i | i in IMAGES where not (u in clouds[i]) /\ u in images[i] } | u in UNIVERSE];
 
 % Set covering constraint.
 constraint forall(u in UNIVERSE)(
@@ -33,7 +33,6 @@ constraint forall(u in UNIVERSE)(
 constraint forall(u in UNIVERSE)(cloudy[u] = (num_clear_images[u] == 0));
 
 var float: cloudy_area = sum(u in UNIVERSE)(cloudy[u] * areas[u]);
-% constraint cloudy_area <= max_cloud_area;
 
 var float: total_cost = sum(i in IMAGES)(costs[i] * taken[i]);
 var float: max_resolution = sum(u in UNIVERSE)(max(i in IMAGES where u in images[i])(taken[i] * resolution[i]));
@@ -47,7 +46,6 @@ constraint objs[4] = max_incidence;
 
 array[1..4] of bool: minimize_objs;
 array[1..4] of float: ref_point;
-
 
 % These variables are for the search strategy, reflecting the greedy strategy for set cover.
 
