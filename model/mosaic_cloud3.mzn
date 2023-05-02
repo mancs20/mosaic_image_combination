@@ -47,9 +47,9 @@ constraint objs[4] = max_incidence;
 array[1..4] of var bool: minimize_objs;
 array[1..4] of var float: ref_point;
 
-constraint ref_point[1] = sum(u in UNIVERSE)(areas[u]);
-constraint ref_point[2] = sum(i in IMAGES)(costs[i]);
-constraint ref_point[3] = sum(u in UNIVERSE)(max(i in IMAGES where u in images[i])(resolution[i]));
+constraint ref_point[1] = sum(u in UNIVERSE)(areas[u]) + 1.0;
+constraint ref_point[2] = sum(i in IMAGES)(costs[i]) + 1.0;
+constraint ref_point[3] = sum(u in UNIVERSE)(max(i in IMAGES where u in images[i])(resolution[i])) + 1.0;
 constraint ref_point[4] = 90.0;
 
 constraint minimize_objs[1] = true;
@@ -63,7 +63,7 @@ array[UNIVERSE] of set of int: images_inv = [ { i | i in IMAGES where u in image
 
 % utaken[u] is true if the universe is already taken.
 array[UNIVERSE] of var bool: utaken;
-constraint forall(u in UNIVERSE)(utaken[u] = (sum(i in images_inv[u])(taken[i]) > 0));
+constraint forall(u in UNIVERSE)(utaken[u] = exists(i in images_inv[u])(taken[i]));
 
 % This variable is only there for the search strategy (based on the greedy algorithm).
 % At some points in the search tree, if covered[i] = [lb..ub], it means that `lb` pieces of the image `i` are already covered.
@@ -72,8 +72,8 @@ constraint forall(u in UNIVERSE)(utaken[u] = (sum(i in images_inv[u])(taken[i]) 
 array[IMAGES] of var int: covered;
 constraint forall(i in IMAGES)(covered[i] = sum(u in images[i])(utaken[u]));
 
-% Channeling between taken and covered, to make sure searching on covered also assign the variable in taken.
-constraint forall(i in IMAGES)(taken[i] <-> covered[i] = card(images[i]));
+% Redundant constraint
+constraint forall(i in IMAGES)(taken[i] -> covered[i] = card(images[i]));
 
 solve
    ::int_search(covered, anti_first_fail, indomain_max)
