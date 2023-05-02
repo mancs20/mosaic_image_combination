@@ -7,7 +7,7 @@ class OSolve:
      Args:
        instance (Instance): A constraint model.
        statistics (dict): A dictionary to store the statistics of the solver.
-       timer (Optional[Timer]): A timer to retrieve the remaining time budget. `None` if unlimited time budget.
+       timer (Timer): A timer to retrieve the remaining time budget.
        cores (Optional[Int]): The number of cores to use. `None` for single-threaded solving.
        free_search (Optional[Bool]): Whether to use the free search of the underlying solver and ignore model search annotations.
        optimisation_level (Int): The optimisation level of the preprocessing step when converting MiniZinc to FlatZinc (from 1 to 5). Note that this is done before each call to `solve`.
@@ -41,10 +41,7 @@ class OSolve:
          Solution:
            A solution to `instance`."""
     while True:
-      if self.timer == None:
-        timeout = None
-      else:
-        timeout = self.timer.resume()
+      timeout = self.timer.resume()
       with self.instance.branch() as child:
         child.add_string(self.local_constraints)
         self.local_constraints = ""
@@ -61,8 +58,7 @@ class OSolve:
             break
           except minizinc.error.MiniZincError:
             print("The solver crashed... Retrying...") # It can happen with GeCode in parallel mode.
-      if self.timer != None:
-        cp_sec = self.timer.pause()
+      cp_sec = self.timer.pause()
       self.update_statistics(res, cp_sec)
       if res.status == Status.SATISFIED or res.status == Status.ALL_SOLUTIONS:
         yield res
@@ -84,18 +80,13 @@ class OSolve:
       self.instance.add_string("constraint " + constraint + ";\n")
 
   def update_statistics(self, res, cp_sec):
-    if len(res.statistics) == 0:
-      self.statistics["time_cp_sec"] += cp_sec
+    self.statistics["time_cp_sec"] += cp_sec
+    if res is None:
+      return
     if "nodes" in res.statistics:
       self.statistics["cp_total_nodes"] += res.statistics["nodes"]
-    if "initTime" in res.statistics:
-      self.statistics["time_cp_sec"] += res.statistics["initTime"].total_seconds()
-    if "solveTime" in res.statistics:
-      self.statistics["time_cp_sec"] += res.statistics["solveTime"].total_seconds()
-    elif "time" in res.statistics:
-      self.statistics["time_cp_sec"] += res.statistics["time"].total_seconds() / 1000
     if "flatTime" in res.statistics:
       self.statistics["time_fzn_sec"] += res.statistics["flatTime"].total_seconds()
     if res.solution is not None:
       self.statistics["cp_solutions"] += 1
-      self.statistics["cp_solutions_list"].append(self.statistics["time_fzn_sec"] + self.statistics["time_cp_sec"])
+      self.statistics["cp_solutions_list"].append(self.statistics["time_cp_sec"])

@@ -11,7 +11,6 @@ class Config:
                 description = 'Multi-objective constraint programming with WCTT. This program computes a Pareto front of the deployment problem on switch-based network.')
     parser.add_argument('instance_name')
     parser.add_argument('--model_mzn', required=True)
-    parser.add_argument('--objectives_dzn', required=True)
     parser.add_argument('--dzn_dir', required=True)
     parser.add_argument('--solver_name', required=True)
     parser.add_argument('--cp_timeout_sec', required=True, type=int)
@@ -24,7 +23,6 @@ class Config:
     self.data_name = args.instance_name
     self.input_mzn = args.model_mzn
     self.cp_model = os.path.basename(self.input_mzn)[:-4]
-    self.objectives_dzn = args.objectives_dzn  # Just because parameters directly in the mzn files are not accessible through the Python API...
     self.input_dzn = args.dzn_dir + "/" + self.data_name + ".dzn"
     self.solver_name = args.solver_name
     self.cp_timeout_sec = args.cp_timeout_sec

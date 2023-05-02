@@ -19,7 +19,6 @@ def main():
   config = Config()
   model = Model(config.input_mzn)
   model.add_file(config.input_dzn, parse_data=True)
-  model.add_file(config.objectives_dzn, parse_data=True)
   mzn_solver = Solver.lookup(config.solver_name)
   config.initialize_cores(mzn_solver)
   check_already_computed(config)

@@ -39,13 +39,23 @@ var float: max_resolution = sum(u in UNIVERSE)(min(i in IMAGES where u in images
 var float: max_incidence = max(i in IMAGES)(taken[i] * incidence_angle[i]);
 
 array[1..4] of var float: objs;
-constraint objs[1] = -cloudy_area;
-constraint objs[2] = -total_cost;
-constraint objs[3] = -max_resolution;
-constraint objs[4] = -max_incidence;
+constraint objs[1] = cloudy_area;
+constraint objs[2] = total_cost;
+constraint objs[3] = max_resolution;
+constraint objs[4] = max_incidence;
 
-array[1..4] of bool: minimize_objs;
-array[1..4] of float: ref_point;
+array[1..4] of var bool: minimize_objs;
+array[1..4] of var float: ref_point;
+
+constraint ref_point[1] = sum(u in UNIVERSE)(areas[u]);
+constraint ref_point[2] = sum(i in IMAGES)(costs[i]);
+constraint ref_point[3] = sum(u in UNIVERSE)(max(i in IMAGES where u in images[i])(resolution[i]));
+constraint ref_point[4] = 90.0;
+
+constraint minimize_objs[1] = true;
+constraint minimize_objs[2] = true;
+constraint minimize_objs[3] = true;
+constraint minimize_objs[4] = true;
 
 % These variables are for the search strategy, reflecting the greedy strategy for set cover.
 
