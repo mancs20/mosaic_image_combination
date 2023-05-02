@@ -162,7 +162,7 @@ class ParetoFront:
     """Compute the hypervolume of the Pareto front. The hypervolume is computed using the reference point `ref_point`."""
     if self.front == []:
       return 0
-    ref_point = np.array(self.instance["ref_point"])
+    ref_point = np.array(self.solutions[0]["ref_point"])
     front = np.array([self.solutions[f]['objs'] for f in self.front])
     for i, minimize in enumerate(self.solutions[0]["minimize_objs"]):
       if not minimize:
