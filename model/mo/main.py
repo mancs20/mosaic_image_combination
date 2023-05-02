@@ -19,7 +19,6 @@ def main():
   config = Config()
   model = Model(config.input_mzn)
   model.add_file(config.input_dzn, parse_data=True)
-  model.add_file(config.objectives_dzn, parse_data=True)
   mzn_solver = Solver.lookup(config.solver_name)
   config.initialize_cores(mzn_solver)
   check_already_computed(config)
@@ -55,7 +54,7 @@ def check_already_computed(config):
 
 def build_solver(instance, config, statistics):
   osolve = build_osolver(instance, config, statistics)
-  osolve_mo = MO(instance, osolve)
+  osolve_mo = MO(instance, statistics, osolve)
   return osolve_mo, osolve_mo.pareto_front
 
 def build_osolver(instance, config, statistics):
@@ -67,6 +66,7 @@ def csv_header(config):
   config.init_statistics(statistics)
   init_top_level_statistics(statistics)
   OSolve.init_statistics(statistics)
+  MO.init_statistics(statistics)
   return list(statistics.keys())
 
 def create_summary_file(config):
