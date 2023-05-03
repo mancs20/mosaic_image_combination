@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH --time=24:00:00
+#SBATCH --time=4:00:00
 #SBATCH --partition=batch
 #SBATCH --nodes=4
 #SBATCH --mem=0
@@ -33,7 +33,7 @@ do
     data_name=$(basename -- "$f" .dzn)
     log_file=$res_dir"/free_search_gecode_"$cp_timeout_sec"_"$data_name
     echo "Start srun...."$log_file
-    srun --exclusive --cpu-bind=cores -n 1 -c $cores python3 main.py --model_mzn ../mosaic_cloud2.mzn --dzn_dir ../data_sets --solver_name gecode --cp_timeout_sec $cp_timeout_sec --summary ../summary.csv --cp_strategy "free_search" --fzn_optimisation_level 1 --cores $cores $data_name 2>&1 | tee -a "$log_file" &
+    srun --exclusive --cpu-bind=cores -n 1 -c $cores python3 main.py --model_mzn ../mosaic_cloud2.mzn --dzn_dir ../data_sets --solver_name gecode --cp_timeout_sec $cp_timeout_sec --summary ../summary_hpc.csv --cp_strategy "free_search" --fzn_optimisation_level 1 --cores $cores $data_name 2>&1 | tee -a "$log_file" &
     [[ $((tasks_counter % tasks)) -eq 0 ]] && wait && rm -f $summary".lock"
     let tasks_counter++
   fi
@@ -46,7 +46,7 @@ do
     data_name=$(basename -- "$f" .dzn)
     log_file=$res_dir"/greedy_gecode_"$cp_timeout_sec"_"$data_name
     echo "Start srun...."$log_file
-    srun --exclusive --cpu-bind=cores -n 1 -c $cores python3 main.py --model_mzn ../mosaic_cloud3.mzn --dzn_dir ../data_sets --solver_name gecode --cp_timeout_sec $cp_timeout_sec --summary ../summary.csv --cp_strategy "greedy" --fzn_optimisation_level 1 --cores $cores $data_name 2>&1 | tee -a "$log_file" &
+    srun --exclusive --cpu-bind=cores -n 1 -c $cores python3 main.py --model_mzn ../mosaic_cloud3.mzn --dzn_dir ../data_sets --solver_name gecode --cp_timeout_sec $cp_timeout_sec --summary ../summary_hpc.csv --cp_strategy "greedy" --fzn_optimisation_level 1 --cores $cores $data_name 2>&1 | tee -a "$log_file" &
     [[ $((tasks_counter % tasks)) -eq 0 ]] && wait && rm -f $summary".lock"
     let tasks_counter++
   fi
