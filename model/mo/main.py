@@ -22,8 +22,8 @@ def main():
   mzn_solver = Solver.lookup(config.solver_name)
   config.initialize_cores(mzn_solver)
   check_already_computed(config)
-  print("Start computing: " + config.uid())
   instance = Instance(mzn_solver, model)
+  print("Start computing: " + config.uid())
   statistics = {}
   config.init_statistics(statistics)
   init_top_level_statistics(statistics)
