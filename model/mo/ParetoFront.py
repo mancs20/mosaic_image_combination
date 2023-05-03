@@ -7,9 +7,9 @@ class ParetoFront:
   Attributes:
     instance (Instance): A Minizinc instance containing the model to be solved.
       In particular, the model is expected to have three parameters (where `N` is the number of objectives):
-      * `array[1..N] of var int: objs;` are the objectives variables.
-      * `array[1..N] of bool: minimize_objs;` where `minimize_objs[i]` is `true` if the objective `i` needs to be minimized and `false` if it needs to be maximized.
-      * `array[1..N] of int: ref_point;` (optional): if the hypervolume function is called, `ref_point` is the reference point of the hypervolume, i.e., the worst possible point.
+      * `array[1..N] of var float: objs;` are the objectives variables.
+      * `array[1..N] of var bool: minimize_objs;` where `minimize_objs[i]` is `true` if the objective `i` needs to be minimized and `false` if it needs to be maximized.
+      * `array[1..N] of var float: ref_point;` (optional): if the hypervolume function is called, `ref_point` is the reference point of the hypervolume, i.e., the worst possible point.
     solutions (List[Result]): All the solutions that has been discovered so far.
     front (List[Int]): An index subset of `solutions` containing the Pareto front. Invariant: front is sorted.
   """
@@ -44,7 +44,7 @@ class ParetoFront:
           Bool:
             `True` if `x` dominates or is equal to `y`, `False` otherwise.
     """
-    return all([self.compare(int(obj1), int(obj2), m) for (obj1, obj2, m) in zip(x['objs'], y['objs'], x['minimize_objs'])])
+    return all([self.compare(float(obj1), float(obj2), m) for (obj1, obj2, m) in zip(x['objs'], y['objs'], x['minimize_objs'])])
 
   def join_front(self, idx):
     """Update the Pareto front with the solution `self.solutions[idx]` if it is not dominated by any solution.
@@ -133,11 +133,11 @@ class ParetoFront:
     """
     cons = []
     for i, minimize in enumerate(x['minimize_objs']):
-      obj_value = int(x["objs"][i])
+      obj_value = float(x["objs"][i])
       if minimize:
-        cons.append(f"objs[{i+1}] < {obj_value}")
+        cons.append(f"objs[{i+1}] < {obj_value:.10f}")
       else:
-        cons.append(f"objs[{i+1}] > {obj_value}")
+        cons.append(f"objs[{i+1}] > {obj_value:.10f}")
     return " \\/ ".join(cons)
 
   def front_constraint_mzn(self):
@@ -164,10 +164,7 @@ class ParetoFront:
       return 0
     ref_point = np.array(self.solutions[0]["ref_point"])
     front = np.array([self.solutions[f]['objs'] for f in self.front])
-    print(ref_point)
-    print(front)
     for minimize in self.solutions[0]["minimize_objs"]:
       if not minimize:
         assert False, ("We only support minimization for now.")
-    print(HV(ref_point=ref_point)(front))
     return HV(ref_point=ref_point)(front)
