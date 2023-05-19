@@ -16,6 +16,7 @@ def main():
         images_dict[i] = [images[i], costs[i]]
     images_id, images, costs = gp.multidict(images_dict)
 
+    # clouds processing
     cloud_covered_by_image = {}
     clouds_id_area = {}
     for i in range(len(clouds)):
@@ -34,6 +35,16 @@ def main():
     cloud_covered_by_image = gp.tupledict(cloud_covered_by_image)
     clouds_id, area_clouds = gp.multidict(clouds_id_area)
 
+    # resolution processing
+    resolution = gp.tupledict(resolution)
+    # TODO replace this for the epsilon approach
+    max_resolution = max(resolution.values())
+
+    # incidence angle processing
+    incidence_angle = gp.tupledict(incidence_angle)
+    # TODO replace this for the epsilon approach
+    max_incidence_angle = max(incidence_angle.values())
+
     model = gp.Model("mosaic_cloud_mip")
     #decisition variables
     select_image = model.addVars(len(images), vtype=gp.GRB.BINARY, name="select_image_i")
@@ -44,6 +55,14 @@ def main():
     # cloud constraint
     model.addConstrs(gp.quicksum(select_image[i] for i in images_id if c in cloud_covered_by_image[i])
                      >= cloud_covered[c] for c in clouds_id)
+    # multiobjective constraint with epsilon approach
+    # for cloud coverage
+    model.addConstrs(gp.quicksum(area_clouds[c] for c in clouds_id) -
+                     gp.quicksum(cloud_covered[c] * area_clouds[c] for c in clouds_id) <= max_cloud_area)
+    # for resolution
+    # model.addConstrs(gp.quicksum(select_image[i] * areas[i] for i in images_id) <= max_resolution)
+    # for incidence angle
+    model.addConstrs(select_image[i]*incidence_angle[i] <= max_incidence_angle for i in images_id)
     # constraints end--------------------------------------------------------------
     #objective function
     model.setObjective(gp.quicksum(select_image[i] * costs[i] for i in images_id), gp.GRB.MINIMIZE)
