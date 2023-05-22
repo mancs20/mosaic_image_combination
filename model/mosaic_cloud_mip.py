@@ -36,12 +36,13 @@ def main():
     clouds_id, area_clouds = gp.multidict(clouds_id_area)
 
     # resolution processing
-    resolution = gp.tupledict(resolution)
+    resolution = gp.tupledict(zip(images_id, resolution))
     # TODO replace this for the epsilon approach
     max_resolution = max(resolution.values())
+    min_resolution = min(resolution.values())
 
     # incidence angle processing
-    incidence_angle = gp.tupledict(incidence_angle)
+    incidence_angle = gp.tupledict(zip(images_id, incidence_angle))
     # TODO replace this for the epsilon approach
     max_incidence_angle = max(incidence_angle.values())
 
@@ -49,25 +50,52 @@ def main():
     #decisition variables
     select_image = model.addVars(len(images), vtype=gp.GRB.BINARY, name="select_image_i")
     cloud_covered = model.addVars(clouds_id, vtype=gp.GRB.BINARY, name="cloud_covered_e")
+    resolution_element = model.addVars(elements, vtype=gp.GRB.CONTINUOUS, name="resolution_element_i")
+    effective_image_resolution = model.addVars(len(images), vtype=gp.GRB.CONTINUOUS,
+                                               name="effective_resolution_element_i")
+    effective_incidence_angle = model.addVars(len(images), vtype=gp.GRB.CONTINUOUS,
+                                               name="effective_incidence_angle_i")
+    current_max_incidence_angle = model.addVar(vtype=gp.GRB.CONTINUOUS, name="max_allowed_incidence_angle")
     #constraints--------------------------------------------------------------
     # cost constraint
     model.addConstrs(gp.quicksum(select_image[i] for i in images_id if e in images[i]) >= 1 for e in elements)
     # cloud constraint
-    model.addConstrs(gp.quicksum(select_image[i] for i in images_id if c in cloud_covered_by_image[i])
-                     >= cloud_covered[c] for c in clouds_id)
-    # multiobjective constraint with epsilon approach
-    # for cloud coverage
-    model.addConstrs(gp.quicksum(area_clouds[c] for c in clouds_id) -
-                     gp.quicksum(cloud_covered[c] * area_clouds[c] for c in clouds_id) <= max_cloud_area)
-    # for resolution
-    # model.addConstrs(gp.quicksum(select_image[i] * areas[i] for i in images_id) <= max_resolution)
-    # for incidence angle
-    model.addConstrs(select_image[i]*incidence_angle[i] <= max_incidence_angle for i in images_id)
+    model.addConstrs(gp.quicksum(select_image[i] for i in cloud_covered_by_image.keys()
+                                 if c in cloud_covered_by_image[i]) >= cloud_covered[c] for c in clouds_id)
+    # calculate resolution for each element
+    model.addConstrs(((select_image[i] == 0) >> (effective_image_resolution[i] == 2*max_resolution) for i in images_id))
+    model.addConstrs(((select_image[i] == 1) >> (effective_image_resolution[i] == resolution[i]) for i in images_id))
+    model.addConstrs(resolution_element[e] == gp.min_(effective_image_resolution[i] for i in images_id
+                                                      if e in images[i]) for e in elements)
     # constraints end--------------------------------------------------------------
-    #objective function
-    model.setObjective(gp.quicksum(select_image[i] * costs[i] for i in images_id), gp.GRB.MINIMIZE)
-    #TODO add parameters, like timeout to the model
 
+    # # multiobjective constraint with epsilon approach
+    # # for cloud coverage
+    model.addConstr(gp.quicksum(area_clouds[c] for c in clouds_id) - gp.quicksum(cloud_covered[c] * area_clouds[c] for c in clouds_id) <= max_cloud_area)
+    # # for resolution
+    model.addConstr(gp.quicksum(resolution_element[e] for e in elements) <= max_resolution * len(elements))
+    # # for incidence angle
+    model.addConstrs(effective_incidence_angle[i] == select_image[i] * incidence_angle[i] for i in images_id)
+    model.addConstr(current_max_incidence_angle == max_(effective_incidence_angle[i] for i in images_id))
+    model.addConstr(current_max_incidence_angle <= max_incidence_angle)
+
+    #objective function
+    # lexicographical order
+    cost_objective = gp.quicksum(select_image[i] * costs[i] for i in images_id)
+    cloud_objective = gp.quicksum(area_clouds[c] for c in clouds_id) - \
+                      gp.quicksum(cloud_covered[c] * area_clouds[c] for c in clouds_id)
+    incidence_angle_objective = current_max_incidence_angle
+    resolution_objective = gp.quicksum(resolution_element[e] for e in elements)
+
+    objectives = [cost_objective, cloud_objective, incidence_angle_objective, resolution_objective]
+    priority_objectives = [4, 3, 2, 1]
+
+    model.ModelSense = gp.GRB.MINIMIZE
+
+    for i in range(len(objectives)):
+        model.setObjectiveN(objectives[i], i, priority_objectives[i])
+
+    #TODO add parameters, like timeout to the model
     model.optimize()
 
     # return the selected images
@@ -82,6 +110,31 @@ def main():
         if abs(select_image[image].x) > 1e-6:
             selected_images_tutorial.append(image)
     print("Selected images tutorial: ", selected_images_tutorial)
+
+
+
+    # Query number of multiple objectives, and number of solutions
+    nSolutions = model.SolCount
+    nObjectives = model.NumObj
+    print('Problem has', nObjectives, 'objectives')
+    print('Gurobi found', nSolutions, 'solutions')
+
+    # For each solution, print value of first three variables, and
+    # value for each objective function
+    solutions = []
+    for s in range(nSolutions):
+        # Set which solution we will query from now on
+        model.params.SolutionNumber = s
+
+        # Print objective value of this solution in each objective
+        print('Solution', s, ':', end='')
+        for o in range(nObjectives):
+            # Set which objective we will query
+            model.params.ObjNumber = o
+            # Query the o-th objective value
+            print(' ', model.ObjNVal, end='')
+
+
 
 def get_data_from_minizinc_dzn(input_mzn, input_dzn, image_id_start=0):
     model = ModelMiniZinc(input_mzn)
