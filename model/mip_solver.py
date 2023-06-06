@@ -58,7 +58,7 @@ def get_pareto_front_e_constraint(model_mzn, data_dzn):
     mosaic_model.optimize_e_constraint(range_array)
     start_time = time.time()
     solutions_values, selected_images_for_solution_i = get_pareto_saugmencon_cycle(mosaic_model,
-                                                                                   min_objectives, nadir_objectives)
+                                                                                   min_objectives, nadir_objectives, clouds)
     end_time = time.time()
     execution_time = end_time - start_time
     write_values_to_file(solutions_values, selected_images_for_solution_i, execution_time)
@@ -97,7 +97,7 @@ def optimize_single_objectives(mosaic_model, sense):
         objectives_values[i] = mosaic_model.model.objVal
     return objectives_values
 
-def get_pareto_saugmencon_cycle(mosaic_model, min_objectives, nadir_objectives):
+def get_pareto_saugmencon_cycle(mosaic_model, min_objectives, nadir_objectives, clouds):
     # initialize loop-control variables with values equal to the nadir values + 1
     ef_array = [nadir_objectives[i] + 1 for i in range(len(nadir_objectives))]
     # rwv = [0] * len(nadir_objectives)
@@ -125,13 +125,25 @@ def get_pareto_saugmencon_cycle(mosaic_model, min_objectives, nadir_objectives):
                             one_solution.append(mosaic_model.objectives[i].x)
                         else:
                             one_solution.append(mosaic_model.objectives[i].getValue())
-                    selected_images_for_solution_i.append(get_selected_images(mosaic_model))
+                    selected_images = get_selected_images(mosaic_model)
+                    selected_images_for_solution_i.append(selected_images)
                     ef_array[0] = one_solution[1] # one_solution[0] is the main objective
                     # Explore the relatively worst values rwv of objectives
                     rwv = explore_new_relatively_worst_values_of_objectives(rwv, one_solution)
                     # Transform the solution values dividing by the multiplier to convert to integer
                     for i in range(1, len(one_solution)):
                         one_solution[i] = one_solution[i] / mosaic_model.multiply_to_convert_to_integers
+
+                    # Assert the model is calculating the correct values
+                    assert_model_cost(selected_images, one_solution[0], mosaic_model.costs)
+                    assert_model_cloud_coverage(selected_images, one_solution[1], mosaic_model.area_clouds,
+                                                clouds, mosaic_model.cloud_covered_by_image)
+                    assert_model_resolution(selected_images, one_solution[2], mosaic_model.resolution,
+                                            mosaic_model.images)
+                    assert_model_incidence_angle(selected_images, one_solution[3], mosaic_model.incidence_angle)
+
+                    # end of assert
+
                     solutions_values.append(one_solution)
             ef_array[0] = nadir_objectives[0] + 1
             if ef_array[1] > min_objectives[1]:
@@ -244,6 +256,50 @@ def write_values_to_file(solutions_values, selected_images_for_solution_i, execu
         writer.writerows(values)
 
     print(f"Values saved in {output_file} successfully.")
+
+def assert_model_cost(selected_images, model_cost, costs):
+    cost = 0
+    for image in selected_images:
+        cost += costs[image]
+    assert cost == model_cost
+
+def assert_model_cloud_coverage(selected_images, model_cloud_coverage, areas, clouds, cloud_covered_by_image):
+    present_clouds = set()
+    clouds_covered = set()
+    for image in selected_images:
+        clouds_covered |= cloud_covered_by_image[image]
+        if len(clouds[image]) != 0:
+            for cloud in clouds[image]:
+                present_clouds.add(cloud)
+
+    clouds_not_covered = present_clouds - clouds_covered
+    clouds_not_covered_area = 0
+    for cloud in clouds_not_covered:
+        clouds_not_covered_area += areas[cloud]
+
+    assert clouds_not_covered_area == model_cloud_coverage
+
+def assert_model_resolution(selected_images, model_resolution, resolution, images):
+    sum_resolution = 0
+    element_resolution = {}
+    # order the selected images by resolution
+    images_ordered_by_resolution = sorted(selected_images, key=lambda x: resolution[x])
+    for image_id in images_ordered_by_resolution:
+        for elements in images[image_id]:
+            if elements not in element_resolution:
+                element_resolution[elements] = resolution[image_id]
+
+    for element in element_resolution:
+        sum_resolution += element_resolution[element]
+
+    assert sum_resolution == model_resolution
+
+def assert_model_incidence_angle(selected_images, model_incidence_angle, incidence_angle):
+    max_incidence_angle = 0
+    for image in selected_images:
+        if incidence_angle[image] > max_incidence_angle:
+            max_incidence_angle = incidence_angle[image]
+    assert max_incidence_angle == model_incidence_angle
 
 if __name__ == "__main__":
   main()
