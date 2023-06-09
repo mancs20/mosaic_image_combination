@@ -90,10 +90,14 @@ class MosaicCloudMIPmodel:
                                                                     self.images_id if e in self.images[i])
                                                                     for e in self.elements)
         # incidence angle constraint
+        # The below approach using indicator constraints is faster than the one commented below
         self.model.addConstrs(((self.select_image[i] == 0) >> (self.effective_incidence_angle[i] == 0)
                                for i in self.images_id))
         self.model.addConstrs(((self.select_image[i] == 1) >> (self.effective_incidence_angle[i] == self.incidence_angle[i])
                                for i in self.images_id))
+        # Approach not using indicator constraints, it is slower than the one above
+        # self.model.addConstrs(self.effective_incidence_angle[i] == self.select_image[i] * self.incidence_angle[i]
+        #                       for i in self.images_id)
         self.model.addConstr(self.current_max_incidence_angle == max_(self.effective_incidence_angle[i]
                                                                       for i in self.images_id))
         # constraints end--------------------------------------------------------------
