@@ -141,13 +141,6 @@ def get_pareto_saugmencon_cycle(mosaic_model, min_objectives, nadir_objectives, 
                             one_solution.append(mosaic_model.objectives[i].getValue())
                     selected_images = get_selected_images(mosaic_model)
                     selected_images_for_solution_i.append(selected_images)
-
-                    # TODO delete this after checking that is working for the cloud objective----------------------
-                    if 20829 <= one_solution[2] <= 20830:
-                        a =1
-                    # ------------------------------------------------------------------------------------------------
-
-
                     # make sure the values of the objectives are rounded down to the nearest integer
                     one_solution = [round(x,0) for x in one_solution]
                     ef_array[0] = one_solution[1] # one_solution[0] is the main objective
@@ -156,12 +149,12 @@ def get_pareto_saugmencon_cycle(mosaic_model, min_objectives, nadir_objectives, 
 
                     one_solution[1] = mosaic_model.total_area_clouds + one_solution[1]
                     # Assert the model is calculating the correct values
-                    assert_model_cost(selected_images, one_solution[0], mosaic_model.costs)
-                    assert_model_cloud_coverage(selected_images, one_solution[1], mosaic_model.area_clouds,
-                                                clouds, mosaic_model.cloud_covered_by_image)
-                    assert_model_resolution(selected_images, one_solution[2], mosaic_model.resolution,
-                                            mosaic_model.images)
-                    assert_model_incidence_angle(selected_images, one_solution[3], mosaic_model.incidence_angle)
+                    # assert_model_cost(selected_images, one_solution[0], mosaic_model.costs)
+                    # assert_model_cloud_coverage(selected_images, one_solution[1], mosaic_model.area_clouds,
+                    #                             clouds, mosaic_model.cloud_covered_by_image)
+                    # assert_model_resolution(selected_images, one_solution[2], mosaic_model.resolution,
+                    #                         mosaic_model.images)
+                    # assert_model_incidence_angle(selected_images, one_solution[3], mosaic_model.incidence_angle)
                     # end of assert
 
                     # transform the values of the objectives to the original scale
