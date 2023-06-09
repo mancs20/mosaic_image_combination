@@ -5,6 +5,9 @@ import os
 from minizinc import Instance, Model, Solver
 import multiprocessing
 
+from utils.convert_input_to_int import write_file_dzn_data_file
+
+
 class SolverMinizinc(ABC):
     @property
     @abstractmethod
@@ -72,10 +75,7 @@ class SolverMinizinc(ABC):
 
     @staticmethod
     def write_dzn_file(dzn_file, dict_parameters: dict):
-        # iterate over a dictionary to write the dzn file
-        with open(dzn_file, 'w') as f:
-            for key, value in dict_parameters.items():
-                f.write(key + " = " + str(value) + ";\n")
+        write_file_dzn_data_file(dzn_file, dict_parameters)
 
     @staticmethod
     def add_new_parameter_to_dzn_file(dzn_file, dict_parameters: dict):

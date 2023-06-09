@@ -32,3 +32,15 @@ class OptimizationResult:
     run_time_seconds: float = 0.0
     size_universe: int = 0
     solution_status: str = "unknown"
+
+@dataclass
+class DataSetFieldsForDiscreteApproaches:
+    num_images: int = 0
+    universe: int = 0
+    images = []
+    costs = []
+    clouds = []
+    areas = []
+    max_cloud_area = 0
+    resolution = []
+    incidence_angle = []
