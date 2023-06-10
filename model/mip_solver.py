@@ -117,58 +117,62 @@ def get_pareto_saugmencon_cycle(mosaic_model, min_objectives, nadir_objectives, 
     # ------------------------------------------------------------------------------------------------
     # add initial objective constraints
     mosaic_model.add_objective_constraints(ef_array)
-    # mosaic_model.model.write("model0.lp")
-    while ef_array[2] > min_objectives[2]:
-        ef_array[2] -= 1
+
+    # while ef_array[2] > min_objectives[2]:
+    #     ef_array[2] -= 1
         # rwv[1] = min_objectives[1]
-        while ef_array[1] > min_objectives[1]:
-            ef_array[1] -= 1
-            while ef_array[0] > min_objectives[0]:
-                ef_array[0] -= 1
-                # update right-hand side values (rhs) for the objective constraints
-                mosaic_model.update_objective_constraints(ef_array)
-                # TODO add parameters, like timeout to the model
-                mosaic_model.model.optimize()
-                if mosaic_model.model.Status == gp.GRB.INFEASIBLE:
-                    ef_array = exit_from_loop_with_acceleration(ef_array, nadir_objectives, min_objectives)
-                else:
-                    # record the solution
-                    one_solution = [mosaic_model.get_main_objective().getValue()]
-                    for i in range(len(mosaic_model.objectives)):
-                        if type(mosaic_model.objectives[i]) == gp.Var:
-                            one_solution.append(mosaic_model.objectives[i].x)
-                        else:
-                            one_solution.append(mosaic_model.objectives[i].getValue())
-                    selected_images = get_selected_images(mosaic_model)
-                    selected_images_for_solution_i.append(selected_images)
-                    # make sure the values of the objectives are rounded down to the nearest integer
-                    one_solution = [round(x,0) for x in one_solution]
-                    ef_array[0] = one_solution[1] # one_solution[0] is the main objective
-                    # Explore the relatively worst values rwv of objectives
-                    rwv = explore_new_relatively_worst_values_of_objectives(rwv, one_solution)
+    while ef_array[1] > min_objectives[1]:
+        ef_array[1] -= 1
+        while ef_array[0] > min_objectives[0]:
+            ef_array[0] -= 1
+            # update right-hand side values (rhs) for the objective constraints
+            mosaic_model.update_objective_constraints(ef_array)
+            # TODO add parameters, like timeout to the model
+            mosaic_model.model.optimize()
+            if mosaic_model.model.Status == gp.GRB.INFEASIBLE:
+                ef_array = exit_from_loop_with_acceleration(ef_array, nadir_objectives, min_objectives)
+            else:
+                # record the solution
+                one_solution = [mosaic_model.get_main_objective().getValue()]
+                for i in range(len(mosaic_model.objectives)):
+                    if type(mosaic_model.objectives[i]) == gp.Var:
+                        one_solution.append(mosaic_model.objectives[i].x)
+                    else:
+                        one_solution.append(mosaic_model.objectives[i].getValue())
+                selected_images = get_selected_images(mosaic_model)
+                selected_images_for_solution_i.append(selected_images)
+                # make sure the values of the objectives are rounded down to the nearest integer
+                one_solution = [round(x,0) for x in one_solution]
+                ef_array[0] = one_solution[1] # one_solution[0] is the main objective
+                # Explore the relatively worst values rwv of objectives
+                rwv = explore_new_relatively_worst_values_of_objectives(rwv, one_solution)
 
-                    one_solution[1] = mosaic_model.total_area_clouds + one_solution[1]
-                    # Assert the model is calculating the correct values
-                    # assert_model_cost(selected_images, one_solution[0], mosaic_model.costs)
-                    # assert_model_cloud_coverage(selected_images, one_solution[1], mosaic_model.area_clouds,
-                    #                             clouds, mosaic_model.cloud_covered_by_image)
-                    # assert_model_resolution(selected_images, one_solution[2], mosaic_model.resolution,
-                    #                         mosaic_model.images)
-                    # assert_model_incidence_angle(selected_images, one_solution[3], mosaic_model.incidence_angle)
-                    # end of assert
+                assert_gurobi_solutions_with_calculated_values(mosaic_model, selected_images, one_solution, clouds)
 
-                    # transform the values of the objectives to the original scale
-                    one_solution[2], one_solution[3] = convert_single_value_to_original(one_solution[2],
-                                                                                  one_solution[3])
-                    solutions_values.append(one_solution)
-            ef_array[0] = nadir_objectives[0] + 1
-            if ef_array[1] > min_objectives[1]:
-                ef_array[1] = rwv[1]
-                rwv[1] = min_objectives[1]
-        ef_array[1] = nadir_objectives[1] + 1
-        if ef_array[2] > min_objectives[2]:
-            ef_array[2] = rwv[2]
-            rwv[2] = min_objectives[2]
+                # one_solution[1] = mosaic_model.total_area_clouds + one_solution[1]
+                # Assert the model is calculating the correct values
+                # assert_model_cost(selected_images, one_solution[0], mosaic_model.costs)
+                # assert_model_cloud_coverage(selected_images, one_solution[1], mosaic_model.area_clouds,
+                #                             clouds, mosaic_model.cloud_covered_by_image)
+                # assert_model_resolution(selected_images, one_solution[2], mosaic_model.resolution,
+                #                         mosaic_model.images)
+                # assert_model_incidence_angle(selected_images, one_solution[3], mosaic_model.incidence_angle)
+                # end of assert
+
+                # transform the values of the objectives to the original scale
+                # one_solution[2], one_solution[3] = convert_single_value_to_original(one_solution[2],
+                #                                                               one_solution[3])
+
+                one_solution = transform_objectives_to_original_scale(one_solution, mosaic_model)
+                solutions_values.append(one_solution)
+        ef_array[0] = nadir_objectives[0] + 1
+        if ef_array[1] > min_objectives[1]:
+            ef_array[1] = rwv[1]
+            rwv[1] = min_objectives[1]
+        # ef_array[1] = nadir_objectives[1] + 1
+        # if ef_array[2] > min_objectives[2]:
+        #     ef_array[2] = rwv[2]
+        #     rwv[2] = min_objectives[2]
     return solutions_values, selected_images_for_solution_i
 
 
@@ -225,6 +229,38 @@ def get_selected_images(mosaic_model):
     #         model.params.ObjNumber = o
     #         # Query the o-th objective value
     #         print(' ', model.ObjNVal, end='')
+
+
+def assert_gurobi_solutions_with_calculated_values(mosaic_model, selected_images, solutions_values, clouds):
+    # Assert the model is calculating the correct values
+    cost = solutions_values[0]
+    # clouds = solutions_values[1]
+    # TODO when the cloud coverage is added increase by one the index of solutions_values
+    resolution = solutions_values[1]
+    incidence_angle = solutions_values[2]
+    assert_model_cost(selected_images, cost, mosaic_model.costs)
+    # intially cloud coverage is not considered
+    # assert_model_cloud_coverage(selected_images, solutions_values[1], mosaic_model.area_clouds,
+    #                             clouds, mosaic_model.cloud_covered_by_image)
+    assert_model_resolution(selected_images, resolution, mosaic_model.resolution,
+                            mosaic_model.images)
+
+    assert_model_incidence_angle(selected_images, incidence_angle, mosaic_model.incidence_angle)
+    # end of assert
+
+def transform_objectives_to_original_scale(solutions_values, mosaic_model):
+    # clouds = solutions_values[1]
+    # TODO when the cloud coverage is added increase by one the index of solutions_values
+    resolution_id = 1
+    incidence_angle_id = 2
+    # intially cloud coverage is not considered
+    # one_solution[1] = mosaic_model.total_area_clouds + one_solution[1]
+
+    # TODO when the cloud coverage is added increase by one the index of solutions_values
+    # transform the values of the objectives to the original scale
+    solutions_values[resolution_id], solutions_values[incidence_angle_id] = convert_single_value_to_original(
+        solutions_values[resolution_id], solutions_values[incidence_angle_id])
+    return solutions_values
 
 def round_values(costs, areas, max_cloud_area, resolution, incidence_angle, decimals):
     costs = [round(x, decimals) for x in costs]

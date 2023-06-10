@@ -33,7 +33,7 @@ class MosaicCloudMIPmodel:
     def add_variables(self):
         # decision variables
         self.select_image = self.model.addVars(len(self.images), vtype=gp.GRB.BINARY, name="select_image_i")
-        self.cloud_covered = self.model.addVars(self.clouds_id, vtype=gp.GRB.BINARY, name="cloud_covered_e")
+        # self.cloud_covered = self.model.addVars(self.clouds_id, vtype=gp.GRB.BINARY, name="cloud_covered_e")
         # support variables
         self.resolution_element = self.model.addVars(self.elements, vtype=gp.GRB.CONTINUOUS,
                                                      name="resolution_element_i")
@@ -51,7 +51,8 @@ class MosaicCloudMIPmodel:
         # for from 1 to range of self.objectives
         for i in range(1, len(self.objectives)):
             rest_obj = rest_obj + (self.objectives[i]/range_array[i])
-        obj = obj + (delta * rest_obj)
+        # TODO: initially try withouth delta
+        # obj = obj + (delta * rest_obj)
         self.model.setObjective(obj)
 
     def get_main_objective(self):
@@ -59,9 +60,7 @@ class MosaicCloudMIPmodel:
 
     def add_objectives(self):
         # for cloud coverage
-        # self.objectives.append((gp.quicksum(self.area_clouds[c] for c in self.clouds_id) -
-        #                         gp.quicksum(self.cloud_covered[c] * self.area_clouds[c] for c in self.clouds_id)))
-        self.objectives.append(-(gp.quicksum(self.cloud_covered[c] * self.area_clouds[c] for c in self.clouds_id)))
+        # self.objectives.append(-(gp.quicksum(self.cloud_covered[c] * self.area_clouds[c] for c in self.clouds_id)))
         # for resolution
         self.objectives.append(gp.quicksum(self.resolution_element[e] for e in self.elements))
         # for incidence angle
@@ -74,12 +73,12 @@ class MosaicCloudMIPmodel:
         self.model.addConstrs(gp.quicksum(self.select_image[i] for i in self.images_id if e in self.images[i]) >= 1
                               for e in self.elements)
         # cloud constraint
-        self.model.addConstrs(gp.quicksum(self.select_image[i] for i in self.cloud_covered_by_image.keys()
-                                          if c in self.cloud_covered_by_image[i]) >= self.cloud_covered[c]
-                                            for c in self.clouds_id)
-        self.model.addConstrs(gp.quicksum(self.select_image[i] for i in self.cloud_covered_by_image.keys()
-                                          if c in self.cloud_covered_by_image[i]) <=
-                              self.cloud_covered[c] * len(self.images) for c in self.clouds_id)
+        # self.model.addConstrs(gp.quicksum(self.select_image[i] for i in self.cloud_covered_by_image.keys()
+        #                                   if c in self.cloud_covered_by_image[i]) >= self.cloud_covered[c]
+        #                                     for c in self.clouds_id)
+        # self.model.addConstrs(gp.quicksum(self.select_image[i] for i in self.cloud_covered_by_image.keys()
+        #                                   if c in self.cloud_covered_by_image[i]) <=
+        #                       self.cloud_covered[c] * len(self.images) for c in self.clouds_id)
 
         # calculate resolution for each element
         self.model.addConstrs(((self.select_image[i] == 0) >> (self.effective_image_resolution[i] == big_resolution)
