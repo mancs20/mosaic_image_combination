@@ -7,8 +7,16 @@ import ProjectDataClasses
 def main():
     model_mzn = "../model/mosaic_cloud2.mzn"
     data_dzn = "../model/data_sets/paris_30.dzn"
-    output_dzn = "../model/data_sets/integer_values/paris_30_int.dzn"
+    output_dzn = get_output_dzn_name(data_dzn)
     convert_to_int_data_values_dzn(model_mzn, data_dzn, output_dzn)
+
+def get_output_dzn_name(input_dzn):
+    index = input_dzn.rfind("/")
+    if index == -1:
+        pre_output = "../integer_values/" + input_dzn
+    else:
+        pre_output = input_dzn[:index] + "/integer_values/" + input_dzn[index+1:]
+    return pre_output.replace(".dzn", "_int.dzn")
 
 def convert_to_int_data_values_dzn(input_mzn, input_dzn, output_dzn):
     images, costs, areas, clouds, max_cloud_area, resolution, incidence_angle = \
@@ -62,21 +70,26 @@ def write_file_dzn_data_file(dzn_file, dict_parameters: dict):
 
 def convert_to_int(costs, areas, max_cloud_area, resolution, incidence_angle):
     costs = [int(x) for x in costs]
-    areas = [int(x) for x in areas]
+    divide_area_by = get_division_number_for_reducing_clouds_area_number()
+    areas = [int(x/divide_area_by) for x in areas]
     max_cloud_area = int(max_cloud_area)
     resolution = [int(x * 100) for x in resolution]
     incidence_angle = [int(round(x,1) * 10) for x in incidence_angle]
     return costs, areas, max_cloud_area, resolution, incidence_angle
 
-def convert_to_original_values(resolution, incidence_angle):
+def convert_to_original_values(resolution, incidence_angle, areas):
     resolution = [x/100 for x in resolution]
     incidence_angle = [x/10 for x in incidence_angle]
-    return resolution, incidence_angle
+    areas = [x * get_division_number_for_reducing_clouds_area_number() for x in areas]
+    return resolution, incidence_angle, areas
 
 def convert_single_value_to_original(resolution, incidence_angle):
     resolution = resolution/100
     incidence_angle = incidence_angle/10
     return resolution, incidence_angle
+
+def get_division_number_for_reducing_clouds_area_number():
+    return 1000
 
 if __name__ == "__main__":
   main()
