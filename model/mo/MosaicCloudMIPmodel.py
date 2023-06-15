@@ -52,7 +52,7 @@ class MosaicCloudMIPmodel:
         for i in range(1, len(self.objectives)):
             rest_obj = rest_obj + (self.objectives[i]/range_array[i])
         # TODO: initially try withouth delta
-        # obj = obj + (delta * rest_obj)
+        obj = obj + (delta * rest_obj)
         self.model.setObjective(obj)
 
     def get_main_objective(self):
@@ -103,7 +103,6 @@ class MosaicCloudMIPmodel:
 
     def add_objective_constraints(self, ef_array):
         for i in range(len(self.objectives)):
-            # self.constraint_objectives[i] = self.model.addConstr(self.objectives[i] <= ef_array[i])
             self.constraint_objectives[i] = self.model.addConstr(self.objectives[i] <= ef_array[i])
 
     def update_objective_constraints(self, ef_array):
