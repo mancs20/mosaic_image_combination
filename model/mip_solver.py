@@ -3,10 +3,9 @@ import csv
 
 import gurobipy as gp
 from gurobipy import *
-from minizinc import Solver, Instance
-from minizinc import Model as ModelMiniZinc
 import time
 
+from model.mo.MIPModelEConstraintSmallTest import MIPModelEConstraintSmallTest
 from model.mo.MosaicCloudMIPmodel import MosaicCloudMIPmodel
 from utils.convert_input_to_int import get_data_from_minizinc_dzn
 from utils.convert_input_to_int import convert_single_value_to_original
@@ -21,19 +20,17 @@ def get_pareto_front_e_constraint(model_mzn, data_dzn):
     images, costs, areas, clouds, max_cloud_area, resolution, incidence_angle = \
         get_data_from_minizinc_dzn(model_mzn, data_dzn, image_id_start=0)
 
-    decimals = 3
-    # costs, areas, max_cloud_area, resolution, incidence_angle = round_values(costs, areas, max_cloud_area, resolution,
-    #                                                                          incidence_angle, decimals=decimals)
-
     scale_for_clouds = 1000
-    cloud_covered_by_image, clouds_id_area = get_clouds_covered_by_image(clouds, images, areas, scale_by=scale_for_clouds)
+    cloud_covered_by_image, clouds_id_area = get_clouds_covered_by_image(clouds, images, areas)
     mosaic_model = MosaicCloudMIPmodel(images, costs, areas, cloud_covered_by_image, clouds_id_area, max_cloud_area,
                                        resolution, incidence_angle, model=gp.Model("mosaic_cloud_mip"))
+    # mosaic_model = MIPModelEConstraintSmallTest(images, costs, areas, cloud_covered_by_image, clouds_id_area, max_cloud_area,
+    #                                    resolution, incidence_angle, gp.Model("mosaic_cloud_mip"))
     # add basic constraints
     mosaic_model.add_basic_constraints()
     # find min and nadir for each objective
     # cost_objective, cloud_objective, resolution_objective, incidence_angle_objective
-    min_objectives = get_min_objectives(mosaic_model, main_objective_id=0)
+    min_objectives = get_min_objectives(mosaic_model)
     nadir_objectives = get_nadir_objectives(mosaic_model) # in this case, the nadir is the max
     # prepare the model for the e-constraint method
     mosaic_model.model.ModelSense = gp.GRB.MINIMIZE
@@ -56,19 +53,19 @@ def get_pareto_front_e_constraint(model_mzn, data_dzn):
 
 
 
-    range_array = [nadir_objectives[i] - min_objectives[i] for i in range(len(nadir_objectives))]
+    range_array = [abs(nadir_objectives[i] - min_objectives[i]) for i in range(len(nadir_objectives))]
     mosaic_model.optimize_e_constraint(range_array)
     start_time = time.time()
-    solutions_values, selected_images_for_solution_i = get_pareto_saugmencon_cycle(mosaic_model,
+    solutions_values, selected_images_for_solution_i, ef_array_str = get_pareto_saugmencon_cycle(mosaic_model,
                                                                                    min_objectives, nadir_objectives,
                                                                                    clouds)
     end_time = time.time()
     execution_time = end_time - start_time
     for i in range(len(solutions_values)):
         solutions_values[i][1] = solutions_values[i][1] * scale_for_clouds
-    write_values_to_file(solutions_values, selected_images_for_solution_i, execution_time)
+    write_values_to_file(solutions_values, selected_images_for_solution_i, execution_time, ef_array_str)
 
-def get_clouds_covered_by_image(clouds, images, areas, scale_by=1):
+def get_clouds_covered_by_image(clouds, images, areas):
     cloud_covered_by_image = {}
     clouds_id_area = {}
     for i in range(len(clouds)):
@@ -86,7 +83,7 @@ def get_clouds_covered_by_image(clouds, images, areas, scale_by=1):
                             cloud_covered_by_image[j] = {cloud_id}
     return cloud_covered_by_image, clouds_id_area
 
-def get_min_objectives(mosaic_model, main_objective_id):
+def get_min_objectives(mosaic_model):
     return optimize_single_objectives(mosaic_model, GRB.MINIMIZE)
 
 def get_nadir_objectives(mosaic_model):
@@ -99,17 +96,15 @@ def optimize_single_objectives(mosaic_model, sense):
         mosaic_model.model.setObjective(objective, sense)
         # TODO add parameters, like timeout to the model
         mosaic_model.model.optimize()
-        objectives_values[i] = mosaic_model.model.objVal
+        objectives_values[i] = int(round(mosaic_model.model.objVal, 0))
     return objectives_values
 
 def get_pareto_saugmencon_cycle(mosaic_model, min_objectives, nadir_objectives, clouds):
     # initialize loop-control variables with values equal to the nadir values + 1
     ef_array = [nadir_objectives[i] + 1 for i in range(len(nadir_objectives))]
-    # rwv = [0] * len(nadir_objectives)
     rwv = copy.deepcopy(min_objectives)
     solutions_values = []
     selected_images_for_solution_i = []
-    # rwv[2] = min_objectives[2]
 
     # TODO delete this after checking that is working for the cloud objective----------------------
     # ------------------------------------------------------------------------------------------------
@@ -121,50 +116,48 @@ def get_pareto_saugmencon_cycle(mosaic_model, min_objectives, nadir_objectives, 
     # while ef_array[2] > min_objectives[2]:
     #     ef_array[2] -= 1
         # rwv[1] = min_objectives[1]
+    previous_solution_information = []
     while ef_array[1] > min_objectives[1]:
         ef_array[1] -= 1
         while ef_array[0] > min_objectives[0]:
             ef_array[0] -= 1
-            # update right-hand side values (rhs) for the objective constraints
-            mosaic_model.update_objective_constraints(ef_array)
-            # TODO add parameters, like timeout to the model
-            mosaic_model.model.optimize()
-            if mosaic_model.model.Status == gp.GRB.INFEASIBLE:
+            previous_solution_relaxation, previous_solution_values = \
+                search_previous_solutions_relaxation(ef_array, previous_solution_information)
+            if not previous_solution_relaxation:
+                # update right-hand side values (rhs) for the objective constraints
+                mosaic_model.update_objective_constraints(ef_array)
+                # TODO add parameters, like timeout to the model
+                mosaic_model.model.optimize()
+            if mosaic_model.model.Status == gp.GRB.INFEASIBLE or (previous_solution_relaxation and
+                                                                  type(previous_solution_values) is str):
+                if not previous_solution_relaxation:
+                    # save ef_array
+                    save_solution_information(ef_array, "infeasible", previous_solution_information)
                 ef_array = exit_from_loop_with_acceleration(ef_array, nadir_objectives, min_objectives)
             else:
-                # record the solution
-                one_solution = [mosaic_model.get_main_objective().getValue()]
-                for i in range(len(mosaic_model.objectives)):
-                    if type(mosaic_model.objectives[i]) == gp.Var:
-                        one_solution.append(mosaic_model.objectives[i].x)
-                    else:
-                        one_solution.append(mosaic_model.objectives[i].getValue())
-                selected_images = get_selected_images(mosaic_model)
-                selected_images_for_solution_i.append(selected_images)
-                # make sure the values of the objectives are rounded down to the nearest integer
-                one_solution = [round(x,0) for x in one_solution]
+                if not previous_solution_relaxation:
+                    # record the solution
+                    one_solution = [mosaic_model.get_main_objective().getValue()]
+                    for i in range(len(mosaic_model.objectives)):
+                        if type(mosaic_model.objectives[i]) == gp.Var:
+                            one_solution.append(mosaic_model.objectives[i].x)
+                        else:
+                            one_solution.append(mosaic_model.objectives[i].getValue())
+                    selected_images = get_selected_images(mosaic_model)
+                    selected_images_for_solution_i.append(selected_images)
+                    # make sure the values of the objectives are rounded down to the nearest integer
+                    one_solution = [int(round(x,0)) for x in one_solution]
+                    previous_solution_information = save_solution_information(ef_array, one_solution,
+                                                                              previous_solution_information)
+                else:
+                    one_solution = previous_solution_values
                 ef_array[0] = one_solution[1] # one_solution[0] is the main objective
                 # Explore the relatively worst values rwv of objectives
-                rwv = explore_new_relatively_worst_values_of_objectives(rwv, one_solution)
-
-                assert_gurobi_solutions_with_calculated_values(mosaic_model, selected_images, one_solution, clouds)
-
-                # one_solution[1] = mosaic_model.total_area_clouds + one_solution[1]
-                # Assert the model is calculating the correct values
-                # assert_model_cost(selected_images, one_solution[0], mosaic_model.costs)
-                # assert_model_cloud_coverage(selected_images, one_solution[1], mosaic_model.area_clouds,
-                #                             clouds, mosaic_model.cloud_covered_by_image)
-                # assert_model_resolution(selected_images, one_solution[2], mosaic_model.resolution,
-                #                         mosaic_model.images)
-                # assert_model_incidence_angle(selected_images, one_solution[3], mosaic_model.incidence_angle)
-                # end of assert
-
-                # transform the values of the objectives to the original scale
-                # one_solution[2], one_solution[3] = convert_single_value_to_original(one_solution[2],
-                #                                                               one_solution[3])
-
-                one_solution = transform_objectives_to_original_scale(one_solution, mosaic_model)
-                solutions_values.append(one_solution)
+                rwv = explore_new_relatively_worst_values_of_objectives(rwv, one_solution, minimization=True)
+                if not previous_solution_relaxation:
+                    assert_gurobi_solutions_with_calculated_values(mosaic_model, selected_images, one_solution, clouds)
+                    one_solution = transform_objectives_to_original_scale(one_solution, mosaic_model)
+                    solutions_values.append(one_solution)
         ef_array[0] = nadir_objectives[0] + 1
         if ef_array[1] > min_objectives[1]:
             ef_array[1] = rwv[1]
@@ -173,23 +166,30 @@ def get_pareto_saugmencon_cycle(mosaic_model, min_objectives, nadir_objectives, 
         # if ef_array[2] > min_objectives[2]:
         #     ef_array[2] = rwv[2]
         #     rwv[2] = min_objectives[2]
-    return solutions_values, selected_images_for_solution_i
+    ef_array_str = [str(x[0]) for x in previous_solution_information]
+    return solutions_values, selected_images_for_solution_i, ef_array_str
 
 
 def exit_from_loop_with_acceleration(ef_array, nadir_objectives, min_objectives):
     i = 0
     while i < (len(ef_array) - 1) and ef_array[i] == nadir_objectives[i]:
         i += 1
-    # TODO FIX FOR J WHEN IS EQUAL TO 0
     for j in range(i+1):
         ef_array[j] = min_objectives[j]
     return ef_array
 
-def explore_new_relatively_worst_values_of_objectives(rwv, one_solution):
+def explore_new_relatively_worst_values_of_objectives(rwv, one_solution, minimization=True):
     # one_solution[0] is the main objective
-    for i in range(len(rwv)):
-        if one_solution[i+1] > rwv[i]:
-            rwv[i] = one_solution[i+1]
+    if minimization:
+        for i in range(len(rwv)):
+            if one_solution[i+1] > rwv[i]:
+                rwv[i] = one_solution[i+1]
+    else:
+        print("one_solution: ", one_solution)
+        print("rwv: ", rwv)
+        for i in range(len(rwv)):
+            if one_solution[i+1] < rwv[i]:
+                rwv[i] = one_solution[i+1]
     return rwv
 
 def get_selected_images(mosaic_model):
@@ -239,7 +239,7 @@ def assert_gurobi_solutions_with_calculated_values(mosaic_model, selected_images
     resolution = solutions_values[1]
     incidence_angle = solutions_values[2]
     assert_model_cost(selected_images, cost, mosaic_model.costs)
-    # intially cloud coverage is not considered
+    # initially cloud coverage is not considered
     # assert_model_cloud_coverage(selected_images, solutions_values[1], mosaic_model.area_clouds,
     #                             clouds, mosaic_model.cloud_covered_by_image)
     assert_model_resolution(selected_images, resolution, mosaic_model.resolution,
@@ -253,7 +253,7 @@ def transform_objectives_to_original_scale(solutions_values, mosaic_model):
     # TODO when the cloud coverage is added increase by one the index of solutions_values
     resolution_id = 1
     incidence_angle_id = 2
-    # intially cloud coverage is not considered
+    # initially cloud coverage is not considered
     # one_solution[1] = mosaic_model.total_area_clouds + one_solution[1]
 
     # TODO when the cloud coverage is added increase by one the index of solutions_values
@@ -261,6 +261,68 @@ def transform_objectives_to_original_scale(solutions_values, mosaic_model):
     solutions_values[resolution_id], solutions_values[incidence_angle_id] = convert_single_value_to_original(
         solutions_values[resolution_id], solutions_values[incidence_angle_id])
     return solutions_values
+
+
+def save_solution_information(ef_array, solution, previous_solution_information):
+    # convert ef_array to string using - as separator
+    ef_array_string = '-'.join((str(i) for i in ef_array))
+
+    previous_solution_information.append([ef_array_string, solution])
+    return previous_solution_information
+
+def id_insort_right_previous_solutions(ef_array_string, previous_solution_information):
+    lo = bisect_right_previous_solutions(ef_array_string, previous_solution_information)
+    return lo
+
+def bisect_right_previous_solutions(ef_array_string, previous_solution_information):
+    lo = 0
+    hi = len(previous_solution_information)
+    while lo < hi:
+        mid = (lo+hi)//2
+        if ef_array_string > previous_solution_information[mid][0]: hi = mid
+        else: lo = mid+1
+    return lo
+
+def search_previous_solutions_relaxation(ef_array_actual_solution, previous_solution_information):
+    there_is_relaxation_for_ef_array_actual_solution = False
+    if len(previous_solution_information) == 0:
+        return there_is_relaxation_for_ef_array_actual_solution, None
+
+    # find closer relaxation and check if the solution satisfy the ef_array_actual_solution
+    ef_array_actual_solution_str = '-'.join((str(i) for i in ef_array_actual_solution))
+    previous_closer_relaxation = get_closer_relaxation(ef_array_actual_solution_str, previous_solution_information)
+    if previous_closer_relaxation is False:
+        return there_is_relaxation_for_ef_array_actual_solution, None
+    else:
+        f_solution_values = previous_closer_relaxation[1]
+        there_is_relaxation_for_ef_array_actual_solution = True
+        if type(f_solution_values) is not str:
+            f_solution_values_for_constraint = f_solution_values[1:len(f_solution_values)]
+            if not solution_satisfy_ef_arr(f_solution_values_for_constraint, ef_array_actual_solution):
+                there_is_relaxation_for_ef_array_actual_solution = False
+
+    return there_is_relaxation_for_ef_array_actual_solution, f_solution_values
+
+def get_closer_relaxation(ef_array_actual_solution, previous_solution_information):
+    idx = bisect_right_previous_solutions(ef_array_actual_solution, previous_solution_information)
+    if idx == len(previous_solution_information) or idx == 0:
+        return False
+    return previous_solution_information[idx-1]
+
+def is_ef_array_1_relaxation_of_2(ef_arr_1, ef_arr_2):
+    relaxation = True
+    for i in range(len(ef_arr_1)):
+        if ef_arr_1[i] < ef_arr_2[i]:
+            relaxation = False
+            break
+    return relaxation
+
+def solution_satisfy_ef_arr(solution_values, ef_arr):
+    satisfy = True
+    for i in range(len(ef_arr)):
+        if solution_values[i] > ef_arr[i]:
+            satisfy = False
+    return satisfy
 
 def round_values(costs, areas, max_cloud_area, resolution, incidence_angle, decimals):
     costs = [round(x, decimals) for x in costs]
@@ -270,19 +332,19 @@ def round_values(costs, areas, max_cloud_area, resolution, incidence_angle, deci
     max_cloud_area = round(max_cloud_area, decimals)
     return costs, areas, max_cloud_area, resolution, incidence_angle
 
-def write_values_to_file(solutions_values, selected_images_for_solution_i, execution_time):
+def write_values_to_file(solutions_values, selected_images_for_solution_i, execution_time, ef_array_str):
     values = []
     for i in range(len(selected_images_for_solution_i)):
-        arr = [selected_images_for_solution_i[i]]
+        arr = [selected_images_for_solution_i[i], ef_array_str[i]]
         for j in range(len(solutions_values[i])):
             arr.append(solutions_values[i][j])
         values.append(arr)
 
-    output_file = "solutions.csv"
+    output_file = "solutions_tests.csv"
     with open(output_file, 'w', encoding='UTF8', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["Execution time", execution_time])
-        writer.writerow(["Selected Images", "Cost", "Cloud Coverage", "Resolution", "Incidence Angle"])
+        writer.writerow(["Selected Images", "ef-array", "Cost", "Cloud Coverage", "Resolution", "Incidence Angle"])
         writer.writerows(values)
 
     print(f"Values saved in {output_file} successfully.")
