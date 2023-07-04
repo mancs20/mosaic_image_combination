@@ -47,10 +47,10 @@ constraint objs[4] = max_incidence;
 array[1..4] of var bool: minimize_objs;
 array[1..4] of var int: ref_point;
 
-constraint ref_point[1] = sum(u in UNIVERSE)(areas[u]) + 1.0;
-constraint ref_point[2] = sum(i in IMAGES)(costs[i]) + 1.0;
-constraint ref_point[3] = sum(u in UNIVERSE)(max(i in IMAGES where u in images[i])(resolution[i])) + 1.0;
-constraint ref_point[4] = 90.0;
+constraint ref_point[1] = sum(u in UNIVERSE)(areas[u]) + 1;
+constraint ref_point[2] = sum(i in IMAGES)(costs[i]) + 1;
+constraint ref_point[3] = sum(u in UNIVERSE)(max(i in IMAGES where u in images[i])(resolution[i])) + 1;
+constraint ref_point[4] = 90;
 
 constraint minimize_objs[1] = true;
 constraint minimize_objs[2] = true;
