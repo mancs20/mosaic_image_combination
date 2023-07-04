@@ -13,7 +13,7 @@ from utils.convert_input_to_int import convert_single_value_to_original
 
 def main():
     model_mzn = "mosaic_cloud2.mzn"
-    data_dzn = "./data_sets/integer_values/paris_30_int.dzn"
+    data_dzn = "./data_sets/paris_30.dzn"
     get_pareto_front_e_constraint(model_mzn, data_dzn)
 
 def get_pareto_front_e_constraint(model_mzn, data_dzn):
