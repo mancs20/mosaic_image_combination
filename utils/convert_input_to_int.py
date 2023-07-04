@@ -1,3 +1,5 @@
+import os
+
 from minizinc import Solver, Instance
 from minizinc import Model as ModelMiniZinc
 from dataclasses import fields
@@ -6,9 +8,26 @@ import ProjectDataClasses
 
 def main():
     model_mzn = "../model/mosaic_cloud2.mzn"
-    data_dzn = "../model/data_sets/paris_30.dzn"
-    output_dzn = get_output_dzn_name(data_dzn)
-    convert_to_int_data_values_dzn(model_mzn, data_dzn, output_dzn)
+    # get all files under ../model/data_sets/
+    # to use this it is necessary to use the models with floats
+    directory_path = "../model/data_sets/float_values"
+    files = get_dzn_files(directory_path)
+
+    # for each file, convert to int and write to ../integer_values/
+    for file in files:
+        print("Starting with file: " + file)
+        output_dzn = get_output_dzn_name(file)
+        int_parameters = convert_to_int_data_values_dzn(model_mzn, file, output_dzn)
+        write_file_dzn_data_file(output_dzn, dict_parameters=int_parameters)
+        print("Done with file: " + file)
+
+def get_dzn_files(directory):
+    dzn_files = []
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.endswith(".dzn"):
+                dzn_files.append(os.path.join(root, file))
+    return dzn_files
 
 def get_output_dzn_name(input_dzn):
     index = input_dzn.rfind("/")
@@ -16,7 +35,7 @@ def get_output_dzn_name(input_dzn):
         pre_output = "../integer_values/" + input_dzn
     else:
         pre_output = input_dzn[:index] + "/integer_values/" + input_dzn[index+1:]
-    return pre_output.replace(".dzn", "_int.dzn")
+    return pre_output
 
 def convert_to_int_data_values_dzn(input_mzn, input_dzn, output_dzn):
     images, costs, areas, clouds, max_cloud_area, resolution, incidence_angle = \
@@ -36,7 +55,7 @@ def convert_to_int_data_values_dzn(input_mzn, input_dzn, output_dzn):
     int_parameters["resolution"] = resolution
     int_parameters["incidence_angle"] = incidence_angle
 
-    write_file_dzn_data_file(output_dzn, dict_parameters=int_parameters)
+    return int_parameters
 
 def get_data_from_minizinc_dzn(input_mzn, input_dzn, image_id_start=1):
     model = ModelMiniZinc(input_mzn)
