@@ -5,6 +5,7 @@ class MO:
      See further information in the class `ParetoFront`.
   Args:
     instance (Instance): A constraint model.
+    statistics (dict): A dictionary to store the statistics of the solver.
     subsolver (Solver): A solver for the constraint model instance supporting `solve()` and `add_local_constraint()`.
     verbose (Bool): If `True`, the solver prints the Pareto front, new objectives and statistics at each iteration."""
   def __init__(self, instance, statistics, subsolver, verbose = True):
@@ -21,10 +22,10 @@ class MO:
   def solve(self):
     for x in self.subsolver.solve():
       self.pareto_front.join(x)
+      self.statistics["pareto_front"] = self.pareto_front.to_str()
       if self.verbose:
         print("New objective found: " + str(x["objs"]))
-        print(self.pareto_front.to_str())
-        self.statistics["pareto_front"] = self.pareto_front.to_str()
+        print(self.statistics["pareto_front"])
         print(self.pareto_front.front_constraint_mzn())
         print(x.statistics)
       yield x

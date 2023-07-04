@@ -3,12 +3,12 @@ import argparse
 import multiprocessing
 
 class Config:
-  """Configuration class for the multi-objective constraint programming with WCTT.
+  """Configuration class for the multi-objective constraint programming.
      It parses the commandline arguments and initializes the temporary and result directories."""
   def __init__(self):
     parser = argparse.ArgumentParser(
-                prog = 'mo_wctt',
-                description = 'Multi-objective constraint programming with WCTT. This program computes a Pareto front of the deployment problem on switch-based network.')
+                prog = 'multi_objective_cp',
+                description = 'Multi-objective constraint programming. This program computes a Pareto front of an optimization constraint problem.')
     parser.add_argument('instance_name')
     parser.add_argument('--model_mzn', required=True)
     parser.add_argument('--dzn_dir', required=True)
