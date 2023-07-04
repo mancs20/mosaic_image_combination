@@ -2,17 +2,17 @@ include "globals.mzn";
 
 int: num_images;
 int: universe;
-float: max_cloud_area;
+int: max_cloud_area;
 
 set of int: IMAGES = 1..num_images;
 set of int: UNIVERSE = 1..universe;
 
 array[IMAGES] of set of int: images;
 array[IMAGES] of set of int: clouds;
-array[IMAGES] of float: costs;
-array[UNIVERSE] of float: areas;
-array[IMAGES] of float: resolution;
-array[IMAGES] of float: incidence_angle;
+array[IMAGES] of int: costs;
+array[UNIVERSE] of int: areas;
+array[IMAGES] of int: resolution;
+array[IMAGES] of int: incidence_angle;
 
 array[IMAGES] of var bool: taken;
 
@@ -32,20 +32,20 @@ constraint forall(u in UNIVERSE)(
 );
 constraint forall(u in UNIVERSE)(cloudy[u] = (num_clear_images[u] == 0));
 
-var float: cloudy_area = sum(u in UNIVERSE)(cloudy[u] * areas[u]);
+var int: cloudy_area = sum(u in UNIVERSE)(cloudy[u] * areas[u]);
 
-var float: total_cost = sum(i in IMAGES)(costs[i] * taken[i]);
-var float: max_resolution = sum(u in UNIVERSE)(min(i in IMAGES where u in images[i] /\ taken[i])(resolution[i]));
-var float: max_incidence = max(i in IMAGES)(taken[i] * incidence_angle[i]);
+var int: total_cost = sum(i in IMAGES)(costs[i] * taken[i]);
+var int: max_resolution = sum(u in UNIVERSE)(min(i in IMAGES where u in images[i] /\ taken[i])(resolution[i]));
+var int: max_incidence = max(i in IMAGES)(taken[i] * incidence_angle[i]);
 
-array[1..4] of var float: objs;
+array[1..4] of var int: objs;
 constraint objs[1] = cloudy_area;
 constraint objs[2] = total_cost;
 constraint objs[3] = max_resolution;
 constraint objs[4] = max_incidence;
 
 array[1..4] of var bool: minimize_objs;
-array[1..4] of var float: ref_point;
+array[1..4] of var int: ref_point;
 
 constraint ref_point[1] = sum(u in UNIVERSE)(areas[u]) + 0.1;
 constraint ref_point[2] = sum(i in IMAGES)(costs[i]) + 0.1;
