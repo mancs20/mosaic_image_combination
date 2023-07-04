@@ -5,7 +5,6 @@ import gurobipy as gp
 from gurobipy import *
 import time
 
-from model.mo.MIPModelEConstraintSmallTest import MIPModelEConstraintSmallTest
 from model.mo.MosaicCloudMIPmodel import MosaicCloudMIPmodel
 from utils.convert_input_to_int import get_data_from_minizinc_dzn
 from utils.convert_input_to_int import convert_single_value_to_original
