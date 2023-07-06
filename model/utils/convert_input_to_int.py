@@ -64,7 +64,7 @@ def convert_to_int_data_values_dzn(input_mzn, input_dzn, output_dzn):
 def get_data_from_minizinc_dzn(input_mzn, input_dzn, image_id_start=1):
     model = ModelMiniZinc(input_mzn)
     model.add_file(input_dzn, parse_data=True)
-    mzn_solver = Solver.lookup("gecode")
+    mzn_solver = Solver.lookup("ortools") # it could be any cp solver
     instance = Instance(mzn_solver, model)
     images = instance["images"]
     costs = instance["costs"]
