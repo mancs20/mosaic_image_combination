@@ -5,7 +5,7 @@ import os
 from minizinc import Instance, Model, Solver
 import multiprocessing
 
-from utils.convert_input_to_int import write_file_dzn_data_file
+from model.utils.convert_input_to_int import write_file_dzn_data_file
 
 
 class SolverMinizinc(ABC):

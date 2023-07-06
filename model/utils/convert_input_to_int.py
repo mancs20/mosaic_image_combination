@@ -1,10 +1,14 @@
 import os
+import sys
 
 from minizinc import Solver, Instance
 from minizinc import Model as ModelMiniZinc
 from dataclasses import fields
 
-import ProjectDataClasses
+utils_path = os.path.abspath('./')
+sys.path.append(utils_path)
+from ProjectDataClasses import DataSetFieldsForDiscreteApproaches
+
 
 def main():
     model_mzn = "../model/mosaic_cloud2.mzn"
@@ -41,7 +45,7 @@ def convert_to_int_data_values_dzn(input_mzn, input_dzn, output_dzn):
     images, costs, areas, clouds, max_cloud_area, resolution, incidence_angle = \
         get_data_from_minizinc_dzn(input_mzn, input_dzn)
     # convert to int
-    int_parameters = {field.name:0 for field in fields(ProjectDataClasses.DataSetFieldsForDiscreteApproaches)}
+    int_parameters = {field.name:0 for field in fields(DataSetFieldsForDiscreteApproaches)}
     costs, areas, max_cloud_area, resolution, incidence_angle = \
         convert_to_int(costs, areas, max_cloud_area, resolution, incidence_angle)
     universe_size = len(areas)
