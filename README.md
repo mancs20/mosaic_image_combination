@@ -8,3 +8,5 @@ You need the following packages to be installed:
   * pip install gurobipy
 * [Up42 SDK](https://sdk.up42.com/installation/) with plotting functionalities
   * pip install "up42-py[viz]"
+* [dataclasses-json](https://pypi.org/project/dataclasses-json/)
+  * pip install dataclasses-json
