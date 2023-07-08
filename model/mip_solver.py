@@ -1,18 +1,29 @@
 import copy
 import csv
+import os
+import sys
 
 import gurobipy as gp
 from gurobipy import *
 import time
 
-from model.mo.MosaicCloudMIPmodel import MosaicCloudMIPmodel
-from utils.convert_input_to_int import get_data_from_minizinc_dzn
-from utils.convert_input_to_int import convert_single_value_to_original
+from mo.MosaicCloudMIPmodel import MosaicCloudMIPmodel
+
+
+# utils_path = os.path.abspath('./utils')
+# sys.path.insert(0, utils_path)
+# from utils import convert_input_to_int
+from utils.convert_input_to_int import convert_single_value_to_original, get_data_from_minizinc_dzn
 
 
 def main():
-    model_mzn = "mosaic_cloud2.mzn"
-    data_dzn = "./data_sets/paris_30.dzn"
+    model_mzn = "model/mosaic_cloud2.mzn"
+    data_dzn = "model/data_sets/paris_30.dzn"
+
+    # current_dir = os.getcwd()
+    # relative_data_dzn = "model/data_sets/paris_30.dzn"
+    # data_dzn = os.path.join(current_dir, relative_data_dzn)
+
     get_pareto_front_e_constraint(model_mzn, data_dzn)
 
 def get_pareto_front_e_constraint(model_mzn, data_dzn):
