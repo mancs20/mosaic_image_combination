@@ -1,7 +1,7 @@
 from Config import *
 from Sequence import *
-from MO import *
-from OSolve import *
+from MOCP import *
+from OSolveCP import *
 from Timer import *
 from minizinc import Instance, Model, Solver
 import csv
@@ -9,6 +9,9 @@ import os
 import traceback
 import logging
 from filelock import FileLock, Timeout
+
+from model.mo.OSolveMIP import OSolveMIP
+
 
 def init_top_level_statistics(statistics):
   statistics["exhaustive"] = False
@@ -54,19 +57,28 @@ def check_already_computed(config):
 
 def build_solver(instance, config, statistics):
   osolve = build_osolver(instance, config, statistics)
-  osolve_mo = MO(instance, statistics, osolve)
+  osolve_mo = build_MO(instance, statistics, osolve, config)
   return osolve_mo, osolve_mo.pareto_front
 
 def build_osolver(instance, config, statistics):
   free_search = config.cp_strategy == "free_search"
-  return OSolve(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search, config.fzn_optimisation_level)
+  if config.solver_name == "gurobi":
+    return OSolveMIP(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search)
+  else:
+    return OSolveCP(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search, config.fzn_optimisation_level)
+
+def build_MO(instance, statistics, osolve, config):
+  if config.solver_name == "gurobi":
+    return MOCP(instance, statistics, osolve)
+  else:
+    return MOCP(instance, statistics, osolve)
 
 def csv_header(config):
   statistics = {}
   config.init_statistics(statistics)
   init_top_level_statistics(statistics)
-  OSolve.init_statistics(statistics)
-  MO.init_statistics(statistics)
+  OSolveCP.init_statistics(statistics)
+  MOCP.init_statistics(statistics)
   return list(statistics.keys())
 
 def create_summary_file(config):
