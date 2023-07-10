@@ -12,7 +12,7 @@ class MosaicCloudMIPmodel:
         # cloud processing
         self.cloud_covered_by_image = gp.tupledict(cloud_covered_by_image)
         self.clouds_id, self.area_clouds = gp.multidict(clouds_id_area)
-        self.total_area_clouds = sum(self.area_clouds.values())
+        self.total_area_clouds = int(sum(self.area_clouds.values()))
         # resolution processing
         self.resolution = gp.tupledict(zip(self.images_id, resolution))
         # incidence angle processing
@@ -27,13 +27,14 @@ class MosaicCloudMIPmodel:
         self.current_max_incidence_angle = None
         self.add_variables()
         self.objectives = []
+        self.objectives_slack = []
         self.add_objectives()
         self.constraint_objectives = [0] * len(self.objectives)
 
     def add_variables(self):
         # decision variables
         self.select_image = self.model.addVars(len(self.images), vtype=gp.GRB.BINARY, name="select_image_i")
-        # self.cloud_covered = self.model.addVars(self.clouds_id, vtype=gp.GRB.BINARY, name="cloud_covered_e")
+        self.cloud_covered = self.model.addVars(self.clouds_id, vtype=gp.GRB.BINARY, name="cloud_covered_e")
         # support variables
         self.resolution_element = self.model.addVars(self.elements, vtype=gp.GRB.CONTINUOUS,
                                                      name="resolution_element_i")
@@ -60,11 +61,17 @@ class MosaicCloudMIPmodel:
 
     def add_objectives(self):
         # for cloud coverage
-        # self.objectives.append(-(gp.quicksum(self.cloud_covered[c] * self.area_clouds[c] for c in self.clouds_id)))
+        self.objectives.append(self.total_area_clouds-(gp.quicksum(self.cloud_covered[c] * self.area_clouds[c]
+                                                                   for c in self.clouds_id)))
+        self.objectives_slack.append(-self.total_area_clouds)
+
         # for resolution
         self.objectives.append(gp.quicksum(self.resolution_element[e] for e in self.elements))
+        self.objectives_slack.append(0)
+
         # for incidence angle
         self.objectives.append(self.current_max_incidence_angle)
+        self.objectives_slack.append(0)
 
     def add_basic_constraints(self):
         max_resolution = max(self.resolution.values())
@@ -73,12 +80,12 @@ class MosaicCloudMIPmodel:
         self.model.addConstrs(gp.quicksum(self.select_image[i] for i in self.images_id if e in self.images[i]) >= 1
                               for e in self.elements)
         # cloud constraint
-        # self.model.addConstrs(gp.quicksum(self.select_image[i] for i in self.cloud_covered_by_image.keys()
-        #                                   if c in self.cloud_covered_by_image[i]) >= self.cloud_covered[c]
-        #                                     for c in self.clouds_id)
-        # self.model.addConstrs(gp.quicksum(self.select_image[i] for i in self.cloud_covered_by_image.keys()
-        #                                   if c in self.cloud_covered_by_image[i]) <=
-        #                       self.cloud_covered[c] * len(self.images) for c in self.clouds_id)
+        self.model.addConstrs(gp.quicksum(self.select_image[i] for i in self.cloud_covered_by_image.keys()
+                                          if c in self.cloud_covered_by_image[i]) >= self.cloud_covered[c]
+                                            for c in self.clouds_id)
+        self.model.addConstrs(gp.quicksum(self.select_image[i] for i in self.cloud_covered_by_image.keys()
+                                          if c in self.cloud_covered_by_image[i]) <=
+                              self.cloud_covered[c] * len(self.images) for c in self.clouds_id)
 
         # calculate resolution for each element
         self.model.addConstrs(((self.select_image[i] == 0) >> (self.effective_image_resolution[i] == big_resolution)
@@ -107,4 +114,5 @@ class MosaicCloudMIPmodel:
 
     def update_objective_constraints(self, ef_array):
         for i in range(len(ef_array)):
-            self.model.setAttr(gp.GRB.Attr.RHS, self.constraint_objectives[i], ef_array[i])
+            self.model.setAttr(gp.GRB.Attr.RHS, self.constraint_objectives[i],
+                               (self.objectives_slack[i] + ef_array[i]))

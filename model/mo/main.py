@@ -10,7 +10,8 @@ import traceback
 import logging
 from filelock import FileLock, Timeout
 
-from model.mo.OSolveMIP import OSolveMIP
+from MOMIP import MOMIP
+from OSolveMIP import OSolveMIP
 
 
 def init_top_level_statistics(statistics):
@@ -65,11 +66,12 @@ def build_osolver(instance, config, statistics):
   if config.solver_name == "gurobi":
     return OSolveMIP(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search)
   else:
-    return OSolveCP(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search, config.fzn_optimisation_level)
+    return OSolveCP(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search,
+                    config.fzn_optimisation_level)
 
 def build_MO(instance, statistics, osolve, config):
   if config.solver_name == "gurobi":
-    return MOCP(instance, statistics, osolve)
+    return MOMIP(instance, statistics, osolve)
   else:
     return MOCP(instance, statistics, osolve)
 

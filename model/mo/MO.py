@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from model.mo.ParetoFront import ParetoFront
+from ParetoFront import ParetoFront
 
 
 class MO(ABC):

@@ -82,6 +82,20 @@ class ParetoFront:
       return False
     return True
 
+  def join_without_pareto_verification(self, x):
+    """Add to the Pareto front the solution `x` without checking if it is dominated by any solution in the Pareto front.
+       The Pareto front is also updated to remove all solutions dominated by `x`.
+        Args:
+          x (Result): A solution to the constraint model described by `instance`.
+        Returns:
+          Bool:
+            `True` if `x` was added to the solutions set and the Pareto front, `False` otherwise.
+    """
+    idx = len(self.solutions)
+    self.solutions.append(x)
+    self.front.append(idx)
+    return True
+
   def remove(self, x):
     """Remove the solution `x` from the Pareto front, and recompute the Pareto front without `x`.
        The same Pareto front is obtained if `x` is not in the Pareto front.

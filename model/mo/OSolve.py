@@ -24,14 +24,6 @@ class OSolve(ABC):
     def solve(self):
         pass
 
+    @abstractmethod
     def update_statistics(self, res, cp_sec):
-        self.statistics["time_cp_sec"] += cp_sec
-        if res is None:
-            return
-        if "nodes" in res.statistics:
-            self.statistics["cp_total_nodes"] += res.statistics["nodes"]
-        if "flatTime" in res.statistics:
-            self.statistics["time_fzn_sec"] += res.statistics["flatTime"].total_seconds()
-        if res.solution is not None:
-            self.statistics["cp_solutions"] += 1
-            self.statistics["cp_solutions_list"].append(self.statistics["time_cp_sec"])
+        pass

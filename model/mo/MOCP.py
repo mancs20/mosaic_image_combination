@@ -1,5 +1,5 @@
 from ParetoFront import *
-from model.mo.MO import MO
+from MO import MO
 
 
 class MOCP(MO):

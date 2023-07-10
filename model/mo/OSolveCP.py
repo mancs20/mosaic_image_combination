@@ -1,7 +1,7 @@
 from minizinc import Status
 import minizinc
 
-from model.mo.OSolve import OSolve
+from OSolve import OSolve
 
 
 class OSolveCP(OSolve):
@@ -75,14 +75,14 @@ class OSolveCP(OSolve):
     if constraint != "true":
       self.instance.add_string("constraint " + constraint + ";\n")
 
-  # def update_statistics(self, res, cp_sec):
-  #   self.statistics["time_cp_sec"] += cp_sec
-  #   if res is None:
-  #     return
-  #   if "nodes" in res.statistics:
-  #     self.statistics["cp_total_nodes"] += res.statistics["nodes"]
-  #   if "flatTime" in res.statistics:
-  #     self.statistics["time_fzn_sec"] += res.statistics["flatTime"].total_seconds()
-  #   if res.solution is not None:
-  #     self.statistics["cp_solutions"] += 1
-  #     self.statistics["cp_solutions_list"].append(self.statistics["time_cp_sec"])
+  def update_statistics(self, res, cp_sec):
+    self.statistics["time_cp_sec"] += cp_sec
+    if res is None:
+      return
+    if "nodes" in res.statistics:
+      self.statistics["cp_total_nodes"] += res.statistics["nodes"]
+    if "flatTime" in res.statistics:
+      self.statistics["time_fzn_sec"] += res.statistics["flatTime"].total_seconds()
+    if res.solution is not None:
+      self.statistics["cp_solutions"] += 1
+      self.statistics["cp_solutions_list"].append(self.statistics["time_cp_sec"])
