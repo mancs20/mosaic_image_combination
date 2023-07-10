@@ -79,8 +79,8 @@ def csv_header(config):
   statistics = {}
   config.init_statistics(statistics)
   init_top_level_statistics(statistics)
-  OSolveCP.init_statistics(statistics)
-  MOCP.init_statistics(statistics)
+  OSolve.init_statistics(statistics)
+  MO.init_statistics(statistics)
   return list(statistics.keys())
 
 def create_summary_file(config):

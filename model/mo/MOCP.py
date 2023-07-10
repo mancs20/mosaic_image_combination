@@ -24,6 +24,7 @@ class MOCP(MO):
     for x in self.subsolver.solve():
       self.pareto_front.join(x)
       self.statistics["pareto_front"] = self.pareto_front.to_str()
+      self.statistics["solutions_pareto_front"] = self.pareto_front.solutions_to_str()
       if self.verbose:
         print("New objective found: " + str(x["objs"]))
         print(self.statistics["pareto_front"])

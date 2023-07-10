@@ -172,6 +172,17 @@ class ParetoFront:
     """Return a string representation of the Pareto front."""
     return '{' + ','.join([str(self.solutions[f]['objs']) for f in self.front]) + '}'
 
+  def solutions_to_str(self):
+    """Return a string representation of the solutions in the Pareto front."""
+    temp_solutions = []
+    for f in self.front:
+      sol_f = []
+      for idx, val in enumerate(self.solutions[f]['taken']):
+        if val:
+          sol_f.append(idx)
+      temp_solutions.append('[' + '-'.join([str(x) for x in sol_f]) + ']')
+    return '{' + ','.join(temp_solutions) + '}'
+
   def hypervolume(self):
     """Compute the hypervolume of the Pareto front. The hypervolume is computed using the reference point `ref_point`."""
     if self.front == []:
