@@ -11,7 +11,8 @@ module load compiler/GCC/10.2.0
 module load compiler/GCCcore/10.2.0
 module load lang/Python/3.8.6-GCCcore-10.2.0
 module load lang/Java/16.0.1
-export PATH=$PATH:$HOME/deps/libminizinc/build
+export PATH=$PATH:$HOME/deps/libminizinc/build:$HOME/.local/bin:$HOME/bin:$HOME/deps/gecode
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/deps/gecode
 source ~/deps/hpcpy/bin/activate
 
 cp_strategy="free"
