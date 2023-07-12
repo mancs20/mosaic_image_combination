@@ -93,8 +93,10 @@ class OSolveMIP(OSolve):
                         self.mosaic_model.update_objective_constraints(ef_array)
                         # TODO add parameters, like timeout to the model
                         timeout = self.timer.resume()
+                        print("Start the MIP solver...")
                         self.mosaic_model.model.Params.TimeLimit = timeout.total_seconds()
                         self.mosaic_model.model.optimize()
+                        print("Got a result from the MIP solver...")
                         cp_sec = self.timer.pause()
                     if self.mosaic_model.model.Status == gp.GRB.TIME_LIMIT:
                         raise TimeoutError()

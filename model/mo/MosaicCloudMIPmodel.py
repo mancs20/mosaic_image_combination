@@ -76,7 +76,7 @@ class MosaicCloudMIPmodel:
     def add_basic_constraints(self):
         max_resolution = max(self.resolution.values())
         big_resolution = 2 * max_resolution
-        # cost constraint
+        # cover constraint
         self.model.addConstrs(gp.quicksum(self.select_image[i] for i in self.images_id if e in self.images[i]) >= 1
                               for e in self.elements)
         # cloud constraint
