@@ -15,6 +15,7 @@ class MosaicCloudMIPmodel:
         self.total_area_clouds = int(sum(self.area_clouds.values()))
         # resolution processing
         self.resolution = gp.tupledict(zip(self.images_id, resolution))
+        self.min_resolution = min(resolution)
         # incidence angle processing
         self.incidence_angle = gp.tupledict(zip(self.images_id, incidence_angle))
         # multiply to convert to integers
@@ -36,13 +37,13 @@ class MosaicCloudMIPmodel:
         self.select_image = self.model.addVars(len(self.images), vtype=gp.GRB.BINARY, name="select_image_i")
         self.cloud_covered = self.model.addVars(self.clouds_id, vtype=gp.GRB.BINARY, name="cloud_covered_e")
         # support variables
-        self.resolution_element = self.model.addVars(self.elements, vtype=gp.GRB.CONTINUOUS,
+        self.resolution_element = self.model.addVars(self.elements, lb=self.min_resolution, ub=max(self.resolution.values()), vtype=gp.GRB.INTEGER,
                                                      name="resolution_element_i")
-        self.effective_image_resolution = self.model.addVars(len(self.images), vtype=gp.GRB.CONTINUOUS,
+        self.effective_image_resolution = self.model.addVars(len(self.images), vtype=gp.GRB.INTEGER,
                                                         name="effective_resolution_element_i")
-        self.effective_incidence_angle = self.model.addVars(len(self.images), vtype=gp.GRB.CONTINUOUS,
+        self.effective_incidence_angle = self.model.addVars(len(self.images), vtype=gp.GRB.INTEGER,
                                                        name="effective_incidence_angle_i")
-        self.current_max_incidence_angle = self.model.addVar(vtype=gp.GRB.CONTINUOUS,
+        self.current_max_incidence_angle = self.model.addVar(vtype=gp.GRB.INTEGER,
                                                              name="max_allowed_incidence_angle")
 
     def optimize_e_constraint(self, range_array):
