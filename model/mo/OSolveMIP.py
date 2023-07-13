@@ -281,17 +281,28 @@ class OSolveMIP(OSolve):
         return self.optimize_single_objectives(GRB.MINIMIZE)
 
     def get_nadir_objectives(self):
-        return self.optimize_single_objectives(GRB.MAXIMIZE)
+        nadir_objectives = self.get_upper_bound_nadir()
+        return nadir_objectives
 
     def optimize_single_objectives(self, sense):
         objectives_values = [0] * len(self.mosaic_model.objectives)
         for i in range(len(self.mosaic_model.objectives)):
             objective = self.mosaic_model.objectives[i]
+            timeout = self.timer.resume()
+            print("Start the MIP solver to get the min of objective " + str(i))
+            self.mosaic_model.model.Params.TimeLimit = timeout.total_seconds()
             self.mosaic_model.model.setObjective(objective, sense)
             # TODO add parameters, like timeout to the model
             self.mosaic_model.model.optimize()
+            cp_sec = self.timer.pause()
+            print("MIP solver found min of objective " + str(i) + " in " + str(cp_sec) + " seconds")
             objectives_values[i] = int(round(self.mosaic_model.model.objVal, 0))
         return objectives_values
+
+    def get_upper_bound_nadir(self):
+        nadir_objectives = [sum(self.areas), self.get_resolution_nadir_for_ref_point(), max(self.incidence_angle)]
+        return nadir_objectives
+
 
     def update_statistics(self, res, cp_sec):
         self.statistics["time_cp_sec"] += cp_sec
