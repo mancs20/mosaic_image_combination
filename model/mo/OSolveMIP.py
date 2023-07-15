@@ -124,7 +124,7 @@ class OSolveMIP(OSolve):
                                 # update statistics
                                 self.update_statistics(self.mosaic_model.model, cp_sec)
                                 # record the solution
-                                formatted_solution = self.prepare_solution()
+                                formatted_solution = self.prepare_solution(ef_array)
                                 one_solution = formatted_solution["objs"]
                                 previous_solution_information = self.save_solution_information(ef_array, one_solution,
                                                                                           previous_solution_information)
@@ -144,7 +144,7 @@ class OSolveMIP(OSolve):
                 rwv[2] = min_objectives[2]
         print("All solutions were found for " + self.statistics['instance'])
 
-    def prepare_solution(self):
+    def prepare_solution(self, ef_array=[0, 0, 0]):
         one_solution = self.get_solution_values()
         selected_images = self.get_selected_images()
         taken = [False] * len(self.images)
@@ -152,7 +152,7 @@ class OSolveMIP(OSolve):
             taken[image] = True
         ref_points = self.ref_points
         solution = Solution(objs=one_solution, taken=taken,
-                            minimize_objs=[True] * len(one_solution), ref_point=ref_points)
+                            minimize_objs=[True] * len(one_solution), ref_point=ref_points, ef_array=ef_array)
         status = self.mosaic_model.model.Status
         statistics = None
         minizinc_formatted_solution = MinizincResultFormat(status=status, solution=solution, statistics=statistics)
@@ -353,3 +353,4 @@ class Solution:
     minimize_objs: List[bool]
     taken: List[bool]
     ref_point: List[int]
+    ef_array: List[int]

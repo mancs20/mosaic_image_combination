@@ -16,6 +16,7 @@ class MO(ABC):
     def init_statistics(statistics):
         statistics["pareto_front"] = ""
         statistics["solutions_pareto_front"] = ""
+        statistics["ef_array"] = ""
     @abstractmethod
     def solve(self):
         pass

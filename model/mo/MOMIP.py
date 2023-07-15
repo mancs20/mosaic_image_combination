@@ -16,6 +16,7 @@ class MOMIP(MO):
         self.pareto_front.join(solution)
         self.statistics["pareto_front"] = self.pareto_front.to_str()
         self.statistics["solutions_pareto_front"] = self.pareto_front.solutions_to_str()
+        self.statistics["ef_array"] = self.pareto_front.ef_arr_to_str()
 
     def print_statistics_of_recent_solution(self, solution):
         if self.verbose:
