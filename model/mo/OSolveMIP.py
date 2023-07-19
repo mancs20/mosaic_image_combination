@@ -151,6 +151,7 @@ class OSolveMIP(OSolve):
         for image in selected_images:
             taken[image] = True
         ref_points = self.ref_points
+        ef_array = copy.deepcopy(ef_array)
         solution = Solution(objs=one_solution, taken=taken,
                             minimize_objs=[True] * len(one_solution), ref_point=ref_points, ef_array=ef_array)
         status = self.mosaic_model.model.Status
