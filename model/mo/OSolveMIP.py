@@ -92,28 +92,31 @@ class OSolveMIP(OSolve):
                 ef_array[1] -= 1
                 while ef_array[0] > min_objectives[0]:
                     ef_array[0] -= 1
+                    exit_from_loop_with_acceleration = False
+                    one_solution = []
                     previous_solution_relaxation, previous_solution_values = \
                         self.search_previous_solutions_relaxation(ef_array, previous_solution_information)
-                    if not previous_solution_relaxation:
+                    if previous_solution_relaxation:
+                        if type(previous_solution_values) is str:
+                            # the previous solution is infeasible
+                            exit_from_loop_with_acceleration = True
+                        else:
+                            one_solution = previous_solution_values
+                    else:
                         # update right-hand side values (rhs) for the objective constraints
                         self.mosaic_model.update_objective_constraints(ef_array)
-                        # TODO add parameters, like timeout to the model
                         timeout = self.timer.resume()
                         print("Start the MIP solver...")
                         self.mosaic_model.model.Params.TimeLimit = timeout.total_seconds()
                         self.mosaic_model.model.optimize()
                         print("Got a result from the MIP solver...")
                         cp_sec = self.timer.pause()
-                    if self.mosaic_model.model.Status == gp.GRB.TIME_LIMIT:
-                        raise TimeoutError()
-                    elif self.mosaic_model.model.Status == gp.GRB.INFEASIBLE or (previous_solution_relaxation and
-                                                                          type(previous_solution_values) is str):
-                        if not previous_solution_relaxation:
-                            # save ef_array
-                            self.save_solution_information(ef_array, "infeasible", previous_solution_information)
-                        ef_array = self.exit_from_loop_with_acceleration(ef_array, nadir_objectives, min_objectives)
-                    else:
-                        if not previous_solution_relaxation:
+                        if self.mosaic_model.model.Status == gp.GRB.TIME_LIMIT:
+                            raise TimeoutError()
+                        elif self.mosaic_model.model.Status == gp.GRB.INFEASIBLE:
+                            previous_solution_information = self.save_solution_information(ef_array, "infeasible", previous_solution_information)
+                            exit_from_loop_with_acceleration = True
+                        else:
                             selected_images = self.get_selected_images()
                             str_selected_images = '-'.join((str(i) for i in selected_images))
                             if str_selected_images in previous_solutions:
@@ -127,13 +130,18 @@ class OSolveMIP(OSolve):
                                 formatted_solution = self.prepare_solution(ef_array)
                                 one_solution = formatted_solution["objs"]
                                 previous_solution_information = self.save_solution_information(ef_array, one_solution,
-                                                                                          previous_solution_information)
+                                                                                               previous_solution_information)
                                 yield formatted_solution
-                        else:
-                            one_solution = previous_solution_values
+                    if exit_from_loop_with_acceleration:
+                        ef_array = self.exit_from_loop_with_acceleration(ef_array, nadir_objectives, min_objectives)
+                    elif len(one_solution) > 0:
                         ef_array[0] = one_solution[1]  # one_solution[0] is the main objective
                         # Explore the relatively worst values rwv of objectives
-                        rwv = self.explore_new_relatively_worst_values_of_objectives(rwv, one_solution, minimization=True)
+                        rwv = self.explore_new_relatively_worst_values_of_objectives(rwv, one_solution,
+                                                                                     minimization=True)
+                    else:
+                        # this should not happen if the solver is working properly
+                        raise Exception("The solver did not find any solution")
                 ef_array[0] = nadir_objectives[0] + 1
                 if ef_array[1] > min_objectives[1]:
                     ef_array[1] = rwv[1]
