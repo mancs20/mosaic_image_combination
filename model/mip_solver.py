@@ -64,7 +64,7 @@ def get_pareto_front_e_constraint(model_mzn, data_dzn):
 
 
     range_array = [abs(nadir_objectives[i] - min_objectives[i]) for i in range(len(nadir_objectives))]
-    mosaic_model.optimize_e_constraint(range_array)
+    mosaic_model.optimize_e_constraint_saugmecon(range_array)
     start_time = time.time()
     solutions_values, selected_images_for_solution_i, ef_array_str = get_pareto_saugmencon_cycle(mosaic_model,
                                                                                    min_objectives, nadir_objectives,

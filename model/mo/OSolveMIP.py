@@ -207,7 +207,7 @@ class OSolveMIP(OSolve):
         # one_solution[0] is the main objective
         if minimization:
             for i in range(len(rwv)):
-                if one_solution[i + 1] > rwv[i]:
+                if rwv[i] < one_solution[i + 1]:
                     rwv[i] = one_solution[i + 1]
         else:
             print("one_solution: ", one_solution)
@@ -291,7 +291,7 @@ class OSolveMIP(OSolve):
         # prepare the model for the e-constraint method
         self.mosaic_model.model.ModelSense = gp.GRB.MINIMIZE
         range_array = [abs(nadir_objectives[i] - min_objectives[i]) for i in range(len(nadir_objectives))]
-        self.mosaic_model.optimize_e_constraint(range_array)
+        self.mosaic_model.optimize_e_constraint_saugmecon(range_array)
         return formatted_solutions, min_objectives, nadir_objectives
 
     def get_min_objectives(self):
@@ -338,7 +338,7 @@ class OSolveMIP(OSolve):
         if res is None:
             return
         self.statistics["cp_total_nodes"] += res.NodeCount
-        self.statistics["time_fzn_sec"] += 0 # TODO add time_fzn_sec
+        self.statistics["time_fzn_sec"] += 0 # Gurobi Python does not have a fzn time is just Minizinc
         self.statistics["cp_solutions"] += 1
         self.statistics["cp_solutions_list"].append(self.statistics["time_cp_sec"])
 

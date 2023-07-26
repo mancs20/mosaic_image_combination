@@ -40,20 +40,18 @@ class MosaicCloudMIPmodel:
         self.resolution_element = self.model.addVars(self.elements, lb=self.min_resolution, ub=max(self.resolution.values()), vtype=gp.GRB.INTEGER,
                                                      name="resolution_element_i")
         self.effective_image_resolution = self.model.addVars(len(self.images), vtype=gp.GRB.INTEGER,
-                                                        name="effective_resolution_element_i")
+                                                        name="effective_resolution_image_i")
         self.effective_incidence_angle = self.model.addVars(len(self.images), vtype=gp.GRB.INTEGER,
                                                        name="effective_incidence_angle_i")
         self.current_max_incidence_angle = self.model.addVar(vtype=gp.GRB.INTEGER,
                                                              name="max_allowed_incidence_angle")
 
-    def optimize_e_constraint(self, range_array):
+    def optimize_e_constraint_saugmecon(self, range_array):
         obj = self.get_main_objective()
         delta = 0.001 # delta between 0.001 and 0.000001
-        rest_obj = self.objectives[0]/range_array[0]
-        # for from 1 to range of self.objectives
-        for i in range(1, len(self.objectives)):
-            rest_obj = rest_obj + (self.objectives[i]/range_array[i])
-        # TODO: initially try withouth delta
+        rest_obj = 0
+        for i in range(len(self.objectives)):
+            rest_obj += self.objectives[i]/range_array[i]
         obj = obj + (delta * rest_obj)
         self.model.setObjective(obj)
 
@@ -114,6 +112,6 @@ class MosaicCloudMIPmodel:
             self.constraint_objectives[i] = self.model.addConstr(self.objectives[i] <= ef_array[i])
 
     def update_objective_constraints(self, ef_array):
-        for i in range(len(ef_array)):
-            self.model.setAttr(gp.GRB.Attr.RHS, self.constraint_objectives[i],
-                               (self.objectives_slack[i] + ef_array[i]))
+        for constraint in self.constraint_objectives:
+             self.model.remove(constraint)
+        self.add_objective_constraints(ef_array)
