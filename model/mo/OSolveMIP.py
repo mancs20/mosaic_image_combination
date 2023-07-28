@@ -74,9 +74,7 @@ class OSolveMIP(OSolve):
         formatted_solutions, min_objectives, nadir_objectives = self.initialize_model_with_e_constraint()
         # check if the solver could find the optimum for each objective
         for formatted_solution in formatted_solutions:
-            if formatted_solution is not None:
-                yield formatted_solution
-            else:
+            if formatted_solution is None:
                 raise TimeoutError()
         # initialize loop-control variables with values equal to the nadir values + 1
         ef_array = [nadir_objectives[i] + 1 for i in range(len(nadir_objectives))]
@@ -85,6 +83,11 @@ class OSolveMIP(OSolve):
         # add initial objective constraints
         self.mosaic_model.add_objective_constraints(ef_array)
         previous_solution_information = []
+        # adjust solver parameters
+        self.mosaic_model.model.Params.MIPGap = 1e-10 # Although the solver can find the exact Pareto front with the
+        # default value of 1e-4, in some occasions the solver fails to find the optimum, and give extra solutions that
+        # do not belong to the exact Pareto front. This is why we set the MIPGap to a very small value. See Gurobi
+        # documentation
         while ef_array[2] > min_objectives[2]:
             ef_array[2] -= 1
             rwv[1] = min_objectives[1]
@@ -324,7 +327,7 @@ class OSolveMIP(OSolve):
             return None, None
         formatted_solution = self.prepare_solution()
         objective_val = formatted_solution['objs'][id_objective+1]
-        self.update_statistics(self.mosaic_model.model, cp_sec)
+        # self.update_statistics(self.mosaic_model.model, cp_sec)
         self.mosaic_model.model.reset(1)
         return formatted_solution, objective_val
 
