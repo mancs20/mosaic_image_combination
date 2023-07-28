@@ -54,16 +54,12 @@ class ParetoFront:
           Bool:
             `True` if `x` was added to the solutions set and the Pareto front, `False` otherwise.
     """
-    newFront = []
-    for f in self.front:
-      if not self.dominates(self.solutions[idx], self.solutions[f]):
-        newFront.append(f)
+    for idf, f in enumerate(self.front):
       if self.dominates(self.solutions[f], self.solutions[idx]):
         return False
-    newFront.append(idx)
-    self.front.clear()
-    for f in newFront:
-      self.front.append(f)
+      elif self.dominates(self.solutions[idx], self.solutions[f]):
+        self.front.pop(idf)
+    self.front.append(idx)
     return True
 
   def join(self, x):
@@ -77,8 +73,9 @@ class ParetoFront:
     """
     idx = len(self.solutions)
     self.solutions.append(x)
+
     if not self.join_front(idx):
-      self.solutions.pop()
+      # self.solutions.pop()
       return False
     return True
 
