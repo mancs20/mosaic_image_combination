@@ -44,6 +44,7 @@ def main():
     print("Execption raised: " + str(e))
     logging.error(traceback.format_exc())
   statistics["hypervolume"] = pareto_front.hypervolume()
+  statistics["cp_solutions_list"] = [statistics["cp_solutions_list"][x] for x in pareto_front.front]
   print("end of solving statistics: " + str(statistics))
   write_statistics(config, statistics)
 
