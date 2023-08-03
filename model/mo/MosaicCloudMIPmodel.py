@@ -48,9 +48,7 @@ class MosaicCloudMIPmodel:
 
     def optimize_e_constraint_saugmecon(self, range_array):
         obj = self.get_main_objective()
-        delta = 1 # delta should be between 0.001 and 0.000001, but in this problem the main objective has a very high
-        # value, if we set delta to 0.001 the rest of the objectives have no impact on the solution and the solver
-        # misses the optimal solution, and it could produce solutions that doesn't belong to the exact pareto front
+        delta = 0.001 # delta should be between 0.001 and 0.000001
         rest_obj = 0
         for i in range(len(self.objectives)):
             rest_obj += self.objectives[i]/range_array[i]
