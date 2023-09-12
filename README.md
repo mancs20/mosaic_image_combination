@@ -31,12 +31,68 @@ In ProjectDataClasses you can change the search parameters in the dataclass Sear
 
 The downloaded data will be stored in the folder `results/aoi_name/search_range_date/number_of_images`, example `results/paris/2021-01-01-2023-01-01/500`.
 Inside the folder there will be the following files:
+* `images_data.csv`: The metadata of the images in CSV format.
+* `images_data.geojson`: The metadata of the images in Geojson format, ready to visualize in a map.
+* `search_parameters.json`: The search parameters used to download the images.
+
+### Generate datasets files dzn
+
+To generate the datasets files dzn you need to run the script `main.py`. The script will generate the files in the 
+folder `model/data_sets/`. The name of the files follow this rule `aoiName_numberOfImages`, 
+example `model/data_sets/paris_30`. 
+
+#### Convert float values in the data set to integers
+
+The data files are initially generated with float values. Due to numerical issues with the solvers a 
+conversion to integer values is needed. To convert the float values to integers you need to run the script
+`model/utils/convert_input_to_int.py`. The script will convert the float values to int.
 
 ### Run the experiments
 
+To run the experiments you need to run the script `model/mo/main.py` with the following arguments:
+* `--model_mzn`: The path to the mzn model file.
+* `--dzn_dir`: The path to the folder with the dzn files.
+* `--solver_name`: The name of the solver to use, `or-tools`, `gurobi`, etc.
+* `--cp_timeout_sec`: The timeout in seconds for the solver. The experiments were performed with a value of `3600`.
+* `--summary`: The path to the summary file. A file with the results of the experiments, generated in CSV format.
+* `--cores`: The number of cores to use.
+* `--cp_strategy`: The strategy to use for the solver. The default value is `free`.
+* `--fzn_optimisation_level`: The optimisation level for the fzn file. The default value is `1`.
+* `--aoi`: The name of the AOI to use.
+
+Example:
+```bash
+python3 main.py --model_mzn ../mosaic_cloud2.mzn --dzn_dir ../data_sets/ --solver_name gurobi --cp_timeout_sec 60 
+--summary ../summary_test.csv --cores 8 --cp_strategy free --fzn_optimisation_level 1 paris_30
+```
+
+#### Results
+instance	cp_solver	cp_strategy	fzn_optimisation_level	threads	cores	cp_timeout_sec	cp_model	exhaustive	hypervolume	datetime	cp_solutions	cp_total_nodes	time_cp_sec	time_fzn_sec	cp_solutions_list	pareto_front	solutions_pareto_front
+
+The result file is a CSV file with the following columns:
+* `instance`: The name of the instance. Example: `paris_30`.
+* `cp_solver`: The name of the solver used. Example: `gurobi`.
+* `cp_strategy`: The strategy used by the solver. Values: `free`, the default search strategy of the solver or 
+`greedy` the proposed search strategy inspired in the well-know greedy approach for set covering problems.
+* `fzn_optimisation_level`: The optimisation level used by the solver. Only used by the cp solvers.
+* `threads`: The number of threads used by the solver.
+* `cores`: The number of cores used by the solver.
+* `cp_timeout_sec`: The timeout in seconds used by the solver to run the experiment.
+* `cp_model`: The name of the model used. Values: `mosaic_cloud2` or `mosaic_cloud3`. The first one implements the
+default search strategy of the solver and the second one implements the proposed search strategy.
+* `exhaustive`: A value of `TRUE` means that the whole Pareto front was obtained.
+* `hypervolume`: The hypervolume of the Pareto front found by the solver.
+* `datetime`: The date and time when the experiment was performed.
+* `cp_solutions`: The number of all the solutions found by the solver, .
+* `cp_total_nodes`: The total number of nodes explored by the solver.
+* `time_cp_sec`: The time in seconds used by the solver.
+* `time_fzn_sec`: The time in seconds used by the solver to generate the fzn file.
+* `cp_solutions_list`: The list of solutions found by the solver.
+* `pareto_front`: The number of solutions in the Pareto front found by the solver.
+* `solutions_pareto_front`: The list of solutions in the Pareto front found by the solver.
 
 
-### Convert float values in the data set to integers
+
 
 
 

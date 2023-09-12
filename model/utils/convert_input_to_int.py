@@ -14,7 +14,7 @@ def main():
     model_mzn = "../model/mosaic_cloud2.mzn"
     # get all files under ../model/data_sets/
     # to use this it is necessary to use the models with floats
-    directory_path = "../model/data_sets/float_values"
+    directory_path = "../model/data_sets"
     files = get_dzn_files(directory_path)
 
     # for each file, convert to int and write to ../integer_values/
@@ -36,9 +36,9 @@ def get_dzn_files(directory):
 def get_output_dzn_name(input_dzn):
     index = input_dzn.rfind("/")
     if index == -1:
-        pre_output = "../integer_values/" + input_dzn
+        pre_output = "../" + input_dzn
     else:
-        pre_output = input_dzn[:index] + "/integer_values/" + input_dzn[index+1:]
+        pre_output = input_dzn[:index] + "/" + input_dzn[index+1:]
     return pre_output
 
 def convert_to_int_data_values_dzn(input_mzn, input_dzn, output_dzn):
