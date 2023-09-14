@@ -58,18 +58,19 @@ To run the experiments you need to run the script `model/mo/main.py` with the fo
 * `--cores`: The number of cores to use.
 * `--cp_strategy`: The strategy to use for the solver. The default value is `free`.
 * `--fzn_optimisation_level`: The optimisation level for the fzn file. The default value is `1`.
-* `--aoi`: The name of the AOI to use.
+* `name of the instance`: The name of the instance to run the experiment, for example `paris_30`.
 
 Example:
 ```bash
 python3 main.py --model_mzn ../mosaic_cloud2.mzn --dzn_dir ../data_sets/ --solver_name gurobi --cp_timeout_sec 60 
---summary ../summary_test.csv --cores 8 --cp_strategy free --fzn_optimisation_level 1 paris_30
+--summary ../summary.csv --cores 8 --cp_strategy free --fzn_optimisation_level 1 paris_30
 ```
 
 #### Results
-instance	cp_solver	cp_strategy	fzn_optimisation_level	threads	cores	cp_timeout_sec	cp_model	exhaustive	hypervolume	datetime	cp_solutions	cp_total_nodes	time_cp_sec	time_fzn_sec	cp_solutions_list	pareto_front	solutions_pareto_front
-
-The result file is a CSV file with the following columns:
+The result file is a CSV file generated inside the folder `model/mo`. The file `summary.csv` has the results used in the 
+work **"Constraint Model for the Satellite Image Mosaic Selection Problem"**, presented in the **"The 29th International 
+Conference on Principles and Practice of Constraint Programming"**. The description of the columns of the file are 
+presented below:
 * `instance`: The name of the instance. Example: `paris_30`.
 * `cp_solver`: The name of the solver used. Example: `gurobi`.
 * `cp_strategy`: The strategy used by the solver. Values: `free`, the default search strategy of the solver or 
@@ -79,17 +80,18 @@ The result file is a CSV file with the following columns:
 * `cores`: The number of cores used by the solver.
 * `cp_timeout_sec`: The timeout in seconds used by the solver to run the experiment.
 * `cp_model`: The name of the model used. Values: `mosaic_cloud2` or `mosaic_cloud3`. The first one implements the
-default search strategy of the solver and the second one implements the proposed search strategy.
+default search strategy of the solver and the second one implements the proposed search strategy. Only used by the cp solvers. 
 * `exhaustive`: A value of `TRUE` means that the whole Pareto front was obtained.
 * `hypervolume`: The hypervolume of the Pareto front found by the solver.
 * `datetime`: The date and time when the experiment was performed.
-* `cp_solutions`: The number of all the solutions found by the solver, .
+* `cp_solutions`: The number of all the solutions found by the solver, not only the solutions that belong to the Pareto
+front, but all the intermediate solutions.
 * `cp_total_nodes`: The total number of nodes explored by the solver.
 * `time_cp_sec`: The time in seconds used by the solver.
-* `time_fzn_sec`: The time in seconds used by the solver to generate the fzn file.
-* `cp_solutions_list`: The list of solutions found by the solver.
-* `pareto_front`: The number of solutions in the Pareto front found by the solver.
-* `solutions_pareto_front`: The list of solutions in the Pareto front found by the solver.
+* `time_fzn_sec`: The time in seconds used by the solver to generate the fzn file. Only valid if minizinc was used.
+* `cp_solutions_list`: The time in which each solution was found by the solver.
+* `pareto_front`: A list with the objective values of the solutions that belong to the Pareto.
+* `solutions_pareto_front`: A list with the image ids selected for the solutions that belong to the Pareto front.
 
 
 
