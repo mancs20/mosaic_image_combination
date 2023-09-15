@@ -12,7 +12,7 @@ class CPClouds(StrategyDiscrete, SolverMinizinc):
 
     @property
     def model_path(self):
-        return "./model/mosaic_cloud.mzn"
+        return "../../model/mosaic_cloud2.mzn"
 
     def __init__(self, clouds:constants.Clouds, max_cloud_cover=0.2):
         super().__init__()
