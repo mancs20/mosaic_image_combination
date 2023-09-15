@@ -1,7 +1,0 @@
-num_images=3;
-universe=3;
-max_cloud_area=1.0;
-images=[{1,2},{2,3},{1,2,3}];
-clouds=[{1},{},{2,3}];
-costs=[2.0, 2.0, 3.0];
-areas=[1.0, 1.0, 1.0];
