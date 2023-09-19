@@ -12,6 +12,9 @@ from filelock import FileLock, Timeout
 
 from MOMIP import MOMIP
 from OSolveMIP import OSolveMIP
+from model.mo.FrontGenerators.Gavanelli import Gavanelli
+from model.mo.FrontGenerators.Saugmecon import Saugmecon
+from model.mo.Solvers.GurobiSolver import GurobiSolver
 
 
 def init_top_level_statistics(statistics):
@@ -27,6 +30,8 @@ def main():
   config.initialize_cores(mzn_solver)
   check_already_computed(config)
   instance = Instance(mzn_solver, model)
+  if config.onfig.solver_name == "gurobi" or config.solver_name == "ortools-py":
+    instance = get_data_from_minizinc_dzn(instance)
   print("Start computing: " + config.uid())
   statistics = {}
   config.init_statistics(statistics)
@@ -59,18 +64,34 @@ def check_already_computed(config):
 
 def build_solver(instance, config, statistics):
   osolve = build_osolver(instance, config, statistics)
-  osolve_mo = build_MO(instance, statistics, osolve, config)
+  front_generator_strategy = set_front_strategy(config, instance, osolve)
+  osolve_mo = build_MO(instance, statistics, front_generator_strategy, config)
   return osolve_mo, osolve_mo.pareto_front
 
 def build_osolver(instance, config, statistics):
   free_search = config.cp_strategy == "free_search"
   if config.solver_name == "gurobi":
-    return OSolveMIP(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search)
+    return GurobiSolver(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search)
+    # return OSolveMIP(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search)
+  elif config.solver_name == "ortools-py":
+    # todo add solver for ortools python
+    return OSolveCP(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search,
+                    config.fzn_optimisation_level)
   else:
+    # todo maybe change the name to indicate that this is using MiniZinc
     return OSolveCP(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search,
                     config.fzn_optimisation_level)
 
-def build_MO(instance, statistics, osolve, config):
+def set_front_strategy(config, instance, solver):
+    if config.front_strategy == "saugmecon":
+        return Saugmecon(instance, solver)
+    elif config.front_strategy == "gavanelli":
+        return Gavanelli(instance, solver)
+    else:
+        return Saugmecon(config.cp_strategy)
+
+def build_MO(instance, statistics, front_generator, config):
+  return MOMIP(instance, statistics, front_generator)
   if config.solver_name == "gurobi":
     return MOMIP(instance, statistics, osolve)
   else:
@@ -113,6 +134,58 @@ def write_statistics(config, statistics):
   except Timeout:
     print("Could not acquire lock on summary file. Statistics will be printed on standard output instead.")
     print(statistics_to_csv(config, statistics))
+
+def get_data_from_minizinc_dzn(instance, image_id_start=0):
+    images = instance["images"]
+    costs = instance["costs"]
+    areas = instance["areas"]
+    clouds = instance["clouds"]
+    if image_id_start == 0:  # Minizinc the id starts at 1
+        for i in range(len(images)):
+          images[i] = {x - 1 for x in images[i]}
+        for i in range(len(clouds)):
+          clouds[i] = {x - 1 for x in clouds[i]}
+    for i in range(len(clouds)):
+        if len(clouds[i]) == 0:
+          clouds[i] = {}
+
+    max_cloud_area = instance["max_cloud_area"]
+    resolution = instance["resolution"]
+    incidence_angle = instance["incidence_angle"]
+
+    return InstanceSIMS(images, costs, areas, clouds, max_cloud_area, resolution, incidence_angle)
+
+class InstanceSIMS:
+  def __init__(self, images, costs, areas, clouds, max_cloud_area, resolution, incidence_angle):
+    self.images = images
+    self.costs = costs
+    self.areas = areas
+    self.clouds = clouds
+    self.max_cloud_area = max_cloud_area
+    self.resolution = resolution
+    self.incidence_angle = incidence_angle
+    self.cloud_covered_by_image, self.clouds_id_area = self.get_cloud_covered_by_image()
+
+  def get_clouds_covered_by_image(self):
+    cloud_covered_by_image = {}
+    clouds_id_area = {}
+    for i in range(len(self.clouds)):
+      image_cloud_set = self.clouds[i]
+      for cloud_id in image_cloud_set:
+        if cloud_id not in clouds_id_area:
+          clouds_id_area[cloud_id] = self.areas[cloud_id]
+        for j in range(len(self.images)):
+          if i != j:
+            if cloud_id in self.images[j] and cloud_id not in self.clouds[j]:  # the area of the cloud is covered by image j, and it is not cloudy in j
+              if j in cloud_covered_by_image:
+                cloud_covered_by_image[j].add(cloud_id)
+              else:
+                cloud_covered_by_image[j] = {cloud_id}
+    return cloud_covered_by_image, clouds_id_area
+
+  def get_parts_cloud(self):
+    pass
+
 
 if __name__ == "__main__":
   main()
