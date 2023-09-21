@@ -13,6 +13,7 @@ class Config:
     parser.add_argument('--model_mzn', required=True)
     parser.add_argument('--dzn_dir', required=True)
     parser.add_argument('--solver_name', required=True)
+    parser.add_argument('--front_strategy', required=True)
     parser.add_argument('--cp_timeout_sec', required=True, type=int)
     parser.add_argument('--summary', required=True)
     parser.add_argument('--cores', type=int)
@@ -25,6 +26,7 @@ class Config:
     self.cp_model = os.path.basename(self.input_mzn)[:-4]
     self.input_dzn = args.dzn_dir + "/" + self.data_name + ".dzn"
     self.solver_name = args.solver_name
+    self.front_strategy = args.front_strategy
     self.cp_timeout_sec = args.cp_timeout_sec
     self.summary_filename = args.summary
     self.cp_strategy = args.cp_strategy
@@ -39,6 +41,7 @@ class Config:
   def init_statistics(self, statistics):
     statistics["instance"] = self.data_name
     statistics["cp_solver"] = self.solver_name
+    statistics["front_strategy"] = self.front_strategy
     statistics["cp_strategy"] = self.cp_strategy
     statistics["fzn_optimisation_level"] = self.fzn_optimisation_level
     statistics["threads"] = self.threads
