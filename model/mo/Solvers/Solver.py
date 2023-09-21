@@ -6,21 +6,29 @@ from typing import List, Any
 class Solver(ABC):
     def __init__(self, instance, statistics, threads, free_search=True):
         self.instance = instance
-        # self.timer = timer
-        self.threads = threads
+        self.model = self.set_model()
         self.free_search = free_search
         self.statistics = statistics
-        self.model = None
         self.objectives = None
+        self.threads = self.set_threads(threads)
         Solver.init_statistics(statistics)
 
-    def init_statistics(self):
+    @abstractmethod
+    def set_model(self):
+        pass
+
+    @abstractmethod
+    def set_threads(self, threads):
+        pass
+
+    @staticmethod
+    def init_statistics(statistics):
         # todo remove the cp_ part from the statistics names
-        self.statistics["cp_solutions"] = 0
-        self.statistics["cp_total_nodes"] = 0
-        self.statistics["time_cp_sec"] = 0
-        self.statistics["time_fzn_sec"] = 0
-        self.statistics["cp_solutions_list"] = []
+        statistics["cp_solutions"] = 0
+        statistics["cp_total_nodes"] = 0
+        statistics["time_cp_sec"] = 0
+        statistics["time_fzn_sec"] = 0
+        statistics["cp_solutions_list"] = []
 
     @abstractmethod
     def solve(self, optimize_not_satisfy = True):
@@ -35,6 +43,10 @@ class Solver(ABC):
             raise ValueError("Invalid optimization sense: " + sense)
 
     @abstractmethod
+    def add_basic_constraints(self):
+        pass
+
+    @abstractmethod
     def set_minimization(self):
         pass
 
@@ -44,6 +56,10 @@ class Solver(ABC):
 
     @abstractmethod
     def set_time_limit(self, timeout):
+        pass
+
+    @abstractmethod
+    def set_single_objective(self, objective_expression):
         pass
 
     @abstractmethod
@@ -65,6 +81,10 @@ class Solver(ABC):
 
     @abstractmethod
     def status_time_limit(self):
+        pass
+
+    @abstractmethod
+    def status_infeasible(self):
         pass
     # status end-------------------------------------------------
 

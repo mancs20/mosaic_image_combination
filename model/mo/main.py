@@ -30,7 +30,7 @@ def main():
   config.initialize_cores(mzn_solver)
   check_already_computed(config)
   instance = Instance(mzn_solver, model)
-  if config.onfig.solver_name == "gurobi" or config.solver_name == "ortools-py":
+  if config.solver_name == "gurobi" or config.solver_name == "ortools-py":
     instance = get_data_from_minizinc_dzn(instance)
   print("Start computing: " + config.uid())
   statistics = {}
@@ -71,24 +71,24 @@ def build_solver(instance, config, statistics):
 def build_osolver(instance, config, statistics):
   free_search = config.cp_strategy == "free_search"
   if config.solver_name == "gurobi":
-    return GurobiSolver(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search)
+    return GurobiSolver(instance, statistics, config.threads, free_search)
     # return OSolveMIP(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search)
   elif config.solver_name == "ortools-py":
     # todo add solver for ortools python
-    return OSolveCP(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search,
+    return OSolveCP(instance, statistics, config.threads, free_search,
                     config.fzn_optimisation_level)
   else:
     # todo maybe change the name to indicate that this is using MiniZinc
-    return OSolveCP(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search,
+    return OSolveCP(instance, statistics, config.threads, free_search,
                     config.fzn_optimisation_level)
 
 def set_front_strategy(config, instance, solver):
     if config.front_strategy == "saugmecon":
-        return Saugmecon(instance, solver)
+        return Saugmecon(instance, solver, Timer(config.cp_timeout_sec))
     elif config.front_strategy == "gavanelli":
-        return Gavanelli(instance, solver)
+        return Gavanelli(instance, solver, Timer(config.cp_timeout_sec))
     else:
-        return Saugmecon(config.cp_strategy)
+        return Saugmecon(config.cp_strategy, solver, Timer(config.cp_timeout_sec))
 
 def build_MO(instance, statistics, front_generator, config):
   return MOMIP(instance, statistics, front_generator)
@@ -164,7 +164,7 @@ class InstanceSIMS:
     self.max_cloud_area = max_cloud_area
     self.resolution = resolution
     self.incidence_angle = incidence_angle
-    self.cloud_covered_by_image, self.clouds_id_area = self.get_cloud_covered_by_image()
+    self.cloud_covered_by_image, self.clouds_id_area = self.get_clouds_covered_by_image()
 
   def get_clouds_covered_by_image(self):
     cloud_covered_by_image = {}

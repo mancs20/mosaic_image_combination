@@ -1,45 +1,14 @@
+from gurobipy import max_
+
 from model.mo.MosaicCloudMIPmodel import MosaicCloudMIPmodel
 from model.mo.Solvers.Solver import Solver
 import gurobipy as gp
 
 
 class GurobiSolver(Solver):
-    def get_solution_values(self):
-        # todo fix this method
-        one_solution = [self.solver.get_main_objective().getValue()]
-        for i in range(len(self.mosaic_model.objectives)):
-            if type(self.mosaic_model.objectives[i]) == gp.Var:
-                one_solution.append(self.mosaic_model.objectives[i].x)
-            else:
-                one_solution.append(self.mosaic_model.objectives[i].getValue())
-        # make sure the values of the objectives are rounded down to the nearest integer
-        one_solution = [int(round(x, 0)) for x in one_solution]
-        return one_solution
 
-    def get_selected_images(self):
-        pass
-
-    def get_status(self):
-        pass
-
-    def set_minimization(self):
-        pass
-
-    def set_maximization(self):
-        pass
-
-    def set_time_limit(self, timeout):
-        pass
-
-    def reset(self):
-        self.mosaic_model.model.reset(1)
-
-    def status_time_limit(self):
-        pass
-
-    def __int__(self, instance, statistics, timer, threads, free_search=True):
-        super().__init__(instance, statistics, timer, threads, free_search)
-        self.model = gp.Model()
+    def __init__(self, instance, statistics, threads, free_search=True):
+        super().__init__(instance, statistics, threads, free_search)
         self.elements, self.areas = gp.multidict({i: instance.areas[i] for i in range(len(instance.areas))})
         self.images_id, self.images, self.costs = gp.multidict({i: [instance.images[i], instance.costs[i]]
                                                                 for i in range(len(instance.images))})
@@ -65,6 +34,57 @@ class GurobiSolver(Solver):
         self.add_objectives()
         self.constraint_objectives = [0] * len(self.objectives)
 
+    def set_model(self):
+        return gp.Model("GurobiModel")
+
+    def set_threads(self, threads):
+        self.model.Params.Threads = threads
+
+    def get_complete_solution(self):
+        return self.model
+
+    def get_nodes_solution(self, solution):
+        return solution.NodeCount
+
+    def get_solution_values(self):
+        one_solution = [self.get_main_objective().getValue()]
+        for i in range(len(self.objectives)):
+            if type(self.objectives[i]) == gp.Var:
+                one_solution.append(self.objectives[i].x)
+            else:
+                one_solution.append(self.objectives[i].getValue())
+        # make sure the values of the objectives are rounded down to the nearest integer
+        one_solution = [int(round(x, 0)) for x in one_solution]
+        return one_solution
+
+    def get_selected_images(self):
+        selected_images = []
+        for image in self.select_image.keys():
+            if abs(self.select_image[image].x) > 1e-6:
+                selected_images.append(image)
+        return selected_images
+
+    def set_minimization(self):
+        self.model.ModelSense = gp.GRB.MINIMIZE
+
+    def set_maximization(self):
+        self.model.ModelSense = gp.GRB.MAXIMIZE
+
+    def set_time_limit(self, timeout_seconds):
+        self.model.Params.TimeLimit = timeout_seconds
+
+    def reset(self):
+        self.model.reset(1)
+
+    def get_status(self):
+        return self.model.Status
+
+    def status_time_limit(self):
+        return self.model.Status == gp.GRB.TIME_LIMIT
+
+    def status_infeasible(self):
+        return self.model.Status == gp.GRB.INFEASIBLE
+
     def add_variables(self):
         # decision variables
         self.select_image = self.model.addVars(len(self.images), vtype=gp.GRB.BINARY, name="select_image_i")
@@ -76,22 +96,21 @@ class GurobiSolver(Solver):
                                                         name="effective_resolution_image_i")
         self.effective_incidence_angle = self.model.addVars(len(self.images), vtype=gp.GRB.INTEGER,
                                                        name="effective_incidence_angle_i")
-        self.current_max_incidence_angle = self.model.addVar(vtype=gp.GRB.INTEGER,
-                                                             name="max_allowed_incidence_angle")
+        self.current_max_incidence_angle = self.model.addVar(vtype=gp.GRB.INTEGER, name="max_allowed_incidence_angle")
 
     def add_objectives(self):
         # for cloud coverage
         self.objectives.append(self.total_area_clouds-(gp.quicksum(self.cloud_covered[c] * self.area_clouds[c]
                                                                    for c in self.clouds_id)))
-        self.objectives_slack.append(-self.total_area_clouds)
+        # self.objectives_slack.append(-self.total_area_clouds)
 
         # for resolution
         self.objectives.append(gp.quicksum(self.resolution_element[e] for e in self.elements))
-        self.objectives_slack.append(0)
+        # self.objectives_slack.append(0)
 
         # for incidence angle
         self.objectives.append(self.current_max_incidence_angle)
-        self.objectives_slack.append(0)
+        # self.objectives_slack.append(0)
 
     def optimize_e_constraint_saugmecon(self, range_array):
         obj = self.get_main_objective()
@@ -101,6 +120,9 @@ class GurobiSolver(Solver):
             rest_obj += self.objectives[i]/range_array[i]
         obj = obj + (delta * rest_obj)
         self.model.setObjective(obj)
+
+    def set_single_objective(self, objective_expression):
+        self.model.setObjective(objective_expression)
 
     def get_main_objective(self):
         return gp.quicksum(self.select_image[i] * self.costs[i] for i in self.images_id)
@@ -149,7 +171,7 @@ class GurobiSolver(Solver):
              self.model.remove(constraint)
         self.add_objective_constraints(ef_array)
 
-    def solve(self, optimize_not_satisfy):
+    def solve(self, optimize_not_satisfy=True):
         if optimize_not_satisfy:
             self.model.optimize()
         else:

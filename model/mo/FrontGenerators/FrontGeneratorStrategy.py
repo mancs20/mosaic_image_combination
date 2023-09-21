@@ -10,6 +10,7 @@ class FrontGeneratorStrategy(ABC):
         self.solver = solver
         self.timer = timer
         self.ref_points = self.get_reference_points()
+        self.initialize_model()
 
     def get_reference_points(self):
         ref_points = [sum(self.instance.costs) + 1, sum(self.instance.areas) + 1, self.get_resolution_nadir_for_ref_point() + 1, 900]
@@ -30,6 +31,9 @@ class FrontGeneratorStrategy(ABC):
         nadir_objectives = [sum(self.instance.areas), self.get_resolution_nadir_for_ref_point(), max(self.instance.incidence_angle)]
         return nadir_objectives
 
+    def initialize_model(self):
+        self.solver.add_basic_constraints()
+
     @abstractmethod
     def solve(self):
         pass
@@ -41,7 +45,6 @@ class FrontGeneratorStrategy(ABC):
         for image in selected_images:
             taken[image] = True
         ref_points = self.ref_points
-        # ef_array = copy.deepcopy(ef_array)
         solution = Solution(objs=one_solution, taken=taken,
                             minimize_objs=[True] * len(one_solution), ref_point=ref_points)
         status = self.solver.get_status()
@@ -71,6 +74,5 @@ class Solution:
     minimize_objs: List[bool]
     taken: List[bool]
     ref_point: List[int]
-    # ef_array: List[int]
 
 

@@ -12,6 +12,7 @@ class OSolve(ABC):
         self.statistics = statistics
         OSolve.init_statistics(self.statistics)
 
+    @staticmethod
     def init_statistics(statistics):
         """This combinator computes these statistics: cp_solution, cp_total_nodes, time_cp_sec, time_fzn_sec, cp_solutions_list."""
         statistics["cp_solutions"] = 0
