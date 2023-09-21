@@ -180,13 +180,6 @@ class ParetoFront:
       temp_solutions.append(str(sol_f))
     return '{' + ','.join(temp_solutions) + '}'
 
-  def ef_arr_to_str(self):
-    """Return a string representation of the ef_array used to ger the solution in the Pareto front."""
-    ef_arrays = []
-    for f in self.front:
-      ef_arrays.append(str(self.solutions[f]['ef_array']))
-    return '{' + ','.join(ef_arrays) + '}'
-
   def hypervolume(self):
     """Compute the hypervolume of the Pareto front. The hypervolume is computed using the reference point `ref_point`."""
     if self.front == []:
