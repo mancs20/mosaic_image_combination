@@ -37,6 +37,9 @@ class GurobiSolver(Solver):
     def set_model(self):
         return gp.Model("GurobiModel")
 
+    def set_solver(self):
+        return None
+
     def set_threads(self, threads):
         self.model.Params.Threads = threads
 
@@ -112,14 +115,25 @@ class GurobiSolver(Solver):
         self.objectives.append(self.current_max_incidence_angle)
         # self.objectives_slack.append(0)
 
-    def optimize_e_constraint_saugmecon(self, range_array):
+    def build_objective_e_constraint_saugmecon(self, range_array):
         obj = self.get_main_objective()
         delta = 0.001 # delta should be between 0.001 and 0.000001
         rest_obj = 0
         for i in range(len(self.objectives)):
             rest_obj += self.objectives[i]/range_array[i]
         obj = obj + (delta * rest_obj)
-        self.model.setObjective(obj)
+        self.set_single_objective(obj)
+        self.set_minimization()
+        # return obj
+
+    # def optimize_e_constraint_saugmecon(self, range_array):
+    #     obj = self.get_main_objective()
+    #     delta = 0.001 # delta should be between 0.001 and 0.000001
+    #     rest_obj = 0
+    #     for i in range(len(self.objectives)):
+    #         rest_obj += self.objectives[i]/range_array[i]
+    #     obj = obj + (delta * rest_obj)
+    #     self.model.setObjective(obj)
 
     def set_single_objective(self, objective_expression):
         self.model.setObjective(objective_expression)
@@ -162,14 +176,20 @@ class GurobiSolver(Solver):
                                                                       for i in self.images_id))
         # constraints end--------------------------------------------------------------
 
-    def add_objective_constraints(self, ef_array):
-        for i in range(len(self.objectives)):
-            self.constraint_objectives[i] = self.model.addConstr(self.objectives[i] <= ef_array[i])
+    # def add_objective_constraints(self, ef_array):
+    #     for i in range(len(self.objectives)):
+    #         self.constraint_objectives[i] = self.model.addConstr(self.objectives[i] <= ef_array[i])
+    #
+    # def update_objective_constraints(self, ef_array):
+    #     for constraint in self.constraint_objectives:
+    #          self.model.remove(constraint)
+    #     self.add_objective_constraints(ef_array)
+    def add_constraints_leq(self, constraint, rhs):
+        new_constraint = self.model.addConstr(constraint <= rhs)
+        return new_constraint
 
-    def update_objective_constraints(self, ef_array):
-        for constraint in self.constraint_objectives:
-             self.model.remove(constraint)
-        self.add_objective_constraints(ef_array)
+    def remove_constraints(self, constraint):
+        self.model.remove(constraint)
 
     def solve(self, optimize_not_satisfy=True):
         if optimize_not_satisfy:

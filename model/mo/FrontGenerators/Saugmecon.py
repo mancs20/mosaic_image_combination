@@ -8,6 +8,7 @@ class Saugmecon(FrontGeneratorStrategy):
         super().__init__(instance, solver, timer)
         self.min_objectives = None
         self.nadir_objectives = None
+        self.constraint_objectives = [0] * len(self.solver.objectives)
 
     def solve(self):
         formatted_solutions, self.min_objectives, self.nadir_objectives = self.initialize_model_with_e_constraint()
@@ -22,10 +23,19 @@ class Saugmecon(FrontGeneratorStrategy):
         rwv = copy.deepcopy(self.min_objectives)
         previous_solutions = set()
         # add initial objective constraints
-        self.solver.add_objective_constraints(ef_array)
+        self.add_objectives_as_constraints(ef_array)
         previous_solution_information = []
         yield from self.saugmecon_loop(ef_array, rwv, len(self.min_objectives), previous_solution_information,
                                        previous_solutions)
+
+    def add_objectives_as_constraints(self, ef_array):
+        for i in range(len(self.solver.objectives)):
+            self.constraint_objectives[i] = self.solver.add_constraints_leq(self.solver.objectives[i], ef_array[i])
+
+    def update_objective_constraints(self, ef_array):
+        for constraint in self.constraint_objectives:
+            self.solver.remove_constraints(constraint)
+        self.add_objectives_as_constraints(ef_array)
 
     def saugmecon_loop(self, ef_array, rwv, id_objective, previous_solution_information, previous_solutions):
         id_objective -= 1
@@ -65,13 +75,13 @@ class Saugmecon(FrontGeneratorStrategy):
                 one_solution = previous_solution_values
         else:
             # update right-hand side values (rhs) for the objective constraints
-            self.solver.update_objective_constraints(ef_array)
+            self.update_objective_constraints(ef_array)
             timeout = self.timer.resume()
-            print("Start the MIP solver...")
+            print("Start the solver...")
             self.solver.set_time_limit(timeout.total_seconds())
             # self.solver.model.Params.TimeLimit = timeout.total_seconds()
             self.solver.solve(optimize_not_satisfy=True)
-            print("Got a result from the MIP solver...")
+            print("Got a result from the solver...")
             cp_sec = self.timer.pause()
             if self.solver.status_time_limit():
                 raise TimeoutError()
@@ -198,8 +208,20 @@ class Saugmecon(FrontGeneratorStrategy):
         # prepare the model for the e-constraint method
         self.solver.set_optimization_sense("min")
         range_array = [abs(nadir_objectives[i] - min_objectives[i]) for i in range(len(nadir_objectives))]
-        self.solver.optimize_e_constraint_saugmecon(range_array)
+        # self.solver.optimize_e_constraint_saugmecon(range_array)
+        self.optimize_e_constraint_saugmecon(range_array)
         return formatted_solutions, min_objectives, nadir_objectives
+
+    def optimize_e_constraint_saugmecon(self, range_array):
+        # obj = self.solver.get_main_objective()
+        # delta = 0.001  # delta should be between 0.001 and 0.000001
+        # rest_obj = 0
+        # for i in range(len(self.solver.objectives)):
+        #     rest_obj += self.solver.objectives[i] / range_array[i]
+        # obj = obj + (delta * rest_obj)
+        self.solver.build_objective_e_constraint_saugmecon(range_array)
+        # self.solver.set_single_objective(obj)
+        # self.solver.set_optimization_sense("min")
 
     def get_min_objectives(self):
         objectives_values = [0] * len(self.solver.objectives)

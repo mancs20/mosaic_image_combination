@@ -7,6 +7,7 @@ class Solver(ABC):
     def __init__(self, instance, statistics, threads, free_search=True):
         self.instance = instance
         self.model = self.set_model()
+        self.solver = self.set_solver()
         self.free_search = free_search
         self.statistics = statistics
         self.objectives = None
@@ -15,6 +16,10 @@ class Solver(ABC):
 
     @abstractmethod
     def set_model(self):
+        pass
+
+    @abstractmethod
+    def set_solver(self):
         pass
 
     @abstractmethod
@@ -43,7 +48,19 @@ class Solver(ABC):
             raise ValueError("Invalid optimization sense: " + sense)
 
     @abstractmethod
+    def add_variables(self):
+        pass
+
+    @abstractmethod
     def add_basic_constraints(self):
+        pass
+
+    @abstractmethod
+    def add_constraints_leq(self, constraint, rhs):
+        pass
+
+    @abstractmethod
+    def remove_constraints(self, constraint):
         pass
 
     @abstractmethod
@@ -60,6 +77,14 @@ class Solver(ABC):
 
     @abstractmethod
     def set_single_objective(self, objective_expression):
+        pass
+
+    @abstractmethod
+    def get_main_objective(self):
+        pass
+
+    @abstractmethod
+    def build_objective_e_constraint_saugmecon(self, range_array):
         pass
 
     @abstractmethod

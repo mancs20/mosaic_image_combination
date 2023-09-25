@@ -15,6 +15,7 @@ from OSolveMIP import OSolveMIP
 from model.mo.FrontGenerators.Gavanelli import Gavanelli
 from model.mo.FrontGenerators.Saugmecon import Saugmecon
 from model.mo.Solvers.GurobiSolver import GurobiSolver
+from model.mo.Solvers.OrtoolsCPSolver import OrtoolsCPSolver
 
 
 def init_top_level_statistics(statistics):
@@ -26,7 +27,10 @@ def main():
   config = Config()
   model = Model(config.input_mzn)
   model.add_file(config.input_dzn, parse_data=True)
-  mzn_solver = Solver.lookup(config.solver_name)
+  if config.solver_name == "ortools-py":
+    mzn_solver = Solver.lookup("gurobi")
+  else:
+    mzn_solver = Solver.lookup(config.solver_name)
   config.initialize_cores(mzn_solver)
   check_already_computed(config)
   instance = Instance(mzn_solver, model)
@@ -58,7 +62,7 @@ def check_already_computed(config):
     with open(config.summary_filename, 'r') as fsummary:
       summary = csv.DictReader(fsummary, delimiter=';')
       for row in summary:
-        if row["instance"] == config.data_name and row["cp_solver"] == config.solver_name and row["cp_strategy"] == config.cp_strategy and row["fzn_optimisation_level"] == str(config.fzn_optimisation_level) and row["cores"] == str(config.cores) and row["cp_timeout_sec"] == str(config.cp_timeout_sec):
+        if row["instance"] == config.data_name and row["cp_solver"] == config.solver_name and row["front_strategy"] == config.front_strategy and row["cp_strategy"] == config.cp_strategy and row["fzn_optimisation_level"] == str(config.fzn_optimisation_level) and row["cores"] == str(config.cores) and row["cp_timeout_sec"] == str(config.cp_timeout_sec):
          print(f"Skipping {config.uid()} because it is already in {config.summary_filename}")
          exit(0)
 
@@ -72,11 +76,8 @@ def build_osolver(instance, config, statistics):
   free_search = config.cp_strategy == "free_search"
   if config.solver_name == "gurobi":
     return GurobiSolver(instance, statistics, config.threads, free_search)
-    # return OSolveMIP(instance, statistics, Timer(config.cp_timeout_sec), config.threads, free_search)
   elif config.solver_name == "ortools-py":
-    # todo add solver for ortools python
-    return OSolveCP(instance, statistics, config.threads, free_search,
-                    config.fzn_optimisation_level)
+    return OrtoolsCPSolver(instance, statistics, config.threads, free_search)
   else:
     # todo maybe change the name to indicate that this is using MiniZinc
     return OSolveCP(instance, statistics, config.threads, free_search,
