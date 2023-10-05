@@ -121,7 +121,10 @@ class GurobiSolver(Solver):
         rest_obj = 0
         for i in range(len(self.objectives)):
             rest_obj += self.objectives[i]/range_array[i]
-        obj = obj + (delta * rest_obj)
+        # todo to compare against cp augmentation has to be false
+        augmenentation = True
+        if augmenentation:
+            obj = obj + (delta * rest_obj)
         self.set_single_objective(obj)
         self.set_minimization()
         # return obj
