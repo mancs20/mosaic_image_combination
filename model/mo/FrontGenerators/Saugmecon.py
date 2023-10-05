@@ -79,7 +79,6 @@ class Saugmecon(FrontGeneratorStrategy):
             timeout = self.timer.resume()
             print("Start the solver...")
             self.solver.set_time_limit(timeout.total_seconds())
-            # self.solver.model.Params.TimeLimit = timeout.total_seconds()
             self.solver.solve(optimize_not_satisfy=True)
             print("Got a result from the solver...")
             cp_sec = self.timer.pause()
@@ -242,14 +241,14 @@ class Saugmecon(FrontGeneratorStrategy):
     def optimize_single_objectives(self, sense, id_objective):
         objective = self.solver.objectives[id_objective]
         timeout = self.timer.resume()
-        print("Start the MIP solver to get the min of objective " + str(id_objective))
+        print("Start the solver to get the min of objective " + str(id_objective))
         self.solver.set_time_limit(timeout.total_seconds())
         self.solver.set_single_objective(objective)
         self.solver.set_optimization_sense(sense)
         self.solver.solve(optimize_not_satisfy=True)
 
         solution_sec = self.timer.pause()
-        print("MIP solver found min of objective " + str(id_objective) + " in " + str(solution_sec) + " seconds")
+        print("The solver found min of objective " + str(id_objective) + " in " + str(solution_sec) + " seconds")
         if self.solver.status_time_limit():
             return None, None
         formatted_solution = self.prepare_solution()
