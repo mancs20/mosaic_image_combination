@@ -127,8 +127,6 @@ class OrtoolsCPSolver(Solver, ):
             self.status = self.solver.Solve(self.model)
             if self.status == cp_model.INFEASIBLE:
                 print("infeasible")
-            # todo remove this after testing
-            # self.assert_solution()
         else:
             # todo do satisfiability
             # check https://developers.google.com/optimization/cp/cp_tasks
@@ -226,28 +224,11 @@ class OrtoolsCPSolver(Solver, ):
         return self.solver.NumBranches()
 
     def tackle_numerical_problems(self):
-        self.instance.costs = [int(x/self.gcd(self.instance.costs)) for x in self.instance.costs]
+        # self.instance.costs = [int(x/self.gcd(self.instance.costs)) for x in self.instance.costs]
+        pass
 
     def gcd(self, list_to_gcd):
         gcd = list_to_gcd[0]
         for i in range(1, len(list_to_gcd)):
             gcd = math.gcd(gcd, list_to_gcd[i])
         return gcd
-
-    def assert_solution(self):
-        self.assert_cost()
-        self.assert_cloud_covered()
-        self.assert_resolution()
-        self.assert_incidence_angle()
-
-    def assert_cost(self):
-        pass
-
-    def assert_cloud_covered(self):
-        pass
-
-    def assert_resolution(self):
-        pass
-
-    def assert_incidence_angle(self):
-        pass
