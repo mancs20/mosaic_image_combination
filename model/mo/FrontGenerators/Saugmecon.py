@@ -240,11 +240,11 @@ class Saugmecon(FrontGeneratorStrategy):
 
     def optimize_single_objectives(self, sense, id_objective):
         objective = self.solver.objectives[id_objective]
-        timeout = self.timer.resume()
         print("Start the solver to get the min of objective " + str(id_objective))
-        self.solver.set_time_limit(timeout.total_seconds())
         self.solver.set_single_objective(objective)
         self.solver.set_optimization_sense(sense)
+        timeout = self.timer.resume()
+        self.solver.set_time_limit(timeout.total_seconds())
         self.solver.solve(optimize_not_satisfy=True)
 
         solution_sec = self.timer.pause()
