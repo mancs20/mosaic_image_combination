@@ -55,6 +55,7 @@ To run the experiments you need to run the script `model/mo/main.py` with the fo
 * `--model_mzn`: The path to the mzn model file.
 * `--dzn_dir`: The path to the folder with the dzn files.
 * `--solver_name`: The name of the solver to use, `or-tools`, `gurobi`, etc.
+* `--front_strategy`: The strategy to use to generate the Pareto front. Ex: `saugmecon`, `gavanelli`.
 * `--cp_timeout_sec`: The timeout in seconds for the solver. The experiments were performed with a value of `3600`.
 * `--summary`: The path to the summary file. A file with the results of the experiments, generated in CSV format.
 * `--cores`: The number of cores to use.
@@ -75,6 +76,7 @@ Conference on Principles and Practice of Constraint Programming"**. The descript
 presented below:
 * `instance`: The name of the instance. Example: `paris_30`.
 * `cp_solver`: The name of the solver used. Example: `gurobi`.
+* `front_strategy`: The strategy used to generate the Pareto front. Example: `saugmecon`.
 * `cp_strategy`: The strategy used by the solver. Values: `free`, the default search strategy of the solver or 
 `greedy` the proposed search strategy inspired in the well-know greedy approach for set covering problems.
 * `fzn_optimisation_level`: The optimisation level used by the solver. Only used by the cp solvers.
