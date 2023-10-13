@@ -4,15 +4,22 @@ from typing import List, Any
 
 
 class Solver(ABC):
-    def __init__(self, instance, statistics, threads, free_search=True):
-        self.instance = instance
-        self.model = self.set_model()
+    def __init__(self, model, statistics, threads, free_search=True):
+        self.model = model
+        self.assert_right_solver(model)
         self.solver = self.set_solver()
         self.free_search = free_search
         self.statistics = statistics
         self.objectives = None
         self.threads = self.set_threads(threads)
         Solver.init_statistics(statistics)
+
+    @abstractmethod
+    def assert_right_solver(self, model):
+        pass
+
+    def message_incorrect_solver(self):
+        return f"Incorrect solver {self} for model {self.model}"
 
     @abstractmethod
     def set_model(self):
@@ -92,7 +99,7 @@ class Solver(ABC):
         pass
 
     @abstractmethod
-    def get_solution_values(self):
+    def get_solution_objective_values(self):
         pass
 
     @abstractmethod
@@ -131,45 +138,6 @@ class Solver(ABC):
     @abstractmethod
     def get_nodes_solution(self, solution):
         pass
-
-    # def prepare_solution(self):
-    #     one_solution = self.get_solution_values()
-    #     selected_images = self.get_selected_images()
-    #     taken = [False] * len(self.instance.images)
-    #     for image in selected_images:
-    #         taken[image] = True
-    #     ref_points = self.ref_points
-    #     # ef_array = copy.deepcopy(ef_array)
-    #     solution = Solution(objs=one_solution, taken=taken,
-    #                         minimize_objs=[True] * len(one_solution), ref_point=ref_points)
-    #     status = self.get_status()
-    #     statistics = None
-    #     minizinc_formatted_solution = MinizincResultFormat(status=status, solution=solution, statistics=statistics)
-    #     return minizinc_formatted_solution
-
-
-# @dataclass
-# class MinizincResultFormat:
-#     status: None
-#     solution: Any
-#     statistics: None
-#
-#     def __getitem__(self, key):
-#         if isinstance(self.solution, list):
-#             if isinstance(key, tuple):
-#                 return getattr(self.solution.__getitem__(key[0]), key[1])
-#             else:
-#                 return self.solution.__getitem__(key)
-#         else:
-#             return getattr(self.solution, key)
-#
-# @dataclass
-# class Solution:
-#     objs: List[int]
-#     minimize_objs: List[bool]
-#     taken: List[bool]
-#     ref_point: List[int]
-#     # ef_array: List[int]
 
 
 

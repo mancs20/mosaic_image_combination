@@ -14,8 +14,7 @@ class ParetoFront:
     front (List[Int]): An index subset of `solutions` containing the Pareto front. Invariant: front is sorted.
   """
 
-  def __init__(self, instance):
-    self.instance = instance
+  def __init__(self):
     self.minimize_objs = []
     self.solutions = []
     self.front = []

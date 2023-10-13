@@ -39,8 +39,8 @@ class FrontGeneratorStrategy(ABC):
         pass
 
     def prepare_solution(self):
-        one_solution = self.solver.get_solution_values()
-        selected_images = self.solver.get_selected_images()
+        one_solution = self.solver.get_solution_objective_values()
+        selected_images = self.solver.model.get_solution_values()
         taken = [False] * len(self.instance.images)
         for image in selected_images:
             taken[image] = True

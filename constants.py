@@ -13,6 +13,17 @@ EXPERIMENT_RESULTS_COVERAGE = 'experiment_result_coverage_'
 # folder names
 QUICKLOOKS_FOLDER_NAME = 'quicklooks'
 
+# problem names
+class Problem(Enum):
+    SATELLITE_IMAGE_SELECTION_PROBLEM = 'sims'
+    MINIZINC_DEFINED = 'minizinc_defined'
+
+# solver names
+class Solver(Enum):
+    GUROBI = 'gurobi'
+    ORTOOLS_PY = 'ortools-py'
+    MINIZINC = 'minizinc'
+
 # type of clouds
 class Clouds(Enum):
     NO_CLOUDS = "No_Clouds"
