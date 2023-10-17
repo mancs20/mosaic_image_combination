@@ -54,6 +54,7 @@ conversion to integer values is needed. To convert the float values to integers 
 To run the experiments you need to run the script `model/mo/main.py` with the following arguments:
 * `--model_mzn`: The path to the mzn model file.
 * `--dzn_dir`: The path to the folder with the dzn files.
+* `--problem_name`: The name of the problem to solve, Ex: `sims` for the Satellite Image Mosaic Selection Problem presented in Constraint Model for the Satellite Image Mosaic Selection Problem.
 * `--solver_name`: The name of the solver to use, `or-tools`, `gurobi`, etc.
 * `--front_strategy`: The strategy to use to generate the Pareto front. Ex: `saugmecon`, `gavanelli`.
 * `--cp_timeout_sec`: The timeout in seconds for the solver. The experiments were performed with a value of `3600`.

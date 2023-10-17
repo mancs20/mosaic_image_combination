@@ -13,8 +13,13 @@ from filelock import FileLock, Timeout
 from MOMIP import MOMIP
 from model.mo.FrontGenerators.Gavanelli import Gavanelli
 from model.mo.FrontGenerators.Saugmecon import Saugmecon
+from model.mo.Instances.InstanceMinizinc import InstanceMinizinc
 from model.mo.Instances.InstanceSIMS import InstanceSIMS
+from model.mo.Solvers.GurobiModels.SatelliteImageMosaicSelectionGurobiModel import \
+  SatelliteImageMosaicSelectionGurobiModel
 from model.mo.Solvers.GurobiSolver import GurobiSolver
+from model.mo.Solvers.OrtoolsCPModels.SatelliteImageMosaicSelectionOrtoolsCPModel import \
+  SatelliteImageMosaicSelectionOrtoolsCPModel
 from model.mo.Solvers.OrtoolsCPSolver import OrtoolsCPSolver
 
 
@@ -58,8 +63,12 @@ def build_instance(config):
   config.initialize_cores(mzn_solver)
   check_already_computed(config)
   instance = Instance(mzn_solver, model)
-  if config.problem == constants.SATELLITE_IMAGE_SELECTION_PROBLEM and config.solver_name == "gurobi" or config.solver_name == "ortools-py":
-    instance = InstanceSIMS(instance)
+  problem_name = config.problem_name
+  if config.solver_name == "gurobi" or config.solver_name == "ortools-py":
+    if problem_name == constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
+      instance = InstanceSIMS(instance)
+  else:
+    instance = InstanceMinizinc(mzn_solver, model, problem_name)
 
   return instance
 
@@ -73,34 +82,52 @@ def check_already_computed(config):
          exit(0)
 
 def build_solver(instance, config, statistics):
-  osolve = build_osolver(instance, config, statistics)
-  front_generator_strategy = set_front_strategy(config, instance, osolve)
+  if not instance.is_minizinc:
+    model = build_model(instance, config)
+  osolve = build_osolver(model, instance, config, statistics)
+  front_generator_strategy = set_front_strategy(config, osolve)
   osolve_mo = build_MO(instance, statistics, front_generator_strategy, osolve)
   return osolve_mo, osolve_mo.pareto_front
 
-def build_osolver(instance, config, statistics):
-  free_search = config.cp_strategy == "free_search"
-  if config.solver_name == "gurobi":
-    return GurobiSolver(instance, statistics, config.threads, free_search)
-  elif config.solver_name == "ortools-py":
-    return OrtoolsCPSolver(instance, statistics, config.threads, free_search)
+def build_model(instance, config):
+  problem = instance.problem_name
+  if not instance.is_minizinc:
+    if problem == constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
+      if config.solver_name == "gurobi":
+        return SatelliteImageMosaicSelectionGurobiModel(instance)
+      elif config.solver_name == "ortools-py":
+        return SatelliteImageMosaicSelectionOrtoolsCPModel(instance)
   else:
+    print("Error. You're trying to build a model from a Minizinc instance. Minizinc instances already have the model")
+    exit(1)
+
+
+def build_osolver(model, instance, config, statistics):
+  free_search = config.cp_strategy == "free_search"
+  if instance.is_minizinc:
     # todo maybe change the name to indicate that this is using MiniZinc
     return OSolveCP(instance, statistics, config.threads, free_search,
                     config.fzn_optimisation_level)
-
-def set_front_strategy(config, instance, solver):
-    if config.front_strategy == "saugmecon":
-        return Saugmecon(instance, solver, Timer(config.cp_timeout_sec))
-    elif config.front_strategy == "gavanelli":
-        return Gavanelli(instance, solver, Timer(config.cp_timeout_sec))
+  else:
+    if config.solver_name == "gurobi":
+      return GurobiSolver(model, statistics, config.threads, free_search)
+    elif config.solver_name == "ortools-py":
+      return OrtoolsCPSolver(model, statistics, config.threads, free_search)
     else:
-        return Saugmecon(config.cp_strategy, solver, Timer(config.cp_timeout_sec))
+      return GurobiSolver(model, statistics, config.threads, free_search)
+
+def set_front_strategy(config, solver):
+    if config.front_strategy == "saugmecon":
+        return Saugmecon(solver, Timer(config.cp_timeout_sec))
+    elif config.front_strategy == "gavanelli":
+        return Gavanelli(solver, Timer(config.cp_timeout_sec))
+    else:
+        return Saugmecon(solver, Timer(config.cp_timeout_sec))
 
 def build_MO(instance, statistics, front_generator, osolve):
-  if instance.problem == constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM:
+  if instance.problem_name == constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
     return MOMIP(instance, statistics, front_generator)
-  elif instance.problem == constants.Problem.MINIZINC_DEFINED:
+  elif instance.problem_name == constants.Problem.MINIZINC_DEFINED:
     # todo check how to remove osolve for minizinc problem, and use front_generator instead
     return MOCP(instance, statistics, osolve)
 

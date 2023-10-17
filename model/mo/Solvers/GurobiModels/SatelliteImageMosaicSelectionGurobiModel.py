@@ -5,8 +5,10 @@ from model.mo.Solvers.GenericModel import GenericModel
 # from model.mo.Solvers.GurobiModels.GurobiSolver import GurobiSolver
 import gurobipy as gp
 
+from model.mo.Solvers.GurobiModels.GurobiModel import GurobiModel
 
-class SatelliteImageMosaicSelectionGurobiModel(GenericModel):
+
+class SatelliteImageMosaicSelectionGurobiModel(GurobiModel):
 
     def __init__(self, instance):
         super().__init__(instance)
@@ -43,13 +45,9 @@ class SatelliteImageMosaicSelectionGurobiModel(GenericModel):
         # self.add_objectives()
         self.constraint_objectives = [0] * len(self.objectives)
 
-
     def assert_right_instance(self):
-        if self.instance.problem != constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM:
+        if self.instance.problem_name != constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
             raise Exception(self.message_incorrect_instance())
-
-    def set_solver_name(self):
-        return constants.Solver.GUROBI
 
     def create_model(self):
         return gp.Model("SIMSModel")
@@ -57,7 +55,6 @@ class SatelliteImageMosaicSelectionGurobiModel(GenericModel):
     def add_variables(self):
         # decision variables
         self.select_image = self.solver_model.addVars(len(self.images), vtype=gp.GRB.BINARY, name="select_image_i")
-        self.solution_variables.append(self.select_image)
         self.cloud_covered = self.solver_model.addVars(self.clouds_id, vtype=gp.GRB.BINARY, name="cloud_covered_e")
         # support variables
         self.resolution_element = self.solver_model.addVars(self.elements, lb=self.min_resolution,

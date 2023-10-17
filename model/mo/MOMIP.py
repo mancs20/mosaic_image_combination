@@ -14,7 +14,7 @@ class MOMIP:
         # super().__init__(instance, statistics, front_generator, verbose=True)
         self.instance = instance
         self.front_generator_strategy = front_generator
-        self.pareto_front = ParetoFront(instance)
+        self.pareto_front = ParetoFront()
         self.verbose = verbose
         self.assert_results = assert_results
         self.statistics = statistics
@@ -29,8 +29,9 @@ class MOMIP:
         for x in self.front_generator_strategy.solve():
             self.add_solution_pareto_front(x)
             self.print_statistics_of_recent_solution(x)
-            if self.assert_results:
-                self.assert_solution(x.solution.objs, self.get_selected_images_from_taken(x.solution.taken))
+            # todo move asser for model
+            # if self.assert_results:
+            #     self.assert_solution(x.solution.objs, self.get_selected_images_from_taken(x.solution.taken))
             yield x
 
     def add_solution_pareto_front(self, solution):

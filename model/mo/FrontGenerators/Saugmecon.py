@@ -4,8 +4,8 @@ from model.mo.FrontGenerators.FrontGeneratorStrategy import FrontGeneratorStrate
 
 
 class Saugmecon(FrontGeneratorStrategy):
-    def __init__(self, instance, solver, timer):
-        super().__init__(instance, solver, timer)
+    def __init__(self, solver, timer):
+        super().__init__(solver, timer)
         self.best_objective_values = None
         self.nadir_objectives_values = None
         self.constraint_objectives = [0] * (len(self.solver.model.objectives) - 1) # all objectives except objective[0]
@@ -207,7 +207,7 @@ class Saugmecon(FrontGeneratorStrategy):
         formatted_solutions, best_constraint_objective_values = self.get_best_constraint_objective_values()
         if None in formatted_solutions:
             return formatted_solutions, best_constraint_objective_values, None
-        nadir_objectives = self.get_nadir_objectives()  # in this case, the nadir is the max
+        nadir_objectives = self.get_nadir_objectives()[1:]  # in this case, the nadir is the max
         # prepare the model for the e-constraint method
         self.solver.set_optimization_sense("min")
         range_array = [abs(nadir_objectives[i] - best_constraint_objective_values[i]) for i in range(len(nadir_objectives))]
@@ -231,7 +231,7 @@ class Saugmecon(FrontGeneratorStrategy):
         return formatted_solutions, objectives_values
 
     def get_nadir_objectives(self):
-        nadir_objectives = self.get_upper_bound_nadir()
+        nadir_objectives = self.solver.model.get_nadir_bound_estimation()
         return nadir_objectives
 
     def optimize_single_objectives(self, sense, id_objective):
@@ -248,7 +248,7 @@ class Saugmecon(FrontGeneratorStrategy):
         if self.solver.status_time_limit():
             return None, None
         formatted_solution = self.prepare_solution()
-        objective_val = formatted_solution['objs'][id_objective+1]
+        objective_val = formatted_solution['objs'][id_objective]
         self.solver.update_statistics(solution_sec)
         self.solver.reset()
         return formatted_solution, objective_val

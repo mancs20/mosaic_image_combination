@@ -4,8 +4,10 @@ import constants
 from model.mo.Solvers.GenericModel import GenericModel
 from ortools.sat.python import cp_model
 
+from model.mo.Solvers.OrtoolsCPModels.OrtoolsCPModel import OrtoolsCPModel
 
-class SatelliteImageMosaicSelectionOrtoolsCPModel(GenericModel):
+
+class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel):
 
     def __init__(self, instance):
         super().__init__(instance)
@@ -26,17 +28,12 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(GenericModel):
         self.add_variables()
         self.add_objectives()
         self.tackle_numerical_problems()
-        # todo check if for ortools is better to create an abstract class
-        self.solver_values
 
     def create_model(self):
         return cp_model.CpModel()
 
-    def set_solver_name(self):
-        return constants.Solver.ORTOOLS_PY
-
     def assert_right_instance(self):
-        if self.instance.problem != constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM:
+        if self.instance.problem_name != constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
             raise Exception(self.message_incorrect_instance())
 
     def add_variables(self):
@@ -50,11 +47,6 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(GenericModel):
             self.cloud_area[cloud] = self.solver_model.NewIntVar(0, self.instance.clouds_id_area[cloud], f"cloud_area{cloud}")
 
     def add_constraints(self):
-        # cover constraint
-        # constraint forall(u in UNIVERSE)(
-        #     exists(i in IMAGES)(taken[i] /\ u in images[i]));
-        # for unused_name, tasks in data.groupby("worker"):
-        #     self.solver_model.AddAtLeastOne(x[tasks.index])
         for i in range(len(self.instance.areas)):
             images_covering_element = self.get_images_covering_element(i)
             self.constraints.append(self.solver_model.AddAtLeastOne(self.select_image[j] for j in images_covering_element))

@@ -173,7 +173,7 @@ class ParetoFront:
     temp_solutions = []
     for f in self.front:
       sol_f = []
-      for idx, val in enumerate(self.solutions[f]['taken']):
+      for idx, val in enumerate(self.solutions[f]['solution_values']):
         if val:
           sol_f.append(idx)
       temp_solutions.append(str(sol_f))

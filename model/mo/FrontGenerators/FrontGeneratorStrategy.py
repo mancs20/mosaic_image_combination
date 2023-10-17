@@ -5,34 +5,13 @@ from typing import List, Any
 
 class FrontGeneratorStrategy(ABC):
 
-    def __init__(self, instance, solver, timer):
-        self.instance = instance
+    def __init__(self, solver, timer):
         self.solver = solver
         self.timer = timer
-        self.ref_points = self.get_reference_points()
-        self.initialize_model()
+        # self.initialize_model()
 
-    def get_reference_points(self):
-        ref_points = [sum(self.instance.costs) + 1, sum(self.instance.areas) + 1, self.get_resolution_nadir_for_ref_point() + 1, 900]
-        return ref_points
-
-    def get_resolution_nadir_for_ref_point(self):
-        resolution_parts_max = {}
-        for idx, image in enumerate(self.instance.images):
-            for u in image:
-                if u not in resolution_parts_max:
-                    resolution_parts_max[u] = self.instance.resolution[idx]
-                else:
-                    if resolution_parts_max[u] < self.instance.resolution[idx]:
-                        resolution_parts_max[u] = self.instance.resolution[idx]
-        return sum(resolution_parts_max.values())
-
-    def get_upper_bound_nadir(self):
-        nadir_objectives = [sum(self.instance.areas), self.get_resolution_nadir_for_ref_point(), max(self.instance.incidence_angle)]
-        return nadir_objectives
-
-    def initialize_model(self):
-        self.solver.add_basic_constraints()
+    # def initialize_model(self):
+    #     self.solver.add_basic_constraints()
 
     @abstractmethod
     def solve(self):
@@ -40,12 +19,9 @@ class FrontGeneratorStrategy(ABC):
 
     def prepare_solution(self):
         one_solution = self.solver.get_solution_objective_values()
-        selected_images = self.solver.model.get_solution_values()
-        taken = [False] * len(self.instance.images)
-        for image in selected_images:
-            taken[image] = True
-        ref_points = self.ref_points
-        solution = Solution(objs=one_solution, taken=taken,
+        solution_values = self.solver.model.get_solution_values()
+        ref_points = self.solver.model.get_ref_points_for_hypervolume()
+        solution = Solution(objs=one_solution, solution_values=solution_values,
                             minimize_objs=[True] * len(one_solution), ref_point=ref_points)
         status = self.solver.get_status()
         statistics = None
@@ -72,7 +48,7 @@ class MinizincResultFormat:
 class Solution:
     objs: List[int]
     minimize_objs: List[bool]
-    taken: List[bool]
+    solution_values: List[bool]
     ref_point: List[int]
 
 

@@ -10,8 +10,7 @@ class Solver(ABC):
         self.solver = self.set_solver()
         self.free_search = free_search
         self.statistics = statistics
-        self.objectives = None
-        self.threads = self.set_threads(threads)
+        self.set_threads(threads)
         Solver.init_statistics(statistics)
 
     @abstractmethod
@@ -20,10 +19,6 @@ class Solver(ABC):
 
     def message_incorrect_solver(self):
         return f"Incorrect solver {self} for model {self.model}"
-
-    @abstractmethod
-    def set_model(self):
-        pass
 
     @abstractmethod
     def set_solver(self):
@@ -55,14 +50,6 @@ class Solver(ABC):
             raise ValueError("Invalid optimization sense: " + sense)
 
     @abstractmethod
-    def add_variables(self):
-        pass
-
-    @abstractmethod
-    def add_basic_constraints(self):
-        pass
-
-    @abstractmethod
     def add_constraints_leq(self, constraint, rhs):
         pass
 
@@ -87,10 +74,6 @@ class Solver(ABC):
         pass
 
     @abstractmethod
-    def get_main_objective(self):
-        pass
-
-    @abstractmethod
     def build_objective_e_constraint_saugmecon(self, range_array):
         pass
 
@@ -100,10 +83,6 @@ class Solver(ABC):
 
     @abstractmethod
     def get_solution_objective_values(self):
-        pass
-
-    @abstractmethod
-    def get_selected_images(self):
         pass
 
     # status---------------------------------------------------

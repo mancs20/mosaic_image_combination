@@ -7,13 +7,14 @@ class GenericModel(ABC):
         self.instance = instance
         self.assert_right_instance()
         self.solver_model = self.create_model()
-        self.solver_name = self.set_solver_name()
+        self.solver_name = ""
+        self.set_solver_name()
         self.objectives = []
         self.constraints = []
         # todo maybe is better to create an abstract class for Ortools CP, the values of the solutions need to be accessed
         #  from the solver
-        self.solution_variables = []
-        self.solver_values = []
+        # self.solution_variables = []
+        # self.solver_values = []
 
     @abstractmethod
     def create_model(self):
@@ -45,6 +46,13 @@ class GenericModel(ABC):
     @abstractmethod
     def get_solution_values(self):
         pass
+
+    def get_nadir_bound_estimation(self):
+        return self.instance.get_nadir_bound_estimation()
+
+    def get_ref_points_for_hypervolume(self):
+        return self.instance.get_ref_points_for_hypervolume()
+
 
 
 

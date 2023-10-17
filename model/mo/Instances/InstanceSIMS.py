@@ -5,10 +5,10 @@ from model.mo.Instances.InstanceGeneric import InstanceGeneric
 class InstanceSIMS(InstanceGeneric):
   # def __init__(self, images, costs, areas, clouds, max_cloud_area, resolution, incidence_angle):
   def __init__(self, minizinc_instance):
-    super().__init__(is_minizinc=False, problem=constants.SATELLITE_IMAGE_SELECTION_PROBLEM)
+    super().__init__(is_minizinc=False, problem_name=constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value)
     self.images, self.clouds = self.correct_starting_indexes(minizinc_instance["images"], minizinc_instance["clouds"])
     self.costs = minizinc_instance["costs"]
-    self.areas = minizinc_instance[" areas"]
+    self.areas = minizinc_instance["areas"]
     self.max_cloud_area = minizinc_instance["max_cloud_area"]
     self.resolution = minizinc_instance["resolution"]
     self.incidence_angle = minizinc_instance["incidence_angle"]
@@ -42,6 +42,24 @@ class InstanceSIMS(InstanceGeneric):
               clouds[i] = {}
       return images, clouds
 
+  def get_ref_points_for_hypervolume(self):
+      ref_points = [sum(self.costs) + 1, sum(self.areas) + 1,
+                    self.get_resolution_nadir_for_ref_point() + 1, 900]
+      return ref_points
 
-  def get_parts_cloud(self):
-    pass
+  def get_resolution_nadir_for_ref_point(self):
+      resolution_parts_max = {}
+      for idx, image in enumerate(self.images):
+          for u in image:
+              if u not in resolution_parts_max:
+                  resolution_parts_max[u] = self.resolution[idx]
+              else:
+                  if resolution_parts_max[u] < self.resolution[idx]:
+                      resolution_parts_max[u] = self.resolution[idx]
+      return sum(resolution_parts_max.values())
+
+  def get_nadir_bound_estimation(self):
+      nadir_objectives = [sum(self.costs), sum(self.areas), self.get_resolution_nadir_for_ref_point(), max(self.incidence_angle)]
+      return nadir_objectives
+
+
