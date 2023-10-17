@@ -77,7 +77,7 @@ def check_already_computed(config):
     with open(config.summary_filename, 'r') as fsummary:
       summary = csv.DictReader(fsummary, delimiter=';')
       for row in summary:
-        if row["instance"] == config.data_name and row["cp_solver"] == config.solver_name and row["front_strategy"] == config.front_strategy and row["cp_strategy"] == config.cp_strategy and row["fzn_optimisation_level"] == str(config.fzn_optimisation_level) and row["cores"] == str(config.cores) and row["cp_timeout_sec"] == str(config.cp_timeout_sec):
+        if row["instance"] == config.data_name and row["problem"] == config.problem_name and row["solver_name"] == config.solver_name and row["front_strategy"] == config.front_strategy and row["cp_strategy"] == config.cp_strategy and row["fzn_optimisation_level"] == str(config.fzn_optimisation_level) and row["cores"] == str(config.cores) and row["cp_timeout_sec"] == str(config.cp_timeout_sec):
          print(f"Skipping {config.uid()} because it is already in {config.summary_filename}")
          exit(0)
 

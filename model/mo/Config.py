@@ -43,7 +43,7 @@ class Config:
   def init_statistics(self, statistics):
     statistics["instance"] = self.data_name
     statistics["problem"] = self.problem_name
-    statistics["cp_solver"] = self.solver_name
+    statistics["solver_name"] = self.solver_name
     statistics["front_strategy"] = self.front_strategy
     statistics["cp_strategy"] = self.cp_strategy
     statistics["fzn_optimisation_level"] = self.fzn_optimisation_level
@@ -54,7 +54,7 @@ class Config:
 
   def uid(self):
     """Unique identifier for this experiment."""
-    return self.data_name + "_" + self.cp_model + "_" + self.cp_strategy + "_" + str(self.cp_timeout_sec) + "_" + str(self.fzn_optimisation_level) + "_" + str(self.cores)
+    return self.data_name + "_" + self.problem_name + "_" + self.solver_name + "_" + self.front_strategy + "_" + self.cp_model + "_" + self.cp_strategy + "_" + str(self.cp_timeout_sec) + "_" + str(self.fzn_optimisation_level) + "_" + str(self.cores)
 
   def initialize_cores(self, solver):
     """If the solver supports parallelization, use twice the number of available cores. Otherwise, use only one core."""
