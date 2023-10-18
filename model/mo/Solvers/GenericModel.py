@@ -9,12 +9,12 @@ class GenericModel(ABC):
         self.solver_model = self.create_model()
         self.solver_name = ""
         self.set_solver_name()
+        self.get_data_from_instance()
         self.objectives = []
         self.constraints = []
-        # todo maybe is better to create an abstract class for Ortools CP, the values of the solutions need to be accessed
-        #  from the solver
-        # self.solution_variables = []
-        # self.solver_values = []
+        self.add_variables()
+        self.add_objectives()
+        self.add_constraints()
 
     @abstractmethod
     def create_model(self):
@@ -30,6 +30,10 @@ class GenericModel(ABC):
 
     def message_incorrect_instance(self):
         return f"Incorrect instance {self.instance} for model {self}"
+
+    @abstractmethod
+    def get_data_from_instance(self):
+        pass
 
     @abstractmethod
     def add_variables(self):

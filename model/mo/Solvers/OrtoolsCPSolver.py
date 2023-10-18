@@ -33,47 +33,54 @@ class OrtoolsCPSolver(Solver):
             for i in range(len(range_array)):
                 multipliers.append(int(multiplication_of_range / range_array[i]))
             gcd = self.gcd(multipliers + [main_obj_multiplier])
-            obj = int(main_obj_multiplier/gcd) * self.self.model.objectives[0]
+            obj = int(main_obj_multiplier/gcd) * self.model.objectives[0]
             constraint_objectives_scaled = []
             for i in range(len(self.model.objectives)):
                 multiplier = multipliers[i]
                 lb = self.model.objectives[i].Proto().domain[0] * multiplier
                 up = self.model.objectives[i].Proto().domain[-1] * multiplier
-                constraint_objectives_scaled.append(self.model.NewIntVar(lb, up, f"obj_constraint{i}"))
-                self.model.Add(constraint_objectives_scaled[i] == self.model.objectives[i] * multiplier)
-            self.model.Minimize(obj + sum(constraint_objectives_scaled))
+                constraint_objectives_scaled.append(self.model.solver_model.NewIntVar(lb, up, f"obj_constraint{i}"))
+                self.model.solver_model.Add(constraint_objectives_scaled[i] == self.model.objectives[i] * multiplier)
+            self.model.solver_model.Minimize(obj + sum(constraint_objectives_scaled))
         else:
-            self.model.Minimize(self.self.model.objectives[0])
+            self.model.solver_model.Minimize(self.model.objectives[0])
 
     def set_threads(self, threads):
         self.solver.parameters = sat_parameters_pb2.SatParameters(num_search_workers=threads)
 
     def solve(self, optimize_not_satisfy=True):
         if optimize_not_satisfy:
-            self.status = self.solver.Solve(self.model)
+            self.status = self.solver.Solve(self.model.solver_model)
             if self.status == cp_model.INFEASIBLE:
                 print("infeasible")
             else:
-                self.model.solver_values = []
-                for values in self.model.solution_variables:
-                    self.model.solver_values.append(self.solver.Value(values))
+                self.add_solution_values_to_model_solver_values()
         else:
             # todo do satisfiability
             # check https://developers.google.com/optimization/cp/cp_tasks
             pass
 
+    def add_solution_values_to_model_solver_values(self):
+        self.model.solver_values = []
+        for values in self.model.solution_variables:
+            if type(values) == list:
+                for value in values:
+                    self.model.solver_values.append(self.solver.Value(value))
+            else:
+                self.model.solver_values.append(self.solver.Value(values))
+
     def add_constraints_leq(self, constraint, rhs):
-        new_constraint = self.model.Add(constraint <= rhs)
+        new_constraint = self.model.solver_model.Add(constraint <= rhs)
         return new_constraint
 
     def remove_constraints(self, constraint):
         constraint.Proto().Clear()
 
     def set_minimization(self):
-        self.model.Minimize(self.current_objective)
+        self.model.solver_model.Minimize(self.current_objective)
 
     def set_maximization(self):
-        self.model.Maximize(self.current_objective)
+        self.model.solver_model.Maximize(self.current_objective)
 
     def set_time_limit(self, timeout):
         self.solver.parameters.max_time_in_seconds = timeout
@@ -85,7 +92,7 @@ class OrtoolsCPSolver(Solver):
         return True
 
     def get_solution_objective_values(self):
-        one_solution = [self.solver.Value(self.self.model.objectives[0])]
+        one_solution = []
         for i in range(len(self.model.objectives)):
             one_solution.append(self.solver.Value(self.model.objectives[i]))
         one_solution = [int(round(x, 0)) for x in one_solution]

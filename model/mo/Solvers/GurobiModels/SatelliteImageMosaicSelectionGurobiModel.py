@@ -1,8 +1,6 @@
 from gurobipy import max_
 
 import constants
-from model.mo.Solvers.GenericModel import GenericModel
-# from model.mo.Solvers.GurobiModels.GurobiSolver import GurobiSolver
 import gurobipy as gp
 
 from model.mo.Solvers.GurobiModels.GurobiModel import GurobiModel
@@ -11,22 +9,16 @@ from model.mo.Solvers.GurobiModels.GurobiModel import GurobiModel
 class SatelliteImageMosaicSelectionGurobiModel(GurobiModel):
 
     def __init__(self, instance):
-        super().__init__(instance)
-        self.cloud_covered = None
-        self.select_image = None
-        self.elements, self.areas = gp.multidict({i: instance.areas[i] for i in range(len(instance.areas))})
-        self.images_id, self.images, self.costs = gp.multidict({i: [instance.images[i], instance.costs[i]]
-                                                                for i in range(len(instance.images))})
-        # cloud processing
-        self.cloud_covered_by_image = gp.tupledict(instance.cloud_covered_by_image)
-        self.clouds_id, self.area_clouds = gp.multidict(instance.clouds_id_area)
-        self.total_area_clouds = int(sum(self.area_clouds.values()))
-        # resolution processing
-        self.resolution = gp.tupledict(zip(self.images_id, instance.resolution))
-        self.min_resolution = min(instance.resolution)
-        # incidence angle processing
-        self.incidence_angle = gp.tupledict(zip(self.images_id, instance.incidence_angle))
-        # multiply to convert to integers
+        self.elements = None
+        self.areas = None
+        self.images_id = None
+        self.images, self.costs = None, None
+        self.cloud_covered_by_image = None
+        self.clouds_id, self.area_clouds = None, None
+        self.total_area_clouds = None
+        self.resolution = None
+        self.min_resolution = None
+        self.incidence_angle = None
         # variables
         self.select_image = None
         self.cloud_covered = None
@@ -34,16 +26,7 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel):
         self.effective_image_resolution = None
         self.effective_incidence_angle = None
         self.current_max_incidence_angle = None
-        self.add_variables()
-        self.add_objectives()
-        self.add_constraints()
-
-        self.objectives_constrained = []
-        # self.add_objectives_constrained()
-        # self.add_objective_to_optimize()
-
-        # self.add_objectives()
-        self.constraint_objectives = [0] * len(self.objectives)
+        super().__init__(instance)
 
     def assert_right_instance(self):
         if self.instance.problem_name != constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
@@ -51,6 +34,22 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel):
 
     def create_model(self):
         return gp.Model("SIMSModel")
+
+    def get_data_from_instance(self):
+        self.elements, self.areas = gp.multidict({i: self.instance.areas[i] for i in range(len(self.instance.areas))})
+        self.images_id, self.images, self.costs = gp.multidict({i: [self.instance.images[i], self.instance.costs[i]]
+                                                                for i in range(len(self.instance.images))})
+        # cloud processing
+        self.cloud_covered_by_image = gp.tupledict(self.instance.cloud_covered_by_image)
+        self.clouds_id, self.area_clouds = gp.multidict(self.instance.clouds_id_area)
+        self.total_area_clouds = int(sum(self.area_clouds.values()))
+        # resolution processing
+        self.resolution = gp.tupledict(zip(self.images_id, self.instance.resolution))
+        self.min_resolution = min(self.instance.resolution)
+        # incidence angle processing
+        self.incidence_angle = gp.tupledict(zip(self.images_id, self.instance.incidence_angle))
+        # multiply to convert to integers
+
 
     def add_variables(self):
         # decision variables
@@ -67,7 +66,6 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel):
         self.current_max_incidence_angle = self.solver_model.addVar(vtype=gp.GRB.INTEGER, name="max_allowed_incidence_angle")
 
     def add_objectives(self):
-        # objectives = []
         # cost
         self.objectives.append(gp.quicksum(self.select_image[i] * self.costs[i] for i in self.images_id))
         # for cloud coverage

@@ -1,7 +1,6 @@
 import math
 
 import constants
-from model.mo.Solvers.GenericModel import GenericModel
 from ortools.sat.python import cp_model
 
 from model.mo.Solvers.OrtoolsCPModels.OrtoolsCPModel import OrtoolsCPModel
@@ -10,11 +9,11 @@ from model.mo.Solvers.OrtoolsCPModels.OrtoolsCPModel import OrtoolsCPModel
 class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel):
 
     def __init__(self, instance):
-        super().__init__(instance)
         # variables
         self.select_image = None
         self.cloud_covered = None
         self.cloud_area = None
+        self.total_cost = None
         self.total_cloudy_area = None
         self.resolution_element = []
         self.total_resolution = None
@@ -22,12 +21,11 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel):
         self.effective_incidence_angle = None
         self.current_max_incidence_angle = None
         # cloud covering
-        self.total_area_clouds = int(sum(self.instance.clouds_id_area.values()))
-        # objectives
+        self.total_area_clouds = None
+        # this variable has the current objective to optimize
         self.current_objective = None
-        self.add_variables()
-        self.add_objectives()
         self.tackle_numerical_problems()
+        super().__init__(instance)
 
     def create_model(self):
         return cp_model.CpModel()
@@ -36,6 +34,9 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel):
         if self.instance.problem_name != constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
             raise Exception(self.message_incorrect_instance())
 
+    def get_data_from_instance(self):
+        self.total_area_clouds = int(sum(self.instance.clouds_id_area.values()))
+
     def add_variables(self):
         self.select_image = [self.solver_model.NewBoolVar(f"select_image{i}") for i in range(len(self.instance.images))]
         self.solution_variables.append(self.select_image)
@@ -43,28 +44,12 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel):
         self.cloud_area = {}
         for cloud in self.instance.clouds_id_area:
             self.cloud_covered[cloud] = self.solver_model.NewBoolVar(f"cloud_covered{cloud}")
-            # self.cloud_covered[cloud] = self.solver_model.NewIntVar(0, len(self.instance.images), f"cloud_covered{cloud}")
             self.cloud_area[cloud] = self.solver_model.NewIntVar(0, self.instance.clouds_id_area[cloud], f"cloud_area{cloud}")
 
     def add_constraints(self):
         for i in range(len(self.instance.areas)):
             images_covering_element = self.get_images_covering_element(i)
             self.constraints.append(self.solver_model.AddAtLeastOne(self.select_image[j] for j in images_covering_element))
-            # self.solver_model.Add(sum(self.select_image[j] for j in self.instance.images[i]) >= 1)
-
-        # incidence angle constraint
-
-        # cloud covered constraint
-        # for cloud in self.cloud_area:
-        #     potential_images_covering_cloud = self.get_images_covering_element(cloud)
-        #     variables = []
-        #     for i in potential_images_covering_cloud:
-        #         variables.append(self.solver_model.NewBoolVar(f"covering_cloud_{cloud}_by_image_{i}"))
-        #     self.solver_model.AddBoolOr(variables).OnlyEnforceIf(self.cloud_covered[cloud])
-        #     # self.solver_model.Add(self.cloud_area[cloud] == 0).OnlyEnforceIf(self.cloud_covered[cloud])
-        #     self.solver_model.Add(self.cloud_area[cloud] == self.instance.clouds_id_area[cloud]).OnlyEnforceIf(self.cloud_covered[cloud].Not())
-        #     # self.solver_model.AddBoolOr([self.solver_model.Not(var) for var in variables]).OnlyEnforceIf(self.cloud_covered[cloud].Not())
-        #     # self.solver_model.AddBoolOr(self.cloud_covered[cloud], variables)
 
         for cloud in self.cloud_area:
             potential_images_covering_cloud = self.get_images_covering_cloud(cloud)
@@ -72,26 +57,17 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel):
                 self.solver_model.Add(self.cloud_covered[cloud] == True).OnlyEnforceIf(self.select_image[i])
             self.constraints.append(self.solver_model.AddAtLeastOne(self.select_image[i] for i in potential_images_covering_cloud).OnlyEnforceIf(
                 self.cloud_covered[cloud]))
-            # self.solver_model.Add(self.cloud_covered[cloud] == self.solver_model.AddBoolOr([self.select_image[i] for i in potential_images_covering_cloud]))
-            # self.solver_model.Add(self.cloud_covered[cloud] == sum(self.select_image[i] for i in potential_images_covering_cloud))
             self.constraints.append(self.solver_model.Add(self.cloud_area[cloud] == 0).OnlyEnforceIf(self.cloud_covered[cloud]))
             self.constraints.append(self.solver_model.Add(self.cloud_area[cloud] == self.instance.clouds_id_area[cloud]).OnlyEnforceIf(
                 self.cloud_covered[cloud].Not()))
 
     def add_objectives(self):
         # cost objective
-        self.current_objective = self.solver_model.NewIntVar(0, sum(self.instance.costs), "cost")
-        self.solver_model.Add(self.current_objective == sum(self.select_image[i] * self.instance.costs[i] for i in range(len(self.select_image))))
-        self.objectives.append(self.current_objective)
+        self.total_cost = self.solver_model.NewIntVar(0, sum(self.instance.costs), "cost")
+        self.solver_model.Add(self.total_cost == sum(self.select_image[i] * self.instance.costs[i] for i in range(len(self.select_image))))
+        self.objectives.append(self.total_cost)
         # cloud covered objective
-        # todo try with model equivalent to minizinc
-        # self.objectives.append(self.solver_model.NewIntVar(0, self.instance.total_area_clouds, "cloud_covered"))
-        # total_cloud_covered = self.total_area_clouds - sum(self.cloud_covered[i] * self.instance.clouds_id_area[i]
-        #                                         for i in self.instance.clouds_id_area)
-        #
-        # total_cloud_covered = self.total_area_clouds - sum(self.instance.clouds_id_area[i] for i in
-        #                                                    self.instance.clouds_id_area if self.cloud_covered[i] == True)
-
+        # todo try with model equivalent to minizinc, instead of covering the clouds, maximize the clean parts
         self.total_cloudy_area = self.solver_model.NewIntVar(0, self.total_area_clouds, "total_cloudy_area")
         self.solver_model.Add(self.total_cloudy_area == sum(self.cloud_area[i] for i in self.cloud_area))
         self.objectives.append(self.total_cloudy_area)
@@ -126,8 +102,6 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel):
                                    for i in range(len(self.instance.images))])
 
         self.objectives.append(self.current_max_incidence_angle)
-        # self.select_image[i] * self.instance.costs[i]
-        # self.objectives.append(self.solver_model.NewIntVar(0, sum(self.instance.costs), "cost"))
 
     def get_images_covering_element(self, element):
         return [i for i in range(len(self.instance.images)) if element in self.instance.images[i]]
@@ -137,10 +111,8 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel):
 
 
     def get_solution_values(self):
-        # selected_images = [index for index in range(len(self.select_image)) if
-        #                    self.solver.Value(self.select_image[index]) == 1]
         selected_images = [index for index in range(len(self.select_image)) if
-                           self.solver_values[0] == 1]
+                           self.solver_values[index] == 1]
         return selected_images
 
     def tackle_numerical_problems(self):
