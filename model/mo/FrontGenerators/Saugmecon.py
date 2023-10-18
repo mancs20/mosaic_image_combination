@@ -81,9 +81,6 @@ class Saugmecon(FrontGeneratorStrategy):
             if self.solver.status_time_limit():
                 raise TimeoutError()
             elif self.solver.status_infeasible():
-                # todo remove commented line after test is working
-                # previous_solution_information = self.save_solution_information(ef_array, "infeasible",
-                #                                                                previous_solution_information)
                 self.save_solution_information(ef_array, "infeasible",previous_solution_information)
                 exit_from_loop_with_acceleration = True
             else:
@@ -99,20 +96,12 @@ class Saugmecon(FrontGeneratorStrategy):
                     # record the solution
                     formatted_solution = self.prepare_solution()
                     one_solution = formatted_solution["objs"]
-                    # todo remove commented line after test is working
-                    # previous_solution_information = self.save_solution_information(ef_array, one_solution,
-                    #                                                                previous_solution_information)
                     self.save_solution_information(ef_array, one_solution, previous_solution_information)
                     yield formatted_solution
         if exit_from_loop_with_acceleration:
-            # todo remove commented line after test is working
-            # ef_array = self.exit_from_loop_with_acceleration(ef_array, self.nadir_objectives_values, self.best_objective_values)
             self.exit_from_loop_with_acceleration(ef_array, self.nadir_objectives_values, self.best_objective_values)
         elif len(one_solution) > 0:
             ef_array[0] = one_solution[1]  # one_solution[0] is the main objective
-            # Explore the relatively worst values rwv of objectives
-            # todo remove commented line after test is working
-            # rwv = self.explore_new_relatively_worst_values_of_objectives(rwv, one_solution,
             self.explore_new_relatively_worst_values_of_objectives(rwv, one_solution,
                                                                          minimization=True)
         else:
@@ -221,6 +210,7 @@ class Saugmecon(FrontGeneratorStrategy):
     def get_best_constraint_objective_values(self):
         objectives_values = [0] * len(self.constraint_objectives)
         formatted_solutions = [0] * len(self.constraint_objectives)
+        # todo the sense should be given by the model, together with objective values
         sense = "min"
         for i in range(len(self.constraint_objectives)):
             formatted_solution, objective_val = self.optimize_single_objectives(sense, i+1)

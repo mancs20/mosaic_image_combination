@@ -1,7 +1,4 @@
-from gurobipy import max_
-
 import constants
-from model.mo.MosaicCloudMIPmodel import MosaicCloudMIPmodel
 from model.mo.Solvers.Solver import Solver
 import gurobipy as gp
 
@@ -71,7 +68,6 @@ class GurobiSolver(Solver):
             obj = obj + (delta * rest_obj)
         self.set_single_objective(obj)
         self.set_minimization()
-        # return obj
 
     def set_single_objective(self, objective_expression):
         self.model.solver_model.setObjective(objective_expression)

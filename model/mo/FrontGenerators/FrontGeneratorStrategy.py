@@ -8,10 +8,6 @@ class FrontGeneratorStrategy(ABC):
     def __init__(self, solver, timer):
         self.solver = solver
         self.timer = timer
-        # self.initialize_model()
-
-    # def initialize_model(self):
-    #     self.solver.add_basic_constraints()
 
     @abstractmethod
     def solve(self):

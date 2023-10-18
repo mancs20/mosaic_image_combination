@@ -2,6 +2,7 @@ from MO import MO
 
 from ParetoFront import ParetoFront
 
+# todo change name this is MO when minizinc is not used
 class MOMIP:
     """Multi-objective solver maintaining a Pareto front.
          See further information in the class `ParetoFront`.
