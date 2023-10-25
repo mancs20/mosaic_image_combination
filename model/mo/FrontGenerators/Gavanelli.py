@@ -6,7 +6,6 @@ class Gavanelli(FrontGeneratorStrategy):
         super().__init__(solver, timer)
 
     def solve(self):
-        or_constraint = None
         whole_front_found = False
         id_or_constraint = 0
         while not whole_front_found:
@@ -19,12 +18,6 @@ class Gavanelli(FrontGeneratorStrategy):
                 # record the solution
                 formatted_solution = self.prepare_solution()
                 one_solution = formatted_solution["objs"]
-                # if or_constraint is not None:
-                #     self.solver.remove_constraints(or_constraint)
-                or_constraint = self.solver.add_or_all_objectives_constraint(one_solution, id_or_constraint)
+                self.solver.add_or_all_objectives_constraint(one_solution, id_or_constraint)
                 id_or_constraint += 1
                 yield formatted_solution
-
-    def add_or_constraint(self, rhs):
-        return self.solver.add_or_all_objectives_constraint(rhs)
-        # model.AddBoolOr([x, y.Not()])

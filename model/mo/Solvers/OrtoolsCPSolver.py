@@ -10,7 +10,6 @@ class OrtoolsCPSolver(Solver):
         super().__init__(model, statistics, threads, free_search)
         self.status = None
         self.current_objective = None
-        self.solution_printer = SolutionWithLimitOne()
 
     def assert_right_solver(self, model):
         if model.solver_name != constants.Solver.ORTOOLS_PY.value:
@@ -50,29 +49,11 @@ class OrtoolsCPSolver(Solver):
         self.solver.parameters = sat_parameters_pb2.SatParameters(num_search_workers=threads)
 
     def solve(self, optimize_not_satisfy=True):
-        if optimize_not_satisfy:
-            self.status = self.solver.Solve(self.model.solver_model)
-        else:
-            # todo do satisfiability
-            # check https://developers.google.com/optimization/cp/cp_tasks
-            self.stop_after_one_solution()
+        self.status = self.solver.Solve(self.model.solver_model)
         if self.status == cp_model.INFEASIBLE:
             print("infeasible")
         else:
             self.add_solution_values_to_model_solver_values()
-
-    def stop_after_one_solution(self):
-        # Enumerate all solutions.
-        # solver.parameters.enumerate_all_solutions = True
-        # Solve.
-        # self.status = self.solver.Solve(self.model.solver_model, self.solution_printer)
-        self.status = self.solver.Solve(self.model.solver_model)
-        if self.status == cp_model.OPTIMAL:
-            print("Result is optimal, and it shouldn't be.")
-        else:
-            print("Result is optimal, and it shouldn't be.")
-        # print(f"Number of solutions found: {self.solution_printer.solution_count()}")
-        # assert solution_printer.solution_count() == 1
 
     def add_solution_values_to_model_solver_values(self):
         self.model.solver_values = []
@@ -130,8 +111,6 @@ class OrtoolsCPSolver(Solver):
 
     def add_or_all_objectives_constraint(self, rhs, id_constraint):
         # todo try to implement it for the general case where the objectives can be max or min
-        # self.model.solver_model.AddBoolOr([self.model.objectives[i] <= rhs[i] for i in range(len(rhs))])
-        # model.AddBoolOr([x, y.Not()])
         obj_constraints = [self.model.objectives[i] < rhs[i] for i in range(len(rhs))]
         bool_vars = [self.model.solver_model.NewBoolVar(f"or_all_objectives_{id_constraint}_{i}")
                      for i in range(len(self.model.objectives))]
@@ -146,21 +125,3 @@ class OrtoolsCPSolver(Solver):
         for i in range(1, len(list_to_gcd)):
             gcd = math.gcd(gcd, list_to_gcd[i])
         return gcd
-
-class SolutionWithLimitOne(cp_model.CpSolverSolutionCallback):
-        """Print intermediate solutions."""
-
-        def __init__(self):
-            cp_model.CpSolverSolutionCallback.__init__(self)
-            # self.__variables = variables
-            self.__solution_count = 0
-
-        def on_solution_callback(self):
-            self.__solution_count += 1
-            if self.__solution_count > 0:
-                print(f"Stop search after 1 solutions")
-                self.StopSearch()
-                self.__solution_count = 0
-
-        def solution_count(self):
-            return self.__solution_count
