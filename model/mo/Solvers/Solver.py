@@ -115,6 +115,10 @@ class Solver(ABC):
         pass
 
     @abstractmethod
+    def add_or_all_objectives_constraint(self, rhs):
+        pass
+
+    @abstractmethod
     def get_nodes_solution(self, solution):
         pass
 

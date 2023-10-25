@@ -72,15 +72,8 @@ class Saugmecon(FrontGeneratorStrategy):
         else:
             # update right-hand side values (rhs) for the objective constraints
             self.update_objective_constraints(ef_array)
-            timeout = self.timer.resume()
-            print("Start the solver...")
-            self.solver.set_time_limit(timeout.total_seconds())
-            self.solver.solve(optimize_not_satisfy=True)
-            print("Got a result from the solver...")
-            cp_sec = self.timer.pause()
-            if self.solver.status_time_limit():
-                raise TimeoutError()
-            elif self.solver.status_infeasible():
+            solution_sec =self.get_solver_solution_for_timeout(optimize_not_satisfy=True)
+            if self.solver.status_infeasible():
                 self.save_solution_information(ef_array, "infeasible",previous_solution_information)
                 exit_from_loop_with_acceleration = True
             else:
@@ -92,7 +85,7 @@ class Saugmecon(FrontGeneratorStrategy):
                     # update previous_solutions
                     previous_solutions.add(str_selected_images)
                     # update statistics
-                    self.solver.update_statistics(cp_sec)
+                    self.solver.update_statistics(solution_sec)
                     # record the solution
                     formatted_solution = self.prepare_solution()
                     one_solution = formatted_solution["objs"]

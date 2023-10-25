@@ -85,3 +85,6 @@ class GurobiSolver(Solver):
         else:
             # todo do satisfiability
             pass
+
+    def add_or_all_objectives_constraint(self, rhs, sense):
+        pass
