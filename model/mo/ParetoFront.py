@@ -53,11 +53,16 @@ class ParetoFront:
           Bool:
             `True` if `x` was added to the solutions set and the Pareto front, `False` otherwise.
     """
+    list_to_pop = []
     for idf, f in enumerate(self.front):
       if self.dominates(self.solutions[f], self.solutions[idx]):
         return False
       elif self.dominates(self.solutions[idx], self.solutions[f]):
-        self.front.pop(idf)
+        list_to_pop.append(idf)
+    if len(list_to_pop) > 0:
+      list_to_pop.reverse()
+      for remove_solution in list_to_pop:
+        self.front.pop(remove_solution)
     self.front.append(idx)
     return True
 
