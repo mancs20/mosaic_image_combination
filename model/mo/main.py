@@ -48,8 +48,8 @@ def main():
     print("Execption raised: " + str(e))
     logging.error(traceback.format_exc())
   statistics["hypervolume"] = pareto_front.hypervolume()
-  solution_times_list = [statistics["cp_solutions_list"][x] for x in pareto_front.front]
-  statistics["cp_solutions_list"] = solution_times_list
+  solution_times_list = [statistics["solutions_time_list"][x] for x in pareto_front.front]
+  statistics["solutions_time_list"] = solution_times_list
   print("end of solving statistics: " + str(statistics))
   write_statistics(config, statistics)
 
@@ -78,7 +78,7 @@ def check_already_computed(config):
     with open(config.summary_filename, 'r') as fsummary:
       summary = csv.DictReader(fsummary, delimiter=';')
       for row in summary:
-        if row["instance"] == config.data_name and row["problem"] == config.problem_name and row["solver_name"] == config.solver_name and row["front_strategy"] == config.front_strategy and row["cp_strategy"] == config.cp_strategy and row["fzn_optimisation_level"] == str(config.fzn_optimisation_level) and row["cores"] == str(config.cores) and row["cp_timeout_sec"] == str(config.cp_timeout_sec):
+        if row["instance"] == config.data_name and row["problem"] == config.problem_name and row["solver_name"] == config.solver_name and row["front_strategy"] == config.front_strategy and row["solver_search_strategy"] == config.solver_search_strategy and row["fzn_optimisation_level"] == str(config.fzn_optimisation_level) and row["cores"] == str(config.cores) and row["solver_timeout_sec"] == str(config.solver_timeout_sec):
          print(f"Skipping {config.uid()} because it is already in {config.summary_filename}")
          exit(0)
 
@@ -104,7 +104,7 @@ def build_model(instance, config):
 
 
 def build_osolver(model, instance, config, statistics):
-  free_search = config.cp_strategy == "free_search"
+  free_search = config.solver_search_strategy == "free_search"
   if instance.is_minizinc:
     # todo maybe change the name to indicate that this is using MiniZinc
     return OSolveCP(instance, statistics, config.threads, free_search,
@@ -119,11 +119,11 @@ def build_osolver(model, instance, config, statistics):
 
 def set_front_strategy(config, solver):
     if config.front_strategy == "saugmecon":
-        return Saugmecon(solver, Timer(config.cp_timeout_sec))
+        return Saugmecon(solver, Timer(config.solver_timeout_sec))
     elif config.front_strategy == "gavanelli":
-        return Gavanelli(solver, Timer(config.cp_timeout_sec))
+        return Gavanelli(solver, Timer(config.solver_timeout_sec))
     else:
-        return Saugmecon(solver, Timer(config.cp_timeout_sec))
+        return Saugmecon(solver, Timer(config.solver_timeout_sec))
 
 def build_MO(instance, statistics, front_generator, osolve):
   if instance.problem_name == constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:

@@ -30,12 +30,11 @@ class Solver(ABC):
 
     @staticmethod
     def init_statistics(statistics):
-        # todo remove the cp_ part from the statistics names
-        statistics["cp_solutions"] = 0
-        statistics["cp_total_nodes"] = 0
-        statistics["time_cp_sec"] = 0
-        statistics["time_fzn_sec"] = 0
-        statistics["cp_solutions_list"] = []
+        statistics["number_of_solutions"] = 0
+        statistics["total_nodes"] = 0
+        statistics["time_solver_sec"] = 0
+        statistics["minizinc_time_fzn_sec"] = 0
+        statistics["solutions_time_list"] = []
 
     @abstractmethod
     def solve(self, optimize_not_satisfy = True):
@@ -100,15 +99,14 @@ class Solver(ABC):
     # status end-------------------------------------------------
 
     def update_statistics(self, seconds):
-        # todo remove the cp_ part from the statistics names
-        self.statistics["time_cp_sec"] += seconds
+        self.statistics["time_solver_sec"] += seconds
         solution = self.get_complete_solution()
         if solution is None:
             return
-        self.statistics["cp_solutions"] += 1
-        self.statistics["cp_total_nodes"] += self.get_nodes_solution(solution)
-        self.statistics["time_cp_sec"] += seconds
-        self.statistics["cp_solutions_list"].append(self.statistics["time_cp_sec"])
+        self.statistics["number_of_solutions"] += 1
+        self.statistics["total_nodes"] += self.get_nodes_solution(solution)
+        self.statistics["time_solver_sec"] += seconds
+        self.statistics["solutions_time_list"].append(self.statistics["time_solver_sec"])
 
     @abstractmethod
     def get_complete_solution(self):

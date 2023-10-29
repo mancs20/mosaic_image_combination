@@ -333,13 +333,13 @@ class OSolveMIP(OSolve):
 
 
     def update_statistics(self, res, cp_sec):
-        self.statistics["time_cp_sec"] += cp_sec
+        self.statistics["time_solver_sec"] += cp_sec
         if res is None:
             return
-        self.statistics["cp_total_nodes"] += res.NodeCount
-        self.statistics["time_fzn_sec"] += 0 # Gurobi Python does not have a fzn time is just Minizinc
-        self.statistics["cp_solutions"] += 1
-        self.statistics["cp_solutions_list"].append(self.statistics["time_cp_sec"])
+        self.statistics["total_nodes"] += res.NodeCount
+        self.statistics["minizinc_time_fzn_sec"] += 0 # Gurobi Python does not have a fzn time is just Minizinc
+        self.statistics["number_of_solutions"] += 1
+        self.statistics["solutions_time_list"].append(self.statistics["time_solver_sec"])
 
 @dataclass
 class MinizincResultFormat:

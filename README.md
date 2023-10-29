@@ -57,17 +57,17 @@ To run the experiments you need to run the script `model/mo/main.py` with the fo
 * `--problem_name`: The name of the problem to solve, Ex: `sims` for the Satellite Image Mosaic Selection Problem presented in Constraint Model for the Satellite Image Mosaic Selection Problem.
 * `--solver_name`: The name of the solver to use, `or-tools`, `gurobi`, etc.
 * `--front_strategy`: The strategy to use to generate the Pareto front. Ex: `saugmecon`, `gavanelli`.
-* `--cp_timeout_sec`: The timeout in seconds for the solver. The experiments were performed with a value of `3600`.
+* `--solver_timeout_sec`: The timeout in seconds for the solver. The experiments were performed with a value of `3600`.
 * `--summary`: The path to the summary file. A file with the results of the experiments, generated in CSV format.
 * `--cores`: The number of cores to use.
-* `--cp_strategy`: The strategy to use for the solver. The default value is `free`.
+* `--solver_search_strategy`: The strategy to use for the solver. The default value is `free`.
 * `--fzn_optimisation_level`: The optimisation level for the fzn file. The default value is `1`.
 * `name of the instance`: The name of the instance to run the experiment, for example `paris_30`.
 
 Example:
 ```bash
-python3 main.py --model_mzn ../mosaic_cloud2.mzn --dzn_dir ../data_sets/ --solver_name gurobi --cp_timeout_sec 60 
---summary ../summary.csv --cores 8 --cp_strategy free --fzn_optimisation_level 1 paris_30
+python3 main.py --model_mzn ../mosaic_cloud2.mzn --dzn_dir ../data_sets/ --solver_name gurobi --solver_timeout_sec 60 
+--summary ../summary.csv --cores 8 --solver_search_strategy free --fzn_optimisation_level 1 paris_30
 ```
 
 #### Results
@@ -76,25 +76,27 @@ work **"Constraint Model for the Satellite Image Mosaic Selection Problem"**, pr
 Conference on Principles and Practice of Constraint Programming"**. The description of the columns of the file are 
 presented below:
 * `instance`: The name of the instance. Example: `paris_30`.
-* `cp_solver`: The name of the solver used. Example: `gurobi`.
+* `problem`: The name of the problem. Example: `sims`.
+* `solver_name`: The name of the solver used. Example: `gurobi`.
 * `front_strategy`: The strategy used to generate the Pareto front. Example: `saugmecon`.
-* `cp_strategy`: The strategy used by the solver. Values: `free`, the default search strategy of the solver or 
+* `solver_search_strategy`: The strategy used by the solver. Values: `free`, the default search strategy of the solver or 
 `greedy` the proposed search strategy inspired in the well-know greedy approach for set covering problems.
 * `fzn_optimisation_level`: The optimisation level used by the solver. Only used by the cp solvers.
 * `threads`: The number of threads used by the solver.
 * `cores`: The number of cores used by the solver.
-* `cp_timeout_sec`: The timeout in seconds used by the solver to run the experiment.
-* `cp_model`: The name of the model used. Values: `mosaic_cloud2` or `mosaic_cloud3`. The first one implements the
-default search strategy of the solver and the second one implements the proposed search strategy. Only used by the cp solvers. 
+* `solver_timeout_sec`: The timeout in seconds used by the solver to run the experiment.
+* `minizinc_model`: The name of the minizinc model used. Values: `mosaic_cloud2` or `mosaic_cloud3`. The first one implements the
+default search strategy of the solver and the second one implements the proposed search strategy. It is is neccessary to read
+* minizinc data files and when minizinc is used to solve the model.
 * `exhaustive`: A value of `TRUE` means that the whole Pareto front was obtained.
 * `hypervolume`: The hypervolume of the Pareto front found by the solver.
 * `datetime`: The date and time when the experiment was performed.
-* `cp_solutions`: The number of all the solutions found by the solver, not only the solutions that belong to the Pareto
+* `number_of_solutions`: The number of all the solutions found by the solver, not only the solutions that belong to the Pareto
 front, but all the intermediate solutions.
-* `cp_total_nodes`: The total number of nodes explored by the solver.
-* `time_cp_sec`: The time in seconds used by the solver.
-* `time_fzn_sec`: The time in seconds used by the solver to generate the fzn file. Only valid if minizinc was used.
-* `cp_solutions_list`: The time in which each solution was found by the solver.
+* `total_nodes`: The total number of nodes explored by the solver.
+* `time_solver_sec`: The time in seconds used by the solver.
+* `minizinc_time_fzn_sec`: The time in seconds used by the solver to generate the fzn file. Only valid if minizinc was used.
+* `solutions_time_list`: The time in which each solution was found by the solver.
 * `pareto_front`: A list with the objective values of the solutions that belong to the Pareto.
 * `solutions_pareto_front`: A list with the image ids selected for the solutions that belong to the Pareto front.
 

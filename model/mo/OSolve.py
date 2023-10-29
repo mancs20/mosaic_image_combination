@@ -14,12 +14,13 @@ class OSolve(ABC):
 
     @staticmethod
     def init_statistics(statistics):
-        """This combinator computes these statistics: cp_solution, cp_total_nodes, time_cp_sec, time_fzn_sec, cp_solutions_list."""
-        statistics["cp_solutions"] = 0
-        statistics["cp_total_nodes"] = 0
-        statistics["time_cp_sec"] = 0   # Time spent in the CP solver.
-        statistics["time_fzn_sec"] = 0
-        statistics["cp_solutions_list"] = []
+        """This combinator computes these statistics: number_of_solutions, total_nodes, time_solver_sec,
+        minizinc_time_fzn_sec, solutions_time_list."""
+        statistics["number_of_solutions"] = 0
+        statistics["total_nodes"] = 0
+        statistics["time_solver_sec"] = 0   # Time spent in the solver.
+        statistics["minizinc_time_fzn_sec"] = 0
+        statistics["solutions_time_list"] = []
 
     @abstractmethod
     def solve(self):
