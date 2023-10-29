@@ -109,7 +109,7 @@ class OrtoolsCPSolver(Solver):
         # todo check if this is the best statistic to show
         return self.solver.NumBranches()
 
-    def add_or_all_objectives_constraint(self, rhs, id_constraint):
+    def add_or_all_objectives_constraint(self, rhs, id_constraint=0, sense_min=True):
         # todo try to implement it for the general case where the objectives can be max or min
         obj_constraints = [self.model.objectives[i] < rhs[i] for i in range(len(rhs))]
         bool_vars = [self.model.solver_model.NewBoolVar(f"or_all_objectives_{id_constraint}_{i}")

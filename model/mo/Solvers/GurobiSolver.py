@@ -80,11 +80,19 @@ class GurobiSolver(Solver):
         self.model.solver_model.remove(constraint)
 
     def solve(self, optimize_not_satisfy=True):
-        if optimize_not_satisfy:
-            self.model.solver_model.optimize()
-        else:
-            # todo do satisfiability
-            pass
+        if not optimize_not_satisfy:
+            self.model.solver_model.Params.solutionLimit = 1
+        self.model.solver_model.optimize()
 
-    def add_or_all_objectives_constraint(self, rhs, sense):
-        pass
+    def add_or_all_objectives_constraint(self, rhs, id_constraint=0, sense_min=True):
+        # todo try to implement it for the general case where the objectives can be max or min
+        y = self.model.solver_model.addVars(len(self.model.objectives), vtype=gp.GRB.BINARY,
+                                            name=f"temp_y_{id_constraint}")
+        self.model.solver_model.addConstr(gp.quicksum(y) == 1)
+        big_m_nadir_objectives = self.model.get_nadir_bound_estimation()
+        rhs = [rhs[i] - 1 for i in range(len(rhs))]
+        for i in range(len(self.model.objectives)):
+            self.model.solver_model.addConstr(self.model.objectives[i] <=
+                                              rhs[i] + (big_m_nadir_objectives[i] * (1 -y[i])))
+            # self.model.solver_model.addConstr(self.model.objectives[i] <= rhs[i])
+
