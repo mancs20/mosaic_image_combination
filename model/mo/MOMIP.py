@@ -36,9 +36,18 @@ class MOMIP:
             yield x
 
     def add_solution_pareto_front(self, solution):
-        self.pareto_front.join(solution)
+        added_to_front = self.pareto_front.join(solution)
+        error = False
+        error_msg = (f"Error!! solution {solution} is a new solution which is dominated by some of the previous. "
+                     f"Previous solutions: {self.pareto_front.solutions}")
+        if not added_to_front and self.front_generator_strategy.always_add_new_solutions_to_front():
+            error = True
+            print(f"Error!! solution {solution} is a new solution which is dominated by some of the previous")
+            print(f"Previous solutions: {self.pareto_front.solutions}")
         self.statistics["pareto_front"] = self.pareto_front.to_str()
         self.statistics["solutions_pareto_front"] = self.pareto_front.solutions_to_str()
+        if error:
+            raise Exception(error_msg)
 
 
     def print_statistics_of_recent_solution(self, solution):

@@ -8,9 +8,14 @@ class FrontGeneratorStrategy(ABC):
     def __init__(self, solver, timer):
         self.solver = solver
         self.timer = timer
+        self.always_add_new_solutions_to_front()
 
     @abstractmethod
     def solve(self):
+        pass
+
+    @abstractmethod
+    def always_add_new_solutions_to_front(self):
         pass
 
     def get_solver_solution_for_timeout(self, optimize_not_satisfy=True):

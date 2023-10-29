@@ -1,9 +1,14 @@
+import copy
+
 from model.mo.FrontGenerators.FrontGeneratorStrategy import FrontGeneratorStrategy
 
 
 class Gavanelli(FrontGeneratorStrategy):
     def __init__(self, solver, timer):
         super().__init__(solver, timer)
+
+    def always_add_new_solutions_to_front(self):
+        return True
 
     def solve(self):
         whole_front_found = False

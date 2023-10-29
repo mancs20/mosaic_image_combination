@@ -79,7 +79,6 @@ class ParetoFront:
     self.solutions.append(x)
 
     if not self.join_front(idx):
-      # self.solutions.pop()
       return False
     return True
 

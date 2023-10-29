@@ -10,6 +10,9 @@ class Saugmecon(FrontGeneratorStrategy):
         self.nadir_objectives_values = None
         self.constraint_objectives = [0] * (len(self.solver.model.objectives) - 1) # all objectives except objective[0]
 
+    def always_add_new_solutions_to_front(self):
+        return True
+
     def solve(self):
         formatted_solutions, self.best_objective_values, self.nadir_objectives_values = self.initialize_model_with_e_constraint()
         # check if the solver could find the optimum for each objective
