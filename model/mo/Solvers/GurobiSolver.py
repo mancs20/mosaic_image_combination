@@ -56,15 +56,13 @@ class GurobiSolver(Solver):
     def status_infeasible(self):
         return self.model.solver_model.Status == gp.GRB.INFEASIBLE
 
-    def build_objective_e_constraint_saugmecon(self, range_array):
+    def build_objective_e_constraint_saugmecon(self, range_array, augmentation):
         obj = self.model.objectives[0]
         delta = 0.001 # delta should be between 0.001 and 0.000001
         rest_obj = 0
         for i in range(len(range_array)):
             rest_obj += self.model.objectives[i+1]/range_array[i]
-        # todo to compare against cp augmentation has to be false
-        augmenentation = False
-        if augmenentation:
+        if augmentation:
             obj = obj + (delta * rest_obj)
         self.set_single_objective(obj)
         self.set_minimization()

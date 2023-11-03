@@ -28,6 +28,9 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel):
         self.current_max_incidence_angle = None
         super().__init__(instance)
 
+    def is_numerically_possible_augment_objective(self):
+        return False # For Ortools-cp it is not possible
+
     def assert_right_instance(self):
         if self.instance.problem_name != constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
             raise Exception(self.message_incorrect_instance())

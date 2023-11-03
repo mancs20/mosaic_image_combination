@@ -18,10 +18,9 @@ class OrtoolsCPSolver(Solver):
     def set_solver(self):
         return cp_model.CpSolver()
 
-    def build_objective_e_constraint_saugmecon(self, range_array):
+    def build_objective_e_constraint_saugmecon(self, range_array, augmentation):
         # ortools cannot work with floats, so we need to convert to ints
-        multiply_to_convert_to_int = False
-        if multiply_to_convert_to_int:
+        if augmentation:
             gcd = self.gcd(range_array)
             range_array = [int(x/gcd) for x in range_array]
             main_obj_multiplier = 1000

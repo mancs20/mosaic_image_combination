@@ -73,7 +73,7 @@ class Solver(ABC):
         pass
 
     @abstractmethod
-    def build_objective_e_constraint_saugmecon(self, range_array):
+    def build_objective_e_constraint_saugmecon(self, range_array, augmentation):
         pass
 
     @abstractmethod

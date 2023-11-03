@@ -11,7 +11,7 @@ class Saugmecon(FrontGeneratorStrategy):
         self.constraint_objectives = [0] * (len(self.solver.model.objectives) - 1) # all objectives except objective[0]
 
     def always_add_new_solutions_to_front(self):
-        return True
+        return self.solver.model.is_numerically_possible_augment_objective()
 
     def solve(self):
         formatted_solutions, self.best_objective_values, self.nadir_objectives_values = self.initialize_model_with_e_constraint()
@@ -24,10 +24,15 @@ class Saugmecon(FrontGeneratorStrategy):
         # initialize loop-control variables with values equal to the nadir values + 1
         ef_array = [self.nadir_objectives_values[i] + 1 for i in range(len(self.nadir_objectives_values))]
         rwv = copy.deepcopy(self.best_objective_values)
+        # previous solution information
         previous_solutions = set()
+        previous_solution_information = []
+        for i in range(len(formatted_solutions)):
+            selected_images = formatted_solutions[i]['solution_values']
+            str_selected_images = self.convert_selected_images_to_str(selected_images)
+            previous_solutions.add(str_selected_images)
         # add initial objective constraints
         self.add_objectives_as_constraints(ef_array)
-        previous_solution_information = []
         yield from self.saugmecon_loop(ef_array, rwv, len(self.best_objective_values), previous_solution_information,
                                        previous_solutions)
 
@@ -43,16 +48,15 @@ class Saugmecon(FrontGeneratorStrategy):
     def saugmecon_loop(self, ef_array, rwv, id_objective, previous_solution_information, previous_solutions):
         id_objective -= 1
         while ef_array[id_objective] > self.best_objective_values[id_objective]:
-            ef_array[id_objective] -= 1
             if id_objective == 0:
                 # solve the saugmecon model
                 while ef_array[id_objective] > self.best_objective_values[id_objective]:
                     ef_array[id_objective] -= 1
                     yield from self.solve_saugmecon_most_inner_loop(ef_array, rwv, previous_solution_information,
                                                                      previous_solutions)
-                    
                 return
             else:
+                ef_array[id_objective] -= 1
                 yield from self.saugmecon_loop(ef_array, rwv, id_objective, previous_solution_information, previous_solutions)
                 ef_array[id_objective-1] = self.nadir_objectives_values[id_objective - 1] + 1
                 if ef_array[id_objective] > self.best_objective_values[id_objective]:
@@ -81,7 +85,7 @@ class Saugmecon(FrontGeneratorStrategy):
                 exit_from_loop_with_acceleration = True
             else:
                 selected_images = self.solver.model.get_solution_values()
-                str_selected_images = '-'.join((str(i) for i in selected_images))
+                str_selected_images = self.convert_selected_images_to_str(selected_images)
                 if str_selected_images in previous_solutions:
                     one_solution = self.solver.get_solution_objective_values()
                 else:
@@ -103,6 +107,11 @@ class Saugmecon(FrontGeneratorStrategy):
         else:
             # this should not happen if the solver is working properly
             raise Exception("The solver did not find any solution")
+
+    @staticmethod
+    def convert_selected_images_to_str(selected_images):
+        str_selected_images = '-'.join((str(i) for i in selected_images))
+        return str_selected_images
 
     @staticmethod
     def exit_from_loop_with_acceleration(ef_array, nadir_objective_values, best_objective_values):
@@ -153,40 +162,65 @@ class Saugmecon(FrontGeneratorStrategy):
                 lo = mid + 1
         return lo
 
-    def search_previous_solutions_relaxation(self, ef_array_actual_solution, previous_solution_information):
-        there_is_relaxation_for_ef_array_actual_solution = False
+    @staticmethod
+    def get_less_constrained_previous_solutions(ef_array, previous_solution_information):
         if len(previous_solution_information) == 0:
-            return there_is_relaxation_for_ef_array_actual_solution, None
+            return -1
+        # get position to start searching
+        idx = Saugmecon.bisect_right_previous_solutions(ef_array, previous_solution_information) - 1
+        solution_with_more_relaxation_found = False
+        while not solution_with_more_relaxation_found and idx > -1:
+            if Saugmecon.ef_array1_less_constraint_ef_array2(previous_solution_information[idx][0], ef_array, min_sense=True):
+                f_solution_values = previous_solution_information[idx][1]
+                # check if the solution is not infeasible. If it is infeasible return True and in the loop call Exit with
+                # acceleration
+                solution_with_more_relaxation_found = True
+                if type(f_solution_values) is not str:
+                    f_solution_values_for_constraint = f_solution_values[1:len(f_solution_values)]
+                    if not Saugmecon.solution_satisfy_ef_arr(f_solution_values_for_constraint, ef_array):
+                        solution_with_more_relaxation_found = False
+                        idx -= 1
+            else:
+                idx -= 1
+        return idx
 
+
+    @staticmethod
+    def ef_array1_less_constraint_ef_array2(ef_array1, ef_array2, min_sense=True):
+        less_constraint = True
+        for i in range(len(ef_array1)):
+            if min_sense:
+                if ef_array1[i] < ef_array2[i]:
+                    less_constraint = False
+                    break
+            else:
+                if ef_array1[i] > ef_array2[i]:
+                    less_constraint = False
+                    break
+        return less_constraint
+
+    def search_previous_solutions_relaxation(self, ef_array_actual_solution, previous_solution_information):
+        # is there a previous problem with less tighten constraint ef_array_actual_solution
         # find closer relaxation and check if the solution satisfy the ef_array_actual_solution
         previous_closer_relaxation = self.get_closer_relaxation(ef_array_actual_solution, previous_solution_information)
         if previous_closer_relaxation is False:
-            return there_is_relaxation_for_ef_array_actual_solution, None
+            return False, None
         else:
             f_solution_values = previous_closer_relaxation[1]
-            there_is_relaxation_for_ef_array_actual_solution = True
-            if type(f_solution_values) is not str:
-                f_solution_values_for_constraint = f_solution_values[1:len(f_solution_values)]
-                if not self.solution_satisfy_ef_arr(f_solution_values_for_constraint, ef_array_actual_solution):
-                    there_is_relaxation_for_ef_array_actual_solution = False
-
-        return there_is_relaxation_for_ef_array_actual_solution, f_solution_values
+            return True, f_solution_values
 
     def get_closer_relaxation(self, ef_array_actual_solution, previous_solution_information):
-        idx = self.bisect_right_previous_solutions(ef_array_actual_solution, previous_solution_information)
-        if idx == 0:
+        idx = self.get_less_constrained_previous_solutions(ef_array_actual_solution, previous_solution_information)
+        if idx < 0:
             return False
-        return previous_solution_information[idx - 1]
+        return previous_solution_information[idx]
 
     @staticmethod
     def solution_satisfy_ef_arr(solution_values, ef_arr):
-        satisfy = True
-        for i in range(len(ef_arr)):
-            if solution_values[i] > ef_arr[i]:
-                satisfy = False
-                break
-        return satisfy
-
+        i = 0
+        while i < len(ef_arr) and solution_values[i] <= ef_arr[i]:
+            i += 1
+        return i == len(ef_arr)
 
     def initialize_model_with_e_constraint(self):
         formatted_solutions, best_constraint_objective_values = self.get_best_constraint_objective_values()
@@ -201,7 +235,7 @@ class Saugmecon(FrontGeneratorStrategy):
         return formatted_solutions, best_constraint_objective_values, nadir_objectives
 
     def optimize_e_constraint_saugmecon(self, range_array):
-        self.solver.build_objective_e_constraint_saugmecon(range_array)
+        self.solver.build_objective_e_constraint_saugmecon(range_array, self.always_add_new_solutions_to_front())
 
     def get_best_constraint_objective_values(self):
         objectives_values = [0] * len(self.constraint_objectives)

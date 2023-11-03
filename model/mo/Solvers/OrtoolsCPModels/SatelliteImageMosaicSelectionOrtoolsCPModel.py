@@ -30,6 +30,9 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel):
     def create_model(self):
         return cp_model.CpModel()
 
+    def is_numerically_possible_augment_objective(self):
+        return False
+
     def assert_right_instance(self):
         if self.instance.problem_name != constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
             raise Exception(self.message_incorrect_instance())

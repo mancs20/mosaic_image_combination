@@ -57,6 +57,10 @@ class GenericModel(ABC):
     def get_ref_points_for_hypervolume(self):
         return self.instance.get_ref_points_for_hypervolume()
 
+    @abstractmethod
+    def is_numerically_possible_augment_objective(self):
+        pass
+
 
 
 
