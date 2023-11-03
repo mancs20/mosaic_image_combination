@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 class OSolveMIP(OSolve):
 
+    # todo remove this class it will became unnecessary
     def __init__(self, instance, statistics, timer, threads=None, free_search=False):
         super().__init__(instance, statistics, timer, threads, free_search)
         self.images = None

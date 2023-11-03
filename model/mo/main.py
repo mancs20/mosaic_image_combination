@@ -10,7 +10,7 @@ import traceback
 import logging
 from filelock import FileLock, Timeout
 
-from MOMIP import MOMIP
+from MONoMinizinc import MONoMinizinc
 from model.mo.FrontGenerators.Gavanelli import Gavanelli
 from model.mo.FrontGenerators.Saugmecon import Saugmecon
 from model.mo.Instances.InstanceMinizinc import InstanceMinizinc
@@ -85,6 +85,8 @@ def check_already_computed(config):
 def build_solver(instance, config, statistics):
   if not instance.is_minizinc:
     model = build_model(instance, config)
+  else:
+    model = None
   osolve = build_osolver(model, instance, config, statistics)
   front_generator_strategy = set_front_strategy(config, osolve)
   osolve_mo = build_MO(instance, statistics, front_generator_strategy, osolve)
@@ -127,7 +129,7 @@ def set_front_strategy(config, solver):
 
 def build_MO(instance, statistics, front_generator, osolve):
   if instance.problem_name == constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
-    return MOMIP(instance, statistics, front_generator)
+    return MONoMinizinc(instance, statistics, front_generator)
   elif instance.problem_name == constants.Problem.MINIZINC_DEFINED:
     # todo check how to remove osolve for minizinc problem, and use front_generator instead
     return MOCP(instance, statistics, osolve)
