@@ -22,7 +22,7 @@ class FrontGeneratorStrategy(ABC):
         timeout = self.timer.resume()
         print("Start the solver...")
         self.solver.set_time_limit(timeout.total_seconds())
-        self.solver.solve(optimize_not_satisfy=False)
+        self.solver.solve(optimize_not_satisfy=optimize_not_satisfy)
         print("Got a result from the solver...")
         solution_sec = self.timer.pause()
         if self.solver.status_time_limit():
