@@ -1,5 +1,3 @@
-import copy
-
 from model.mo.FrontGenerators.FrontGeneratorStrategy import FrontGeneratorStrategy
 
 
