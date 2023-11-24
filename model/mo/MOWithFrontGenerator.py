@@ -1,6 +1,6 @@
 from ParetoFront import ParetoFront
 
-class MONoMinizinc:
+class MOWithFrontGenerator:
     """Multi-objective solver maintaining a Pareto front.
          See further information in the class `ParetoFront`.
       Args:

@@ -10,8 +10,9 @@ class Config:
                 prog = 'multi_objective_cp',
                 description = 'Multi-objective constraint programming. This program computes a Pareto front of an optimization constraint problem.')
     parser.add_argument('instance_name')
-    parser.add_argument('--model_mzn', required=True)
-    parser.add_argument('--dzn_dir', required=True)
+    parser.add_argument('--minizinc_data', required=True)
+    parser.add_argument('--model_mzn', required=False)
+    parser.add_argument('--dzn_dir', required=False)
     parser.add_argument('--problem_name', required=True)
     parser.add_argument('--solver_name', required=True)
     parser.add_argument('--front_strategy', required=True)
@@ -22,6 +23,7 @@ class Config:
     parser.add_argument('--fzn_optimisation_level', required=True, type=int)
     args = parser.parse_args()
     Config.clean_dir_name(args.dzn_dir)
+    self.minizinc_data = bool(int(args.minizinc_data))
     self.data_name = args.instance_name
     self.input_mzn = args.model_mzn
     self.minizinc_model = os.path.basename(self.input_mzn)[:-4]
@@ -34,6 +36,7 @@ class Config:
     self.solver_search_strategy = args.solver_search_strategy
     self.fzn_optimisation_level = args.fzn_optimisation_level
     self.cores = args.cores
+    self.threads = None
 
   def clean_dir_name(dir):
     """Remove the last '/' if it exists."""
@@ -56,9 +59,9 @@ class Config:
     """Unique identifier for this experiment."""
     return self.data_name + "_" + self.problem_name + "_" + self.solver_name + "_" + self.front_strategy + "_" + self.minizinc_model + "_" + self.solver_search_strategy + "_" + str(self.solver_timeout_sec) + "_" + str(self.fzn_optimisation_level) + "_" + str(self.cores)
 
-  def initialize_cores(self, solver):
+  def initialize_cores(self, solver, check_solver = True):
     """If the solver supports parallelization, use twice the number of available cores. Otherwise, use only one core."""
-    if "-p" in solver.stdFlags:
+    if not check_solver or "-p" in solver.stdFlags:
       if self.cores is None:
         self.cores = multiprocessing.cpu_count()
       self.threads = self.cores * 2

@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
 
 class GenericModel(ABC):
 
-    def __init__(self, instance):
+    def __init__(self, instance: Optional = None):
         self.instance = instance
         self.assert_right_instance()
         self.solver_model = self.create_model()

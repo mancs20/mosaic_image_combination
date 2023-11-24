@@ -19,8 +19,8 @@ class FrontGeneratorStrategy(ABC):
         pass
 
     def get_solver_solution_for_timeout(self, optimize_not_satisfy=True):
-        timeout = self.timer.resume()
         print("Start the solver...")
+        timeout = self.timer.resume()
         self.solver.set_time_limit(timeout.total_seconds())
         self.solver.solve(optimize_not_satisfy=optimize_not_satisfy)
         print("Got a result from the solver...")

@@ -52,6 +52,7 @@ conversion to integer values is needed. To convert the float values to integers 
 ### Run the experiments
 
 To run the experiments you need to run the script `model/mo/main.py` with the following arguments:
+* `--minizinc_data`: Specify if the data comes from a minizinc data file, 1 is yes 0 is False.
 * `--model_mzn`: The path to the mzn model file.
 * `--dzn_dir`: The path to the folder with the dzn files.
 * `--problem_name`: The name of the problem to solve, Ex: `sims` for the Satellite Image Mosaic Selection Problem presented in Constraint Model for the Satellite Image Mosaic Selection Problem.

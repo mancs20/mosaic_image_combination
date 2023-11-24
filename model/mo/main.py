@@ -10,7 +10,7 @@ import traceback
 import logging
 from filelock import FileLock, Timeout
 
-from MONoMinizinc import MONoMinizinc
+from MOWithFrontGenerator import MOWithFrontGenerator
 from model.mo.FrontGenerators.Gavanelli import Gavanelli
 from model.mo.FrontGenerators.Saugmecon import Saugmecon
 from model.mo.Instances.InstanceMinizinc import InstanceMinizinc
@@ -18,6 +18,8 @@ from model.mo.Instances.InstanceSIMS import InstanceSIMS
 from model.mo.Solvers.GurobiModels.SatelliteImageMosaicSelectionGurobiModel import \
   SatelliteImageMosaicSelectionGurobiModel
 from model.mo.Solvers.GurobiSolver import GurobiSolver
+from model.mo.Solvers.MinizincPseudoModel import MinizincPseudoModel
+from model.mo.Solvers.MinizincSolver import MinizincSolver
 from model.mo.Solvers.OrtoolsCPModels.SatelliteImageMosaicSelectionOrtoolsCPModel import \
   SatelliteImageMosaicSelectionOrtoolsCPModel
 from model.mo.Solvers.OrtoolsCPSolver import OrtoolsCPSolver
@@ -28,14 +30,25 @@ def init_top_level_statistics(statistics):
   statistics["hypervolume"] = 0
   statistics["datetime"] = datetime.now()
 
+def init_solution_details_statistics(statistics):
+  statistics["number_of_solutions"] = 0
+  statistics["total_nodes"] = 0
+  statistics["time_solver_sec"] = 0  # Time spent in the solver.
+  statistics["minizinc_time_fzn_sec"] = 0
+  statistics["solutions_time_list"] = []
+  statistics["pareto_front"] = ""
+  statistics["solutions_pareto_front"] = ""
+
 def main():
   config = Config()
+  check_already_computed(config)
   instance = build_instance(config)
   print("Start computing: " + config.uid())
   statistics = {}
   config.init_statistics(statistics)
   init_top_level_statistics(statistics)
-  solver, pareto_front = build_solver(instance, config, statistics)
+  model = build_model(instance, config)
+  solver, pareto_front = build_solver(model, instance, config, statistics)
   try:
     statistics["exhaustive"] = False
     for x in solver.solve():
@@ -54,6 +67,17 @@ def main():
   write_statistics(config, statistics)
 
 def build_instance(config):
+  instance = None
+  if use_minizinc_data(config):
+    instance = build_instance_minizinc_data(config)
+  else:
+    config.initialize_cores(solver=None, check_solver=False)
+  return instance
+
+def use_minizinc_data(config) -> bool:
+  return config.minizinc_data == True
+
+def build_instance_minizinc_data(config):
   # here we build the instance, it could from minizinc or from other format
   model = Model(config.input_mzn)
   model.add_file(config.input_dzn, parse_data=True)
@@ -62,7 +86,6 @@ def build_instance(config):
   else:
     mzn_solver = Solver.lookup(config.solver_name)
   config.initialize_cores(mzn_solver)
-  check_already_computed(config)
   instance = Instance(mzn_solver, model)
   problem_name = config.problem_name
   if config.solver_name == "gurobi" or config.solver_name == "ortools-py":
@@ -82,17 +105,15 @@ def check_already_computed(config):
          print(f"Skipping {config.uid()} because it is already in {config.summary_filename}")
          exit(0)
 
-def build_solver(instance, config, statistics):
-  if not instance.is_minizinc:
-    model = build_model(instance, config)
-  else:
-    model = None
+def build_solver(model, instance, config, statistics):
   osolve = build_osolver(model, instance, config, statistics)
   front_generator_strategy = set_front_strategy(config, osolve)
   osolve_mo = build_MO(instance, statistics, front_generator_strategy, osolve)
   return osolve_mo, osolve_mo.pareto_front
 
 def build_model(instance, config):
+  if instance.is_minizinc:
+    return MinizincPseudoModel()
   problem = instance.problem_name
   if not instance.is_minizinc:
     if problem == constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
@@ -109,8 +130,11 @@ def build_osolver(model, instance, config, statistics):
   free_search = config.solver_search_strategy == "free_search"
   if instance.is_minizinc:
     # todo maybe change the name to indicate that this is using MiniZinc
-    return OSolveCP(instance, statistics, config.threads, free_search,
-                    config.fzn_optimisation_level)
+    # return OSolveCP(instance, statistics, config.threads, free_search,
+    #                 config.fzn_optimisation_level)
+    solver = MinizincSolver(model, instance, statistics, config.threads, free_search, config.fzn_optimisation_level)
+    model.set_solver(solver)
+    return solver
   else:
     if config.solver_name == "gurobi":
       return GurobiSolver(model, statistics, config.threads, free_search)
@@ -128,18 +152,19 @@ def set_front_strategy(config, solver):
         return Saugmecon(solver, Timer(config.solver_timeout_sec))
 
 def build_MO(instance, statistics, front_generator, osolve):
-  if instance.problem_name == constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
-    return MONoMinizinc(instance, statistics, front_generator)
-  elif instance.problem_name == constants.Problem.MINIZINC_DEFINED:
-    # todo check how to remove osolve for minizinc problem, and use front_generator instead
+  return MOWithFrontGenerator(instance, statistics, front_generator)
+  # MOCP is used to compute the pareto front with Gavanelli and Minizinc, is not used for the other solvers. It is
+  # a bit faster than the current implementation of MOWithFrontGenerator when the solver is accessed through Minizinc
+  if instance.is_minizinc:
     return MOCP(instance, statistics, osolve)
+  else:
+    return MOWithFrontGenerator(instance, statistics, front_generator)
 
 def csv_header(config):
   statistics = {}
   config.init_statistics(statistics)
   init_top_level_statistics(statistics)
-  OSolve.init_statistics(statistics)
-  MO.init_statistics(statistics)
+  init_solution_details_statistics(statistics)
   return list(statistics.keys())
 
 def create_summary_file(config):

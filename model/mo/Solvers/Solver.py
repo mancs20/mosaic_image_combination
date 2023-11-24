@@ -103,6 +103,7 @@ class Solver(ABC):
         solution = self.get_complete_solution()
         if solution is None:
             return
+        self.statistics["minizinc_time_fzn_sec"] = self.get_flat_time_secs(solution)
         self.statistics["number_of_solutions"] += 1
         self.statistics["total_nodes"] += self.get_nodes_solution(solution)
         self.statistics["time_solver_sec"] += seconds
@@ -119,6 +120,9 @@ class Solver(ABC):
     @abstractmethod
     def get_nodes_solution(self, solution):
         pass
+
+    def get_flat_time_secs(self, solution):
+        return 0
 
 
 

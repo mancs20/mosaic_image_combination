@@ -1,9 +1,10 @@
-from minizinc import Instance
+from minizinc import Instance, Solver
 
 from model.mo.Instances.InstanceGeneric import InstanceGeneric
+from typing import (Optional)
 
 
 class InstanceMinizinc(Instance, InstanceGeneric):
-    def __init__(self, solver, model, problem_name):
+    def __init__(self, solver: Solver, model: Optional = None, problem_name: Optional[str] = ""):
         super().__init__(solver, model)
-        super().__init__(is_minizinc=True, problem_name=problem_name)
+        InstanceGeneric.__init__(self, is_minizinc=True, problem_name=problem_name)
