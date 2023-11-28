@@ -1,12 +1,12 @@
 from gurobipy import max_
 
-import constants
 import gurobipy as gp
 
-from model.mo.Solvers.GurobiModels.GurobiModel import GurobiModel
+from model.mo.Models.GurobiModels.GurobiModel import GurobiModel
+from model.mo.Models.SatelliteImageMosaicSelectionGeneralModel import SatelliteImageMosaicSelectionGeneralModel
 
 
-class SatelliteImageMosaicSelectionGurobiModel(GurobiModel):
+class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaicSelectionGeneralModel):
 
     def __init__(self, instance):
         self.elements = None
@@ -15,25 +15,13 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel):
         self.images, self.costs = None, None
         self.cloud_covered_by_image = None
         self.clouds_id, self.area_clouds = None, None
-        self.total_area_clouds = None
         self.resolution = None
         self.min_resolution = None
         self.incidence_angle = None
-        # variables
-        self.select_image = None
-        self.cloud_covered = None
-        self.resolution_element = None
-        self.effective_image_resolution = None
-        self.effective_incidence_angle = None
-        self.current_max_incidence_angle = None
-        super().__init__(instance)
+        SatelliteImageMosaicSelectionGeneralModel.__init__(self, instance)
 
     def is_numerically_possible_augment_objective(self):
         return False # For Ortools-cp it is not possible
-
-    def assert_right_instance(self):
-        if self.instance.problem_name != constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
-            raise Exception(self.message_incorrect_instance())
 
     def create_model(self):
         return gp.Model("SIMSModel")

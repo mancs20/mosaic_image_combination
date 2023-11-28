@@ -1,5 +1,5 @@
 import constants
-from model.mo.Solvers.GenericModel import GenericModel
+from model.mo.Models.GenericModel import GenericModel
 
 
 class MinizincPseudoModel(GenericModel):
@@ -8,14 +8,17 @@ class MinizincPseudoModel(GenericModel):
         self.solver = None
         super().__init__()
 
+    def problem_name(self):
+        return "Not defined for Minizinc"
+
+    def assert_right_instance(self, instance):
+        print("Instance checking is done in Minizinc, everything should be fine :)")
+
     def create_model(self):
         pass
 
     def set_solver_name(self):
         self.solver_name = constants.Solver.MINIZINC.value
-
-    def assert_right_instance(self):
-        pass
 
     def get_data_from_instance(self):
         pass
@@ -28,6 +31,11 @@ class MinizincPseudoModel(GenericModel):
 
     def add_objectives(self):
         pass
+
+    def is_a_minimization_model(self):
+        print("Maximization is not implemented so far, when using Minizinc be aware that the model will be treated as a "
+              "minimization model")
+        return True
 
     def get_solution_values(self):
         return "This is not implemented when using Minizinc"

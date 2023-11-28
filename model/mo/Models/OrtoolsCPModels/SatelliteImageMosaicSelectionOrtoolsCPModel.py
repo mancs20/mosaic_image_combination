@@ -1,41 +1,30 @@
 import math
 
-import constants
 from ortools.sat.python import cp_model
 
-from model.mo.Solvers.OrtoolsCPModels.OrtoolsCPModel import OrtoolsCPModel
+from model.mo.Models.OrtoolsCPModels.OrtoolsCPModel import OrtoolsCPModel
+from model.mo.Models.SatelliteImageMosaicSelectionGeneralModel import SatelliteImageMosaicSelectionGeneralModel
 
 
-class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel):
+class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel, SatelliteImageMosaicSelectionGeneralModel):
 
     def __init__(self, instance):
         # variables
-        self.select_image = None
-        self.cloud_covered = None
         self.cloud_area = None
         self.total_cost = None
         self.total_cloudy_area = None
-        self.resolution_element = []
         self.total_resolution = None
-        self.effective_image_resolution = None
-        self.effective_incidence_angle = None
-        self.current_max_incidence_angle = None
-        # cloud covering
-        self.total_area_clouds = None
         # this variable has the current objective to optimize
         self.current_objective = None
         self.tackle_numerical_problems()
-        super().__init__(instance)
+        OrtoolsCPModel.__init__(self)
+        SatelliteImageMosaicSelectionGeneralModel.__init__(self, instance)
 
     def create_model(self):
         return cp_model.CpModel()
 
     def is_numerically_possible_augment_objective(self):
         return False
-
-    def assert_right_instance(self):
-        if self.instance.problem_name != constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
-            raise Exception(self.message_incorrect_instance())
 
     def get_data_from_instance(self):
         self.total_area_clouds = int(sum(self.instance.clouds_id_area.values()))
