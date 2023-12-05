@@ -55,7 +55,10 @@ To run the experiments you need to run the script `model/mo/main.py` with the fo
 * `--minizinc_data`: Specify if the data comes from a minizinc data file, 1 is yes 0 is False.
 * `--model_mzn`: The path to the mzn model file.
 * `--dzn_dir`: The path to the folder with the dzn files.
-* `--problem_name`: The name of the problem to solve, Ex: `sims` for the Satellite Image Mosaic Selection Problem presented in Constraint Model for the Satellite Image Mosaic Selection Problem.
+* `--problem_name`: The name of the problem to solve, Ex: `sims` for the Satellite Image Mosaic Selection Problem 
+presented in Constraint Model for the Satellite Image Mosaic Selection Problem. The list of problem names are:
+  * `sims`: Satellite Image Mosaic Selection Problem.
+  * `mokp`: Multi-objective Knapsack Problem.
 * `--solver_name`: The name of the solver to use, `or-tools`, `gurobi`, etc.
 * `--front_strategy`: The strategy to use to generate the Pareto front. Ex: `saugmecon`, `gavanelli`.
 * `--solver_timeout_sec`: The timeout in seconds for the solver. The experiments were performed with a value of `3600`.
@@ -63,7 +66,9 @@ To run the experiments you need to run the script `model/mo/main.py` with the fo
 * `--cores`: The number of cores to use.
 * `--solver_search_strategy`: The strategy to use for the solver. The default value is `free`.
 * `--fzn_optimisation_level`: The optimisation level for the fzn file. The default value is `1`.
-* `name of the instance`: The name of the instance to run the experiment, for example `paris_30`.
+* `name of the instance`: The name of the instance to run the experiment, for example `paris_30` for `sims`. For `mokp` 
+the names are in the form `augmecon2_<number_objectives>kp<number_items>` for example `augmecon2_3kp40` for 3 
+objectives and constraints and 40 items. 
 
 Example:
 ```bash

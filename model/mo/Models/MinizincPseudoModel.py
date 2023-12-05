@@ -23,13 +23,13 @@ class MinizincPseudoModel(GenericModel):
     def get_data_from_instance(self):
         pass
 
-    def add_variables(self):
+    def add_variables_to_model(self):
         pass
 
-    def add_constraints(self):
+    def add_constraints_to_model(self):
         pass
 
-    def add_objectives(self):
+    def define_objectives(self):
         pass
 
     def is_a_minimization_model(self):

@@ -51,6 +51,9 @@ class MinizincSolver(Solver):
     def add_constraints_leq(self, constraint, rhs):
         raise NotImplementedError()
 
+    def add_constraints_geq(self, constraint, rhs):
+        raise NotImplementedError()
+
     def remove_constraints(self, constraint):
         raise NotImplementedError()
 

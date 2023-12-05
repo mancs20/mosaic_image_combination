@@ -8,7 +8,7 @@ class FrontGeneratorStrategy(ABC):
     def __init__(self, solver, timer):
         self.solver = solver
         self.timer = timer
-        self.always_add_new_solutions_to_front()
+        self.not_evaluate_always_add_new_solutions_to_front = False
 
     @abstractmethod
     def solve(self):
@@ -18,7 +18,7 @@ class FrontGeneratorStrategy(ABC):
     def always_add_new_solutions_to_front(self):
         pass
 
-    def get_solver_solution_for_timeout(self, optimize_not_satisfy=True):
+    def get_solver_solution_for_timeout(self, optimize_not_satisfy):
         print("Start the solver...")
         timeout = self.timer.resume()
         self.solver.set_time_limit(timeout.total_seconds())
@@ -33,8 +33,9 @@ class FrontGeneratorStrategy(ABC):
         one_solution = self.solver.get_solution_objective_values()
         solution_values = self.solver.model.get_solution_values()
         ref_points = self.solver.model.get_ref_points_for_hypervolume()
+        minimize_objs = [self.solver.model.is_a_minimization_model()] * len(one_solution)
         solution = Solution(objs=one_solution, solution_values=solution_values,
-                            minimize_objs=[True] * len(one_solution), ref_point=ref_points)
+                            minimize_objs=minimize_objs, ref_point=ref_points)
         status = self.solver.get_status()
         statistics = None
         minizinc_formatted_solution = MinizincResultFormat(status=status, solution=solution, statistics=statistics)

@@ -53,6 +53,10 @@ class Solver(ABC):
         pass
 
     @abstractmethod
+    def add_constraints_geq(self, constraint, rhs):
+        pass
+
+    @abstractmethod
     def remove_constraints(self, constraint):
         pass
 

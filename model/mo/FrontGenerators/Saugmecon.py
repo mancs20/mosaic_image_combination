@@ -1,6 +1,7 @@
 import copy
 
 from model.mo.FrontGenerators.FrontGeneratorStrategy import FrontGeneratorStrategy
+import numpy as np
 
 
 class Saugmecon(FrontGeneratorStrategy):
@@ -9,28 +10,40 @@ class Saugmecon(FrontGeneratorStrategy):
         self.best_objective_values = None
         self.nadir_objectives_values = None
         self.constraint_objectives = [0] * (len(self.solver.model.objectives) - 1) # all objectives except objective[0]
+        if self.solver.model.is_a_minimization_model():
+            self.model_optimization_sense = "min"
+            self.step = -1
+        else:
+            self.model_optimization_sense = "max"
+            self.step = 1
 
     def always_add_new_solutions_to_front(self):
-        return self.solver.model.is_numerically_possible_augment_objective()
+        if self.not_evaluate_always_add_new_solutions_to_front:
+            return False
+        else:
+            return self.solver.model.is_numerically_possible_augment_objective()
 
     def solve(self):
         formatted_solutions, self.best_objective_values, self.nadir_objectives_values = self.initialize_model_with_e_constraint()
         # check if the solver could find the optimum for each objective
+        # The solutions obtained by optimizing only one objective are not necessarily on the Pareto front, they are added just in case they are.
+        self.not_evaluate_always_add_new_solutions_to_front = True
         for formatted_solution in formatted_solutions:
             if formatted_solution is not None:
                 yield formatted_solution
             else:
                 raise TimeoutError()
+        self.not_evaluate_always_add_new_solutions_to_front = False
         # initialize loop-control variables with values equal to the nadir values + 1
-        ef_array = [self.nadir_objectives_values[i] + 1 for i in range(len(self.nadir_objectives_values))]
+        ef_array = [self.nadir_objectives_values[i] - self.step for i in range(len(self.nadir_objectives_values))]
         rwv = copy.deepcopy(self.best_objective_values)
         # previous solution information
         previous_solutions = set()
         previous_solution_information = []
         for i in range(len(formatted_solutions)):
-            selected_images = formatted_solutions[i]['solution_values']
-            str_selected_images = self.convert_selected_images_to_str(selected_images)
-            previous_solutions.add(str_selected_images)
+            solution_values = formatted_solutions[i]['solution_values']
+            str_solution_values = self.convert_solution_value_to_str(solution_values)
+            previous_solutions.add(str_solution_values)
         # add initial objective constraints
         self.add_objectives_as_constraints(ef_array)
         yield from self.saugmecon_loop(ef_array, rwv, len(self.best_objective_values), previous_solution_information,
@@ -38,7 +51,10 @@ class Saugmecon(FrontGeneratorStrategy):
 
     def add_objectives_as_constraints(self, ef_array):
         for i in range(len(self.constraint_objectives)):
-            self.constraint_objectives[i] = self.solver.add_constraints_leq(self.solver.model.objectives[i+1], ef_array[i])
+            if self.model_optimization_sense == "min":
+                self.constraint_objectives[i] = self.solver.add_constraints_leq(self.solver.model.objectives[i+1], ef_array[i])
+            else:
+                self.constraint_objectives[i] = self.solver.add_constraints_geq(self.solver.model.objectives[i+1], ef_array[i])
 
     def update_objective_constraints(self, ef_array):
         for constraint in self.constraint_objectives:
@@ -47,19 +63,21 @@ class Saugmecon(FrontGeneratorStrategy):
 
     def saugmecon_loop(self, ef_array, rwv, id_objective, previous_solution_information, previous_solutions):
         id_objective -= 1
-        while ef_array[id_objective] > self.best_objective_values[id_objective]:
+        # while ef_array[id_objective] > self.best_objective_values[id_objective]:
+        # multiply for -1 to change the sense of the comparison in case is a minimization problem
+        while np.sign(self.step) * (self.best_objective_values[id_objective] - ef_array[id_objective]) > 0:
             if id_objective == 0:
                 # solve the saugmecon model
-                while ef_array[id_objective] > self.best_objective_values[id_objective]:
-                    ef_array[id_objective] -= 1
+                while np.sign(self.step) * (self.best_objective_values[id_objective] - ef_array[id_objective]) > 0:
+                    ef_array[id_objective] += self.step
                     yield from self.solve_saugmecon_most_inner_loop(ef_array, rwv, previous_solution_information,
                                                                      previous_solutions)
                 return
             else:
-                ef_array[id_objective] -= 1
+                ef_array[id_objective] += self.step
                 yield from self.saugmecon_loop(ef_array, rwv, id_objective, previous_solution_information, previous_solutions)
-                ef_array[id_objective-1] = self.nadir_objectives_values[id_objective - 1] + 1
-                if ef_array[id_objective] > self.best_objective_values[id_objective]:
+                ef_array[id_objective-1] = self.nadir_objectives_values[id_objective - 1] - self.step
+                if np.sign(self.step) * (self.best_objective_values[id_objective] - ef_array[id_objective]) > 0:
                     ef_array[id_objective] = rwv[id_objective]
                     rwv[id_objective] = self.best_objective_values[id_objective]
         id_objective += 1
@@ -84,13 +102,13 @@ class Saugmecon(FrontGeneratorStrategy):
                 self.save_solution_information(ef_array, "infeasible",previous_solution_information)
                 exit_from_loop_with_acceleration = True
             else:
-                selected_images = self.solver.model.get_solution_values()
-                str_selected_images = self.convert_selected_images_to_str(selected_images)
-                if str_selected_images in previous_solutions:
+                solution_values = self.solver.model.get_solution_values()
+                str_solution_values = self.convert_solution_value_to_str(solution_values)
+                if str_solution_values in previous_solutions:
                     one_solution = self.solver.get_solution_objective_values()
                 else:
                     # update previous_solutions
-                    previous_solutions.add(str_selected_images)
+                    previous_solutions.add(str_solution_values)
                     # update statistics
                     self.solver.update_statistics(solution_sec)
                     # record the solution
@@ -102,16 +120,15 @@ class Saugmecon(FrontGeneratorStrategy):
             self.exit_from_loop_with_acceleration(ef_array, self.nadir_objectives_values, self.best_objective_values)
         elif len(one_solution) > 0:
             ef_array[0] = one_solution[1]  # one_solution[0] is the main objective
-            self.explore_new_relatively_worst_values_of_objectives(rwv, one_solution,
-                                                                         minimization=True)
+            self.explore_new_relatively_worst_values_of_objectives(rwv, one_solution)
         else:
             # this should not happen if the solver is working properly
             raise Exception("The solver did not find any solution")
 
     @staticmethod
-    def convert_selected_images_to_str(selected_images):
-        str_selected_images = '-'.join((str(i) for i in selected_images))
-        return str_selected_images
+    def convert_solution_value_to_str(solution_values):
+        str_solution_values = '-'.join((str(i) for i in solution_values))
+        return str_solution_values
 
     @staticmethod
     def exit_from_loop_with_acceleration(ef_array, nadir_objective_values, best_objective_values):
@@ -122,16 +139,12 @@ class Saugmecon(FrontGeneratorStrategy):
             ef_array[j] = best_objective_values[j]
         return ef_array
 
-    @staticmethod
-    def explore_new_relatively_worst_values_of_objectives(rwv, one_solution, minimization=True):
-        # one_solution[0] is the main objective
-        if minimization:
+    def explore_new_relatively_worst_values_of_objectives(self, rwv, one_solution):
+        if self.model_optimization_sense == "min":
             for i in range(len(rwv)):
-                if rwv[i] < one_solution[i + 1]:
+                if one_solution[i + 1] > rwv[i]:
                     rwv[i] = one_solution[i + 1]
         else:
-            print("one_solution: ", one_solution)
-            print("rwv: ", rwv)
             for i in range(len(rwv)):
                 if one_solution[i + 1] < rwv[i]:
                     rwv[i] = one_solution[i + 1]
@@ -228,22 +241,19 @@ class Saugmecon(FrontGeneratorStrategy):
             return formatted_solutions, best_constraint_objective_values, None
         nadir_objectives = self.get_nadir_objectives()[1:]  # in this case, the nadir is the max
         # prepare the model for the e-constraint method
-        self.solver.set_optimization_sense("min")
         range_array = [abs(nadir_objectives[i] - best_constraint_objective_values[i]) for i in range(len(nadir_objectives))]
-        # self.solver.optimize_e_constraint_saugmecon(range_array)
         self.optimize_e_constraint_saugmecon(range_array)
         return formatted_solutions, best_constraint_objective_values, nadir_objectives
 
     def optimize_e_constraint_saugmecon(self, range_array):
         self.solver.build_objective_e_constraint_saugmecon(range_array, self.always_add_new_solutions_to_front())
+        self.solver.set_optimization_sense(self.model_optimization_sense)
 
     def get_best_constraint_objective_values(self):
         objectives_values = [0] * len(self.constraint_objectives)
         formatted_solutions = [0] * len(self.constraint_objectives)
-        # todo the sense should be given by the model, together with objective values
-        sense = "min"
         for i in range(len(self.constraint_objectives)):
-            formatted_solution, objective_val = self.optimize_single_objectives(sense, i+1)
+            formatted_solution, objective_val = self.optimize_single_objectives(self.model_optimization_sense, i+1)
             objectives_values[i] = objective_val
             formatted_solutions[i] = formatted_solution
             if formatted_solution is None:
@@ -259,14 +269,8 @@ class Saugmecon(FrontGeneratorStrategy):
         print("Start the solver to get the min of objective " + str(id_objective))
         self.solver.set_single_objective(objective)
         self.solver.set_optimization_sense(sense)
-        timeout = self.timer.resume()
-        self.solver.set_time_limit(timeout.total_seconds())
-        self.solver.solve(optimize_not_satisfy=True)
-
-        solution_sec = self.timer.pause()
+        solution_sec = self.get_solver_solution_for_timeout(optimize_not_satisfy=True)
         print("The solver found min of objective " + str(id_objective) + " in " + str(solution_sec) + " seconds")
-        if self.solver.status_time_limit():
-            return None, None
         formatted_solution = self.prepare_solution()
         objective_val = formatted_solution['objs'][id_objective]
         self.solver.update_statistics(solution_sec)

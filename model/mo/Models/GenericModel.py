@@ -13,9 +13,9 @@ class GenericModel(ABC):
         self.get_data_from_instance()
         self.objectives = []
         self.constraints = []
-        self.add_variables()
-        self.add_objectives()
-        self.add_constraints()
+        self.add_variables_to_model()
+        self.define_objectives()
+        self.add_constraints_to_model()
 
     @abstractmethod
     def create_model(self):
@@ -41,15 +41,15 @@ class GenericModel(ABC):
         pass
 
     @abstractmethod
-    def add_variables(self):
+    def add_variables_to_model(self):
         pass
 
     @abstractmethod
-    def add_constraints(self):
+    def add_constraints_to_model(self):
         pass
 
     @abstractmethod
-    def add_objectives(self):
+    def define_objectives(self):
         pass
 
     @abstractmethod

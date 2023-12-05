@@ -15,8 +15,10 @@ from model.mo.FrontGenerators.Saugmecon import Saugmecon
 from model.mo.Instances.InstanceMIPMatrix import InstanceMIPMatrix
 from model.mo.Instances.InstanceMinizinc import InstanceMinizinc
 from model.mo.Instances.InstanceSIMS import InstanceSIMS
+from model.mo.Models.GurobiModels.MultiobjectiveKnapsackGurobiModel import MultiobjectiveKnapsackGurobiModel
 from model.mo.Models.GurobiModels.SatelliteImageMosaicSelectionGurobiModel import \
     SatelliteImageMosaicSelectionGurobiModel
+from model.mo.Models.OrtoolsCPModels.MultiobjectiveKnapsackOrtoolsCPModel import MultiobjectiveKnapsackOrtoolsCPModel
 from model.mo.Solvers.GurobiSolver import GurobiSolver
 from model.mo.Models.MinizincPseudoModel import MinizincPseudoModel
 from model.mo.Solvers.MinizincSolver import MinizincSolver
@@ -99,35 +101,38 @@ def build_instance_minizinc_data(config):
     return instance
 
 def build_instance_text_data(config):
+    objective_matrix = []
+    constraints_matrix = []
+    rhs_constraints_vector = []
     if config.problem_name == constants.Problem.MULTI_OBJECTIVE_KNAPSACK_PROBLEM.value:
-        if config.data_name.startswith("saugmecon2"):
-            datasets_folder = os.path.join(config.data_sets_folder, "saugmecon2",
-                                           get_saugmecon2_instance_name(config.data_name))
+        if config.data_name.startswith("augmecon2"):
+            datasets_folder = os.path.join(config.data_sets_folder, "augmecon2",
+                                           get_augmecon2_instance_name(config.data_name))
             path_objective_matrix, path_constraints_matrix, path_rhs_constraints_vector = \
-                saugmecon2_get_text_data_files(datasets_folder, config.problem_name)
-            objective_matrix = saugmecon2_get_matrix_from_file(path_objective_matrix)
-            constraints_matrix = saugmecon2_get_matrix_from_file(path_constraints_matrix)
-            rhs_constraints_vector = saugmecon2_get_matrix_from_file(path_rhs_constraints_vector)
+                augmecon2_get_text_data_files(datasets_folder)
+            objective_matrix = augmecon2_get_matrix_from_file(path_objective_matrix)
+            constraints_matrix = augmecon2_get_matrix_from_file(path_constraints_matrix)
+            rhs_constraints_vector = augmecon2_get_rhs_vector_from_file(path_rhs_constraints_vector)
         else:
-            print("Error: There is no data name with that prefix. Try prefix 'saugmecon2'")
+            print("Error: There is no data name with that prefix. Try prefix 'augmecon2'")
             exit(1)
     else:
         print("Error: problem name not recognized")
         exit(1)
-    instance = InstanceMIPMatrix(objective_matrix, constraints_matrix, rhs_constraints_vector)
+    instance = InstanceMIPMatrix(config.problem_name, objective_matrix, constraints_matrix, rhs_constraints_vector)
     return instance
 
-def get_saugmecon2_instance_name(whole_instance_name):
-    # return the rest of the problem data name, Ex: "saugmecon2_3kp40" -> "3kp40"
-    return whole_instance_name[11:]
+def get_augmecon2_instance_name(whole_instance_name):
+    # return the rest of the problem data name, Ex: "augmecon2_3kp40" -> "3kp40"
+    return whole_instance_name[10:]
 
-def saugmecon2_get_text_data_files(datasets_folder):
+def augmecon2_get_text_data_files(datasets_folder):
     path_objective_matrix = os.path.join(datasets_folder, "z3_40ctt.txt")
     path_constraints_matrix = os.path.join(datasets_folder, "z3_40att.txt")
     path_rhs_constraints_vector = os.path.join(datasets_folder, "z3_40btt.txt")
     return path_objective_matrix, path_constraints_matrix, path_rhs_constraints_vector
 
-def saugmecon2_get_matrix_from_file(file_path, file_has_headers=True):
+def augmecon2_get_matrix_from_file(file_path, file_has_headers=True):
     # Read the file and extract data
     with open(file_path, 'r') as file:
         lines = file.readlines()
@@ -136,12 +141,23 @@ def saugmecon2_get_matrix_from_file(file_path, file_has_headers=True):
         rows = [line.strip().split('\t')[1:] for line in lines[1:]]
     else:
         rows = [line.strip().split('\t') for line in lines]
+    rows = [[float(value) for value in row] for row in rows]
     number_of_columns = len(rows[0])
     matrix = []
     for column in range(number_of_columns):
         complete_column = [row[column] for row in rows]
         matrix.append(complete_column)
     return matrix
+
+def augmecon2_get_rhs_vector_from_file(file_path):
+    # Read the file and extract data
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+    # Remove the first column headers
+    # rows = [line.strip().split('\t')[1:] for line in lines[1:]]
+    rows = [line.strip().split('\t')[1:] for line in lines]
+    rhs_vector = [float(row[0]) for row in rows]
+    return rhs_vector
 
 def check_already_computed(config):
     if os.path.exists(config.summary_filename):
@@ -163,14 +179,22 @@ def build_model(instance, config):
         return MinizincPseudoModel()
     problem = instance.problem_name
     if not instance.is_minizinc:
-        if problem == constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
-            if config.solver_name == "gurobi":
-                return SatelliteImageMosaicSelectionGurobiModel(instance)
-            elif config.solver_name == "ortools-py":
-                return SatelliteImageMosaicSelectionOrtoolsCPModel(instance)
+        return get_model_by_problem_and_solver_name_(problem, config.solver_name, instance)
     else:
         print("Error. You're trying to build a model from a Minizinc instance. Minizinc instances already have the model")
         exit(1)
+
+def get_model_by_problem_and_solver_name_(problem_name, solver_name, instance):
+    if problem_name == constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
+        if solver_name == "gurobi":
+            return SatelliteImageMosaicSelectionGurobiModel(instance)
+        elif solver_name == "ortools-py":
+            return SatelliteImageMosaicSelectionOrtoolsCPModel(instance)
+    elif problem_name == constants.Problem.MULTI_OBJECTIVE_KNAPSACK_PROBLEM.value:
+        if solver_name == "gurobi":
+            return MultiobjectiveKnapsackGurobiModel(instance)
+        elif solver_name == "ortools-py":
+            return MultiobjectiveKnapsackOrtoolsCPModel(instance)
 
 
 def build_osolver(model, instance, config, statistics):

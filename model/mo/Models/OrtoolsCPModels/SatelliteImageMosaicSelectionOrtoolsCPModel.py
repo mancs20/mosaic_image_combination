@@ -20,16 +20,13 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel, SatelliteImage
         OrtoolsCPModel.__init__(self)
         SatelliteImageMosaicSelectionGeneralModel.__init__(self, instance)
 
-    def create_model(self):
-        return cp_model.CpModel()
-
     def is_numerically_possible_augment_objective(self):
         return False
 
     def get_data_from_instance(self):
         self.total_area_clouds = int(sum(self.instance.clouds_id_area.values()))
 
-    def add_variables(self):
+    def add_variables_to_model(self):
         self.select_image = [self.solver_model.NewBoolVar(f"select_image{i}") for i in range(len(self.instance.images))]
         self.solution_variables.append(self.select_image)
         self.cloud_covered = {}
@@ -38,7 +35,7 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel, SatelliteImage
             self.cloud_covered[cloud] = self.solver_model.NewBoolVar(f"cloud_covered{cloud}")
             self.cloud_area[cloud] = self.solver_model.NewIntVar(0, self.instance.clouds_id_area[cloud], f"cloud_area{cloud}")
 
-    def add_constraints(self):
+    def add_constraints_to_model(self):
         for i in range(len(self.instance.areas)):
             images_covering_element = self.get_images_covering_element(i)
             self.constraints.append(self.solver_model.AddAtLeastOne(self.select_image[j] for j in images_covering_element))
@@ -53,7 +50,7 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel, SatelliteImage
             self.constraints.append(self.solver_model.Add(self.cloud_area[cloud] == self.instance.clouds_id_area[cloud]).OnlyEnforceIf(
                 self.cloud_covered[cloud].Not()))
 
-    def add_objectives(self):
+    def define_objectives(self):
         # cost objective
         self.total_cost = self.solver_model.NewIntVar(0, sum(self.instance.costs), "cost")
         self.solver_model.Add(self.total_cost == sum(self.select_image[i] * self.instance.costs[i] for i in range(len(self.select_image))))

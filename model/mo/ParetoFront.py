@@ -189,7 +189,8 @@ class ParetoFront:
       return 0
     ref_point = np.array(self.solutions[0]["ref_point"])
     front = np.array([self.solutions[f]['objs'] for f in self.front])
-    for minimize in self.solutions[0]["minimize_objs"]:
-      if not minimize:
-        assert False, ("We only support minimization for now.")
+    # todo implement for maximization
+    # for minimize in self.solutions[0]["minimize_objs"]:
+    #   if not minimize:
+    #     assert False, ("We only support minimization for now.")
     return HV(ref_point=ref_point)(front)

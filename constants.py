@@ -16,6 +16,7 @@ QUICKLOOKS_FOLDER_NAME = 'quicklooks'
 # problem names
 class Problem(Enum):
     SATELLITE_IMAGE_SELECTION_PROBLEM = 'sims'
+    MULTI_OBJECTIVE_KNAPSACK_PROBLEM = 'mokp'
     MINIZINC_DEFINED = 'minizinc_defined'
 
 # solver names

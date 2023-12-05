@@ -42,7 +42,7 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
         # multiply to convert to integers
 
 
-    def add_variables(self):
+    def add_variables_to_model(self):
         # decision variables
         self.select_image = self.solver_model.addVars(len(self.images), vtype=gp.GRB.BINARY, name="select_image_i")
         self.cloud_covered = self.solver_model.addVars(self.clouds_id, vtype=gp.GRB.BINARY, name="cloud_covered_e")
@@ -56,7 +56,7 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
                                                                    name="effective_incidence_angle_i")
         self.current_max_incidence_angle = self.solver_model.addVar(vtype=gp.GRB.INTEGER, name="max_allowed_incidence_angle")
 
-    def add_objectives(self):
+    def define_objectives(self):
         # cost
         self.objectives.append(gp.quicksum(self.select_image[i] * self.costs[i] for i in self.images_id))
         # for cloud coverage
@@ -68,7 +68,7 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
         # for incidence angle
         self.objectives.append(self.current_max_incidence_angle)
 
-    def add_constraints(self):
+    def add_constraints_to_model(self):
         max_resolution = max(self.resolution.values())
         big_resolution = 2 * max_resolution
         # cover constraint

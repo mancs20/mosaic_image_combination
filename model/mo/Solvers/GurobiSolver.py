@@ -65,13 +65,16 @@ class GurobiSolver(Solver):
         if augmentation:
             obj = obj + (delta * rest_obj)
         self.set_single_objective(obj)
-        self.set_minimization()
 
     def set_single_objective(self, objective_expression):
         self.model.solver_model.setObjective(objective_expression)
 
     def add_constraints_leq(self, constraint, rhs):
         new_constraint = self.model.solver_model.addConstr(constraint <= rhs)
+        return new_constraint
+
+    def add_constraints_geq(self, constraint, rhs):
+        new_constraint = self.model.solver_model.addConstr(constraint >= rhs)
         return new_constraint
 
     def remove_constraints(self, constraint):
@@ -83,14 +86,22 @@ class GurobiSolver(Solver):
         self.model.solver_model.optimize()
 
     def add_or_all_objectives_constraint(self, rhs, id_constraint=0, sense_min=True):
-        # todo try to implement it for the general case where the objectives can be max or min
         y = self.model.solver_model.addVars(len(self.model.objectives), vtype=gp.GRB.BINARY,
                                             name=f"temp_y_{id_constraint}")
         self.model.solver_model.addConstr(gp.quicksum(y) == 1)
-        big_m_nadir_objectives = self.model.get_nadir_bound_estimation()
         rhs = [rhs[i] - 1 for i in range(len(rhs))]
+        big_m = self.get_big_m_for_or_all_objectives(rhs)
         for i in range(len(self.model.objectives)):
-            self.model.solver_model.addConstr(self.model.objectives[i] <=
-                                              rhs[i] + (big_m_nadir_objectives[i] * (1 -y[i])))
-            # self.model.solver_model.addConstr(self.model.objectives[i] <= rhs[i])
+            if self.model.is_a_minimization_model():
+                self.model.solver_model.addConstr(self.model.objectives[i] <=
+                                                  rhs[i] + (big_m[i] * (1 -y[i])))
+            else:
+                self.model.solver_model.addConstr(self.model.objectives[i] >=
+                                                  rhs[i] - (big_m[i] * (1 - y[i])))
 
+    def get_big_m_for_or_all_objectives(self, rhs):
+        big_m = []
+        nadir_objectives = self.model.get_nadir_bound_estimation()
+        for i in range(len(rhs)):
+            big_m.append(abs(nadir_objectives[i] - rhs[i]))
+        return big_m

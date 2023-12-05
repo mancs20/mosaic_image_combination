@@ -21,28 +21,48 @@ class OrtoolsCPSolver(Solver):
     def build_objective_e_constraint_saugmecon(self, range_array, augmentation):
         # ortools cannot work with floats, so we need to convert to ints
         if augmentation:
-            gcd = self.gcd(range_array)
-            range_array = [int(x/gcd) for x in range_array]
-            main_obj_multiplier = 1000
-            multiplication_of_range = 1
-            for i in range_array:
-                main_obj_multiplier *= i
-                multiplication_of_range *= i
-            multipliers = []
-            for i in range(len(range_array)):
-                multipliers.append(int(multiplication_of_range / range_array[i]))
-            gcd = self.gcd(multipliers + [main_obj_multiplier])
-            obj = int(main_obj_multiplier/gcd) * self.model.objectives[0]
+            # augmentation consist in adding a small portion of the other objectives to the main objective, it looks
+            # like this for 3 objectives:
+            # obj = main_obj + delta * (obj2/r2 + obj3/r3), where delta is a small number (10e-3,10e-6), r2 and r3 are
+            # the range of the objectives 2 and 3, respectively
+            # As ortools cannot work with floats, we need to multiply everything by r2*r3*10e3 (if delta is 10e-3),
+            # so the expression becomes:
+            # obj = main_obj * r2*r3*10e3 + (obj2 * r3 + obj3 * r2)
+            # but this could be a huge number for ortools, so some times cannot be done.
+            # The best we can do is to
+            # divide everything by the gcd of the range_array, so the expression becomes:
+            # obj = main_obj * r2*r3*10e3/gcd + (obj2 * r3/gcd + obj3 * r2/gcd)
+            try_without_division = True
+            obj = 0
             constraint_objectives_scaled = []
-            for i in range(len(self.model.objectives)):
-                multiplier = multipliers[i]
-                lb = self.model.objectives[i].Proto().domain[0] * multiplier
-                up = self.model.objectives[i].Proto().domain[-1] * multiplier
-                constraint_objectives_scaled.append(self.model.solver_model.NewIntVar(lb, up, f"obj_constraint{i}"))
-                self.model.solver_model.Add(constraint_objectives_scaled[i] == self.model.objectives[i] * multiplier)
-            self.model.solver_model.Minimize(obj + sum(constraint_objectives_scaled))
+            # todo complete the code to work with augmentation without division
+
+            main_obj = self.model.objectives[0] * 1000
+            for obj_range in range_array:
+                main_obj *= obj_range
+            constraint_objectives_scaled = []
+            obj_multiplier = [1] * len(self.model.objectives)
+            obj_multiplier[0] = 1000
+            for i in range(len(obj_multiplier)):
+                for j in range(len(range_array)):
+                    if j+1 != i:
+                        obj_multiplier[i] *= range_array[j]
+            lb_list = []
+            up_list = []
+            if try_without_division:
+                for i in range(len(self.model.objectives)):
+                    lb_list.append(self.model.objectives[i].Proto().domain[0] * obj_multiplier[i])
+                    up_list.append(self.model.objectives[i].Proto().domain[-1] * obj_multiplier[i])
+            else:
+                # change the values of obj_multiplier to be the gcd of the obj_multiplier
+                gcd = self.gcd(obj_multiplier)
+                obj_multiplier = [int(x/gcd) for x in obj_multiplier]
+            main_obj = self.model.solver_model.NewIntVar(sum(lb_list), sum(up_list), "main_obj")
+            self.model.solver_model.Add(main_obj == sum(self.model.objectives[i] * obj_multiplier[i]
+                                  for i in range(len(self.model.objectives))))
+            self.current_objective = main_obj
         else:
-            self.model.solver_model.Minimize(self.model.objectives[0])
+            self.current_objective = self.model.objectives[0]
 
     def set_threads(self, threads):
         self.solver.parameters = sat_parameters_pb2.SatParameters(num_search_workers=threads)
@@ -65,6 +85,10 @@ class OrtoolsCPSolver(Solver):
 
     def add_constraints_leq(self, constraint, rhs):
         new_constraint = self.model.solver_model.Add(constraint <= rhs)
+        return new_constraint
+
+    def add_constraints_geq(self, constraint, rhs):
+        new_constraint = self.model.solver_model.Add(constraint >= rhs)
         return new_constraint
 
     def remove_constraints(self, constraint):
@@ -109,8 +133,10 @@ class OrtoolsCPSolver(Solver):
         return self.solver.NumBranches()
 
     def add_or_all_objectives_constraint(self, rhs, id_constraint=0, sense_min=True):
-        # todo try to implement it for the general case where the objectives can be max or min
-        obj_constraints = [self.model.objectives[i] < rhs[i] for i in range(len(rhs))]
+        if self.model.is_a_minimization_model():
+            obj_constraints = [self.model.objectives[i] < rhs[i] for i in range(len(rhs))]
+        else:
+            obj_constraints = [self.model.objectives[i] > rhs[i] for i in range(len(rhs))]
         bool_vars = [self.model.solver_model.NewBoolVar(f"or_all_objectives_{id_constraint}_{i}")
                      for i in range(len(self.model.objectives))]
         for i in range(len(self.model.objectives)):
