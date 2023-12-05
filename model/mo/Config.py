@@ -28,7 +28,7 @@ class Config:
         self.data_sets_folder = args.dzn_dir
         self.input_mzn = args.model_mzn
         self.minizinc_model = os.path.basename(self.input_mzn)[:-4]
-        self.input_dzn = args.dzn_dir + "/" + self.data_name + ".dzn"
+        self.input_dzn = args.dzn_dir + "/" + args.problem_name + "/" + self.data_name + ".dzn"
         self.solver_name = args.solver_name
         self.problem_name = args.problem_name
         self.front_strategy = args.front_strategy
