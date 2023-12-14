@@ -23,13 +23,19 @@ class SatelliteImageMosaicSelectionGeneralModel(GenericModel, ABC):
         return True
 
     def get_nadir_bound_estimation(self):
-        nadir_objectives = [sum(self.instance.costs), sum(self.instance.areas), self.get_resolution_nadir_for_ref_point(),
-                            max(self.instance.incidence_angle)]
+        nadir_objectives = [0] * len(self.objectives)
+        nadir_objectives[0] = sum(self.instance.costs)
+        nadir_objectives[1] = sum(self.instance.areas)
+        nadir_objectives[2] = self.get_resolution_nadir_for_ref_point()
+        nadir_objectives[3] = max(self.instance.incidence_angle)
         return nadir_objectives
 
     def get_ref_points_for_hypervolume(self):
-        ref_points = [sum(self.instance.costs) + 1, sum(self.instance.areas) + 1,
-                      self.get_resolution_nadir_for_ref_point() + 1, 900]
+        ref_points = [0] * len(self.objectives)
+        ref_points[0] = sum(self.instance.costs) + 1
+        ref_points[1] = sum(self.instance.areas) + 1
+        ref_points[2] = self.get_resolution_nadir_for_ref_point() + 1
+        ref_points[3] = 900
         return ref_points
 
     def get_resolution_nadir_for_ref_point(self):
@@ -44,10 +50,20 @@ class SatelliteImageMosaicSelectionGeneralModel(GenericModel, ABC):
         return sum(resolution_parts_max.values())
 
     def assert_solution(self, solution, selected_images):
+        self.assert_is_a_cover(selected_images)
         self.assert_cost(selected_images, solution[0])
         self.assert_cloud_covered(selected_images, solution[1])
         self.assert_resolution(selected_images, solution[2])
         self.assert_incidence_angle(selected_images, solution[3])
+
+    def assert_is_a_cover(self, selected_images):
+        # check if it is a cover
+        covered_elements = set()
+        for image in selected_images:
+            for element in self.instance.images[image]:
+                covered_elements.add(element)
+        assert len(covered_elements) == len(self.instance.areas)
+
 
     def assert_cost(self, selected_images, cost):
         total_cost = 0
