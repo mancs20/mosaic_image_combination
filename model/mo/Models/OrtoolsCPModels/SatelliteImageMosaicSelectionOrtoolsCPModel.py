@@ -61,36 +61,37 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel, SatelliteImage
         self.solver_model.Add(self.total_cloudy_area == sum(self.cloud_area[i] for i in self.cloud_area))
         self.objectives.append(self.total_cloudy_area)
 
-        # resolution objective
-        max_total_resolution = max(self.instance.resolution) * len(self.instance.areas)
-        self.total_resolution = self.solver_model.NewIntVar(0, max_total_resolution, "total_resolution")
-        self.effective_image_resolution = [
-            self.solver_model.NewIntVar(self.instance.resolution[i], max(self.instance.resolution) + 10,
-                                 f"effective_resolution{i}") for i in
-            range(len(self.instance.images))]
-        for i in range(len(self.instance.images)):
-            self.solver_model.Add(self.effective_image_resolution[i] == self.instance.resolution[i]).OnlyEnforceIf(
-                self.select_image[i])
-            self.solver_model.Add(self.effective_image_resolution[i] == max(self.instance.resolution) + 10).OnlyEnforceIf(
-                self.select_image[i].Not())
-        for i in range(len(self.instance.areas)):
-            self.resolution_element.append(self.solver_model.NewIntVar(0, max(self.instance.resolution), f"resolution{i}"))
-            images = self.get_images_covering_element(i)
-            self.solver_model.AddMinEquality(self.resolution_element[i],
-                                      [self.effective_image_resolution[ima] for ima in images])
-
-        self.solver_model.Add(self.total_resolution == sum(self.resolution_element))
-        self.objectives.append(self.total_resolution)
-
-        # incidence angle objective
-        self.current_max_incidence_angle = self.solver_model.NewIntVar(min(self.instance.incidence_angle),
-                                                                max(self.instance.incidence_angle),
-                                                                "max_incidence_angle")
-        self.solver_model.AddMaxEquality(self.current_max_incidence_angle,
-                                  [self.instance.incidence_angle[i] * self.select_image[i]
-                                   for i in range(len(self.instance.images))])
-
-        self.objectives.append(self.current_max_incidence_angle)
+        # todo uncomment after check the speed
+        # # resolution objective
+        # max_total_resolution = max(self.instance.resolution) * len(self.instance.areas)
+        # self.total_resolution = self.solver_model.NewIntVar(0, max_total_resolution, "total_resolution")
+        # self.effective_image_resolution = [
+        #     self.solver_model.NewIntVar(self.instance.resolution[i], max(self.instance.resolution) + 10,
+        #                          f"effective_resolution{i}") for i in
+        #     range(len(self.instance.images))]
+        # for i in range(len(self.instance.images)):
+        #     self.solver_model.Add(self.effective_image_resolution[i] == self.instance.resolution[i]).OnlyEnforceIf(
+        #         self.select_image[i])
+        #     self.solver_model.Add(self.effective_image_resolution[i] == max(self.instance.resolution) + 10).OnlyEnforceIf(
+        #         self.select_image[i].Not())
+        # for i in range(len(self.instance.areas)):
+        #     self.resolution_element.append(self.solver_model.NewIntVar(0, max(self.instance.resolution), f"resolution{i}"))
+        #     images = self.get_images_covering_element(i)
+        #     self.solver_model.AddMinEquality(self.resolution_element[i],
+        #                               [self.effective_image_resolution[ima] for ima in images])
+        #
+        # self.solver_model.Add(self.total_resolution == sum(self.resolution_element))
+        # self.objectives.append(self.total_resolution)
+        #
+        # # incidence angle objective
+        # self.current_max_incidence_angle = self.solver_model.NewIntVar(min(self.instance.incidence_angle),
+        #                                                         max(self.instance.incidence_angle),
+        #                                                         "max_incidence_angle")
+        # self.solver_model.AddMaxEquality(self.current_max_incidence_angle,
+        #                           [self.instance.incidence_angle[i] * self.select_image[i]
+        #                            for i in range(len(self.instance.images))])
+        #
+        # self.objectives.append(self.current_max_incidence_angle)
 
     def get_images_covering_element(self, element):
         return [i for i in range(len(self.instance.images)) if element in self.instance.images[i]]

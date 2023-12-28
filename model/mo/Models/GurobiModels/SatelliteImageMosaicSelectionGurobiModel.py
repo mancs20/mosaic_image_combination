@@ -34,27 +34,29 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
         self.cloud_covered_by_image = gp.tupledict(self.instance.cloud_covered_by_image)
         self.clouds_id, self.area_clouds = gp.multidict(self.instance.clouds_id_area)
         self.total_area_clouds = int(sum(self.area_clouds.values()))
-        # resolution processing
-        self.resolution = gp.tupledict(zip(self.images_id, self.instance.resolution))
-        self.min_resolution = min(self.instance.resolution)
-        # incidence angle processing
-        self.incidence_angle = gp.tupledict(zip(self.images_id, self.instance.incidence_angle))
-        # multiply to convert to integers
+        # todo uncomment after check the speed
+        # # resolution processing
+        # self.resolution = gp.tupledict(zip(self.images_id, self.instance.resolution))
+        # self.min_resolution = min(self.instance.resolution)
+        # # incidence angle processing
+        # self.incidence_angle = gp.tupledict(zip(self.images_id, self.instance.incidence_angle))
+        # # multiply to convert to integers
 
 
     def add_variables_to_model(self):
         # decision variables
         self.select_image = self.solver_model.addVars(len(self.images), vtype=gp.GRB.BINARY, name="select_image_i")
         self.cloud_covered = self.solver_model.addVars(self.clouds_id, vtype=gp.GRB.BINARY, name="cloud_covered_e")
-        # support variables
-        self.resolution_element = self.solver_model.addVars(self.elements, lb=self.min_resolution,
-                                                            ub=max(self.resolution.values()), vtype=gp.GRB.INTEGER,
-                                                            name="resolution_element_i")
-        self.effective_image_resolution = self.solver_model.addVars(len(self.images), vtype=gp.GRB.INTEGER,
-                                                                    name="effective_resolution_image_i")
-        self.effective_incidence_angle = self.solver_model.addVars(len(self.images), vtype=gp.GRB.INTEGER,
-                                                                   name="effective_incidence_angle_i")
-        self.current_max_incidence_angle = self.solver_model.addVar(vtype=gp.GRB.INTEGER, name="max_allowed_incidence_angle")
+        # todo uncomment after check the speed
+        # # support variables
+        # self.resolution_element = self.solver_model.addVars(self.elements, lb=self.min_resolution,
+        #                                                     ub=max(self.resolution.values()), vtype=gp.GRB.INTEGER,
+        #                                                     name="resolution_element_i")
+        # self.effective_image_resolution = self.solver_model.addVars(len(self.images), vtype=gp.GRB.INTEGER,
+        #                                                             name="effective_resolution_image_i")
+        # self.effective_incidence_angle = self.solver_model.addVars(len(self.images), vtype=gp.GRB.INTEGER,
+        #                                                            name="effective_incidence_angle_i")
+        # self.current_max_incidence_angle = self.solver_model.addVar(vtype=gp.GRB.INTEGER, name="max_allowed_incidence_angle")
 
     def define_objectives(self):
         # cost
@@ -63,10 +65,11 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
         self.objectives.append(
             self.total_area_clouds - (gp.quicksum(self.cloud_covered[c] * self.area_clouds[c]
                                                   for c in self.clouds_id)))
-        # for resolution
-        self.objectives.append(gp.quicksum(self.resolution_element[e] for e in self.elements))
-        # for incidence angle
-        self.objectives.append(self.current_max_incidence_angle)
+        # todo uncomment after check the speed
+        # # for resolution
+        # self.objectives.append(gp.quicksum(self.resolution_element[e] for e in self.elements))
+        # # for incidence angle
+        # self.objectives.append(self.current_max_incidence_angle)
 
     def add_constraints_to_model(self):
         # cover constraint
@@ -81,27 +84,29 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
                                      self.cloud_covered[c] * len(self.images) for c in self.clouds_id))
 
         # calculate resolution for each element
-        max_resolution = max(self.resolution.values())
-        big_resolution = 2 * max_resolution
-        self.constraints.append(self.solver_model.addConstrs(((self.select_image[i] == 0) >> (self.effective_image_resolution[i] == big_resolution)
-                                      for i in self.images_id)))
-        self.constraints.append(self.solver_model.addConstrs(((self.select_image[i] == 1) >> (self.effective_image_resolution[i] == self.resolution[i])
-                                      for i in self.images_id)))
-        self.constraints.append(self.solver_model.addConstrs(self.resolution_element[e] == gp.min_(self.effective_image_resolution[i] for i in
-                                                                           self.images_id if e in self.images[i])
-                                     for e in self.elements))
-        # incidence angle constraint
-        # The below approach using indicator constraints is faster than the one commented below
-        self.constraints.append(self.solver_model.addConstrs(((self.select_image[i] == 0) >> (self.effective_incidence_angle[i] == 0)
-                                      for i in self.images_id)))
-        self.constraints.append(self.solver_model.addConstrs(
-            ((self.select_image[i] == 1) >> (self.effective_incidence_angle[i] == self.incidence_angle[i])
-             for i in self.images_id)))
-        # Approach not using indicator constraints, it is slower than the one above
-        # self.model.addConstrs(self.effective_incidence_angle[i] == self.select_image[i] * self.incidence_angle[i]
-        #                       for i in self.images_id)
-        self.constraints.append(self.solver_model.addConstr(self.current_max_incidence_angle == max_(self.effective_incidence_angle[i]
-                                                                             for i in self.images_id)))
+        # todo uncomment after check the speed
+        # max_resolution = max(self.resolution.values())
+        # big_resolution = 2 * max_resolution
+        # self.constraints.append(self.solver_model.addConstrs(((self.select_image[i] == 0) >> (self.effective_image_resolution[i] == big_resolution)
+        #                               for i in self.images_id)))
+        # self.constraints.append(self.solver_model.addConstrs(((self.select_image[i] == 1) >> (self.effective_image_resolution[i] == self.resolution[i])
+        #                               for i in self.images_id)))
+        # self.constraints.append(self.solver_model.addConstrs(self.resolution_element[e] == gp.min_(self.effective_image_resolution[i] for i in
+        #                                                                    self.images_id if e in self.images[i])
+        #                              for e in self.elements))
+        # # incidence angle constraint
+        # # The below approach using indicator constraints is faster than the one commented below
+        # self.constraints.append(self.solver_model.addConstrs(((self.select_image[i] == 0) >> (self.effective_incidence_angle[i] == 0)
+        #                               for i in self.images_id)))
+        # self.constraints.append(self.solver_model.addConstrs(
+        #     ((self.select_image[i] == 1) >> (self.effective_incidence_angle[i] == self.incidence_angle[i])
+        #      for i in self.images_id)))
+        # # Approach not using indicator constraints, it is slower than the one above
+        # # self.model.addConstrs(self.effective_incidence_angle[i] == self.select_image[i] * self.incidence_angle[i]
+        # #                       for i in self.images_id)
+        # self.constraints.append(self.solver_model.addConstr(self.current_max_incidence_angle == max_(self.effective_incidence_angle[i]
+        #                                                                      for i in self.images_id)))
+        # FINISH of commented section__________
         # constraints end--------------------------------------------------------------
 
     def get_solution_values(self):
