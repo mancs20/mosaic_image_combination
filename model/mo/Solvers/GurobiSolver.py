@@ -69,6 +69,10 @@ class GurobiSolver(Solver):
     def set_single_objective(self, objective_expression):
         self.model.solver_model.setObjective(objective_expression)
 
+    def add_constraints_eq(self, constraint, rhs):
+        new_constraint = self.model.solver_model.addConstr(constraint == rhs)
+        return new_constraint
+
     def add_constraints_leq(self, constraint, rhs):
         new_constraint = self.model.solver_model.addConstr(constraint <= rhs)
         return new_constraint

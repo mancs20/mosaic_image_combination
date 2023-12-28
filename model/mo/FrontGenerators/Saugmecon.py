@@ -115,6 +115,8 @@ class Saugmecon(FrontGeneratorStrategy):
                     formatted_solution = self.prepare_solution()
                     one_solution = formatted_solution["objs"]
                     self.save_solution_information(ef_array, one_solution, previous_solution_information)
+                    # the line below is for testing purposes, uncomment when necessary
+                    # self.solver.model.assert_solution(one_solution, formatted_solution["solution_values"])
                     yield formatted_solution
         if exit_from_loop_with_acceleration:
             self.exit_from_loop_with_acceleration(ef_array, self.nadir_objectives_values, self.best_objective_values)
@@ -276,3 +278,31 @@ class Saugmecon(FrontGeneratorStrategy):
         self.solver.update_statistics(solution_sec)
         self.solver.reset()
         return formatted_solution, objective_val
+
+    def test_if_solver_produce_solutions(self, solutions):
+        all_solutions_found = True
+        constraint_objectives_values = [0] * len(solutions[0])
+        # constraint_objectives_values = []
+        for i in range(len(solutions)):
+            solution_to_test = solutions[i]
+            if i > 0:
+                for constraint in constraint_objectives_values:
+                    self.solver.remove_constraints(constraint)
+            for j in range(len(solution_to_test)):
+                constraint = self.solver.add_constraints_eq(self.solver.model.objectives[j], solution_to_test[j])
+                constraint_objectives_values[j] = constraint
+            solution_sec = self.get_solver_solution_for_timeout(optimize_not_satisfy=True)
+            if self.solver.status_infeasible():
+                print(f"The solver found infeasible solution for objectives values {solution_to_test} so solution {solution_to_test} cannot be obtained with the solver")
+                all_solutions_found = False
+            else:
+                formatted_solution = self.prepare_solution()
+                solution_values = formatted_solution['objs']
+                if solution_values != solution_to_test:
+                    print(f"The solver found solution {solution_values} but the expected solution is {solution_to_test}")
+                    all_solutions_found = False
+                else:
+                    print(f"The solver found solution {solution_values} as expected")
+        if all_solutions_found:
+            print("All solutions were found by the solver")
+        return all_solutions_found

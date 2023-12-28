@@ -71,6 +71,8 @@ class OrtoolsCPSolver(Solver):
         self.status = self.solver.Solve(self.model.solver_model)
         if self.status == cp_model.INFEASIBLE:
             print("infeasible")
+        elif self.status == cp_model.UNKNOWN:
+            print("ortools-sat solver timeout")
         else:
             self.add_solution_values_to_model_solver_values()
 
@@ -82,6 +84,10 @@ class OrtoolsCPSolver(Solver):
                     self.model.solver_values.append(self.solver.Value(value))
             else:
                 self.model.solver_values.append(self.solver.Value(values))
+
+    def add_constraints_eq(self, constraint, rhs):
+        new_constraint = self.model.solver_model.Add(constraint == rhs)
+        return new_constraint
 
     def add_constraints_leq(self, constraint, rhs):
         new_constraint = self.model.solver_model.Add(constraint <= rhs)
