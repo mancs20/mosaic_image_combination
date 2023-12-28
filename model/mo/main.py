@@ -1,3 +1,5 @@
+import sys
+
 import constants
 from Config import *
 from MOCP import *
@@ -115,10 +117,10 @@ def build_instance_text_data(config):
             rhs_constraints_vector = augmecon2_get_rhs_vector_from_file(path_rhs_constraints_vector)
         else:
             print("Error: There is no data name with that prefix. Try prefix 'augmecon2'")
-            exit(1)
+            sys.exit(1)
     else:
         print("Error: problem name not recognized")
-        exit(1)
+        sys.exit(1)
     instance = InstanceMIPMatrix(config.problem_name, objective_matrix, constraints_matrix, rhs_constraints_vector)
     return instance
 
@@ -166,7 +168,7 @@ def check_already_computed(config):
             for row in summary:
                 if row["instance"] == config.data_name and row["problem"] == config.problem_name and row["solver_name"] == config.solver_name and row["front_strategy"] == config.front_strategy and row["solver_search_strategy"] == config.solver_search_strategy and row["fzn_optimisation_level"] == str(config.fzn_optimisation_level) and row["cores"] == str(config.cores) and row["solver_timeout_sec"] == str(config.solver_timeout_sec):
                     print(f"Skipping {config.uid()} because it is already in {config.summary_filename}")
-                    exit(0)
+                    sys.exit(0)
 
 def build_solver(model, instance, config, statistics):
     osolve = build_osolver(model, instance, config, statistics)
@@ -182,7 +184,7 @@ def build_model(instance, config):
         return get_model_by_problem_and_solver_name_(problem, config.solver_name, instance)
     else:
         print("Error. You're trying to build a model from a Minizinc instance. Minizinc instances already have the model")
-        exit(1)
+        sys.exit(1)
 
 def get_model_by_problem_and_solver_name_(problem_name, solver_name, instance):
     if problem_name == constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
