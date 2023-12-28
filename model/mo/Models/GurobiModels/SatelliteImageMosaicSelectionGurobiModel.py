@@ -69,8 +69,6 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
         self.objectives.append(self.current_max_incidence_angle)
 
     def add_constraints_to_model(self):
-        max_resolution = max(self.resolution.values())
-        big_resolution = 2 * max_resolution
         # cover constraint
         self.constraints.append(self.solver_model.addConstrs(gp.quicksum(self.select_image[i] for i in self.images_id if e in self.images[i]) >= 1
                                      for e in self.elements))
@@ -83,6 +81,8 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
                                      self.cloud_covered[c] * len(self.images) for c in self.clouds_id))
 
         # calculate resolution for each element
+        max_resolution = max(self.resolution.values())
+        big_resolution = 2 * max_resolution
         self.constraints.append(self.solver_model.addConstrs(((self.select_image[i] == 0) >> (self.effective_image_resolution[i] == big_resolution)
                                       for i in self.images_id)))
         self.constraints.append(self.solver_model.addConstrs(((self.select_image[i] == 1) >> (self.effective_image_resolution[i] == self.resolution[i])
@@ -111,3 +111,6 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
                 selected_images.append(image)
         return selected_images
 
+    def add_necessary_solver_configuration(self):
+        print("Extra solver configuration needed")
+        self.solver_model.Params.IntegralityFocus = 1

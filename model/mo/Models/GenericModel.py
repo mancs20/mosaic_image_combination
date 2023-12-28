@@ -16,6 +16,7 @@ class GenericModel(ABC):
         self.add_variables_to_model()
         self.define_objectives()
         self.add_constraints_to_model()
+        self.add_necessary_solver_configuration()
 
     @abstractmethod
     def create_model(self):
@@ -71,6 +72,10 @@ class GenericModel(ABC):
 
     @abstractmethod
     def is_numerically_possible_augment_objective(self):
+        pass
+
+    @abstractmethod
+    def add_necessary_solver_configuration(self):
         pass
 
 

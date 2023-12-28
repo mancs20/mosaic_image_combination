@@ -113,3 +113,6 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel, SatelliteImage
         for i in range(1, len(list_to_gcd)):
             gcd = math.gcd(gcd, list_to_gcd[i])
         return gcd
+
+    def add_necessary_solver_configuration(self):
+        print("Extra solver configuration no needed")
