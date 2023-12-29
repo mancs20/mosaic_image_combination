@@ -9,7 +9,7 @@ class Config:
         parser = argparse.ArgumentParser(
             prog = 'multi_objective_cp',
             description = 'Multi-objective constraint programming. This program computes a Pareto front of an optimization constraint problem.')
-        parser.add_argument('instance_name')
+        parser.add_argument('--instance_name', required=True)
         parser.add_argument('--minizinc_data', required=True)
         parser.add_argument('--model_mzn', required=False)
         parser.add_argument('--dzn_dir', required=False)

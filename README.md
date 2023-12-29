@@ -66,14 +66,13 @@ presented in Constraint Model for the Satellite Image Mosaic Selection Problem. 
 * `--cores`: The number of cores to use.
 * `--solver_search_strategy`: The strategy to use for the solver. The default value is `free`.
 * `--fzn_optimisation_level`: The optimisation level for the fzn file. The default value is `1`.
-* `name of the instance`: The name of the instance to run the experiment, for example `paris_30` for `sims`. For `mokp` 
+* `--instance_name`: The name of the instance to run the experiment, for example `paris_30` for `sims`. For `mokp` 
 the names are in the form `augmecon2_<number_objectives>kp<number_items>` for example `augmecon2_3kp40` for 3 
 objectives and constraints and 40 items. 
 
 Example:
 ```bash
-python3 main.py --model_mzn ../mosaic_cloud2.mzn --dzn_dir ../data_sets/ --solver_name gurobi --solver_timeout_sec 60 
---summary ../summary.csv --cores 8 --solver_search_strategy free --fzn_optimisation_level 1 paris_30
+python main.py --minizinc_data 1 --model_mzn ../mosaic_cloud2.mzn --dzn_dir ../data_sets/ --problem_name sims --solver_name gurobi --front_strategy saugmecon --solver_timeout_sec 3600 --summary ../summary_test_sims_2_cost_cloud.csv --cores 6 --solver_search_strategy free --fzn_optimisation_level 1 --instance_name paris_30
 ```
 
 #### Results
