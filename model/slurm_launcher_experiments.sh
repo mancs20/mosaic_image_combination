@@ -65,7 +65,7 @@ TASK="./slurm_run_experiments.sh"
 #TASKLIST="{1..8}"
 # TASKLISTFILE=path/to/input_file
 # If non-empty, used as input source over TASKLIST.
-TASKLISTFILE=parameters
+TASKLISTFILE=slurm_experiment_parameters
 # TASKLISTFILE=
 
 ############################################################
