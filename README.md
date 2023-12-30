@@ -59,7 +59,7 @@ To run the experiments you need to run the script `model/mo/main.py` with the fo
 presented in Constraint Model for the Satellite Image Mosaic Selection Problem. The list of problem names are:
   * `sims`: Satellite Image Mosaic Selection Problem.
   * `mokp`: Multi-objective Knapsack Problem.
-* `--solver_name`: The name of the solver to use, `or-tools`, `gurobi`, etc.
+* `--solver_name`: The name of the solver to use, `ortools-py`, `gurobi`, etc.
 * `--front_strategy`: The strategy to use to generate the Pareto front. Ex: `saugmecon`, `gavanelli`.
 * `--solver_timeout_sec`: The timeout in seconds for the solver. The experiments were performed with a value of `3600`.
 * `--summary`: The path to the summary file. A file with the results of the experiments, generated in CSV format.
