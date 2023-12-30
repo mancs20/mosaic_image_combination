@@ -1,12 +1,21 @@
 import sys
+import os
 
+# Get the root directory
+from pathlib import Path
+script_path = Path(__file__).resolve()
+pre_root_dir = script_path.parents[1]
+root_dir = os.path.dirname(pre_root_dir)
+# Add the root directory to sys.path
+sys.path.append(root_dir)
+# Import the module from the root directory
 import constants
+
 from Config import *
 from MOCP import *
 from Timer import *
 from minizinc import Instance, Model, Solver
 import csv
-import os
 import traceback
 import logging
 from filelock import FileLock, Timeout

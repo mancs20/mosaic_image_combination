@@ -1,6 +1,5 @@
 from abc import ABC
 
-import constants
 
 
 class InstanceGeneric(ABC):

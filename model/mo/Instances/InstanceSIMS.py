@@ -1,4 +1,16 @@
+import sys
+import os
+from pathlib import Path
+
+p = Path(__file__).parents[3]
+
+# Get the root directory
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+# Add the root directory to sys.path
+sys.path.append(root_dir)
+# Import the module from the root directory
 import constants
+
 from model.mo.Instances.InstanceGeneric import InstanceGeneric
 
 
