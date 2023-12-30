@@ -60,4 +60,4 @@ echo "solver_name: $solver_name"
 echo "front_strategy: $front_strategy"
 echo "instance_name: $instance_name"
 
-python main.py --minizinc_data 1 --model_mzn ../mosaic_cloud2.mzn --dzn_dir ../data_sets/ --problem_name "$problem_name" --solver_name "$solver_name" --front_strategy "$front_strategy" --solver_timeout_sec 3600 --summary ../summary_test_sims_2_cost_cloud.csv --cores 6 --solver_search_strategy free --fzn_optimisation_level 1 --instance_name "$instance_name"
+python main.py --minizinc_data 1 --model_mzn ../mosaic_cloud2.mzn --dzn_dir ../data_sets/ --problem_name "$problem_name" --solver_name "$solver_name" --front_strategy "$front_strategy" --solver_timeout_sec 3600 --summary ../summary_sims_2obj_cost_cloud.csv --cores 8 --solver_search_strategy free --fzn_optimisation_level 1 --instance_name "$instance_name"
