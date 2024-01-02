@@ -60,12 +60,12 @@ JOBLOGFILE=logs/state.parallel.log
 ### /!\ ADAPT TASK and TASKLIST[FILE] variables accordingly
 # Absolute path to the (serial) task to be executed i.e. your favorite
 # Java/C/C++/Ruby/Perl/Python/R/whatever program to be run
-TASK="./slurm_run_experiments.sh"
+TASK="./gnu_parallel_run_experiments.sh"
 # Default task list, here {1..8} is a shell expansion interpreted as 1 2... 8
 #TASKLIST="{1..8}"
 # TASKLISTFILE=path/to/input_file
 # If non-empty, used as input source over TASKLIST.
-TASKLISTFILE=slurm_experiment_parameters
+TASKLISTFILE=gnu_parallel_experiment_parameters
 # TASKLISTFILE=
 
 ############################################################
