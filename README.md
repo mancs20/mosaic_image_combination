@@ -9,6 +9,8 @@ You need the following packages to be installed:
   * `pip install "up42-py[viz]"`
 * [dataclasses-json](https://pypi.org/project/dataclasses-json/)
   * `pip install dataclasses-json`
+* [pymoo](https://pymoo.org/)
+  * `pip install pymoo`
 * [or-tools](https://developers.google.com/optimization/install/python)
   * `pip install ortools`
 
