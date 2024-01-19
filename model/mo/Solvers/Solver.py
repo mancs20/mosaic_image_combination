@@ -103,7 +103,6 @@ class Solver(ABC):
     # status end-------------------------------------------------
 
     def update_statistics(self, seconds):
-        self.statistics["time_solver_sec"] += seconds
         solution = self.get_complete_solution()
         if solution is None:
             return
