@@ -1,5 +1,6 @@
 from ParetoFront import ParetoFront
 
+
 class MOWithFrontGenerator:
     """Multi-objective solver maintaining a Pareto front.
          See further information in the class `ParetoFront`.
@@ -8,6 +9,7 @@ class MOWithFrontGenerator:
         statistics (dict): A dictionary to store the statistics of the solver.
         front_generator: A front generator strategy with a solver supporting `solve()`.
         verbose (Bool): If `True`, the solver prints the Pareto front, new objectives and statistics at each iteration."""
+
     def __init__(self, instance, statistics, front_generator, verbose=True):
         self.instance = instance
         self.front_generator_strategy = front_generator
@@ -19,7 +21,6 @@ class MOWithFrontGenerator:
     def init_statistics(self):
         self.statistics["pareto_front"] = ""
         self.statistics["solutions_pareto_front"] = ""
-
 
     def solve(self):
         for x in self.front_generator_strategy.solve():
@@ -41,10 +42,9 @@ class MOWithFrontGenerator:
         if error:
             raise Exception(error_msg)
 
-
     def print_statistics_of_recent_solution(self, solution):
         if self.verbose:
             print("New objective found: " + str(solution["objs"]))
             print(self.statistics["pareto_front"])
-            print(self.pareto_front.front_constraint_mzn()) # todo this print is only usefull in Gavenelli, remove it
+            print(self.pareto_front.front_constraint_mzn())  # todo this print is only usefull in Gavenelli, remove it
             print(solution.statistics)

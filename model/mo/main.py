@@ -3,6 +3,7 @@ import os
 
 # Get the root directory
 from pathlib import Path
+
 script_path = Path(__file__).resolve()
 pre_root_dir = script_path.parents[1]
 root_dir = os.path.dirname(pre_root_dir)
@@ -43,6 +44,7 @@ def init_top_level_statistics(statistics):
     statistics["hypervolume"] = 0
     statistics["datetime"] = datetime.now()
 
+
 def init_solution_details_statistics(statistics):
     statistics["number_of_solutions"] = 0
     statistics["total_nodes"] = 0
@@ -51,6 +53,7 @@ def init_solution_details_statistics(statistics):
     statistics["solutions_time_list"] = []
     statistics["pareto_front"] = ""
     statistics["solutions_pareto_front"] = ""
+
 
 def main():
     config = Config()
@@ -79,6 +82,7 @@ def main():
     print("end of solving statistics: " + str(statistics))
     write_statistics(config, statistics)
 
+
 def build_instance(config):
     instance = None
     if use_minizinc_data(config):
@@ -89,8 +93,10 @@ def build_instance(config):
 
     return instance
 
+
 def use_minizinc_data(config) -> bool:
     return config.minizinc_data == True
+
 
 def build_instance_minizinc_data(config):
     # here we build the instance, it could from minizinc or from other format
@@ -110,6 +116,7 @@ def build_instance_minizinc_data(config):
         instance = InstanceMinizinc(mzn_solver, model, problem_name)
 
     return instance
+
 
 def build_instance_text_data(config):
     objective_matrix = []
@@ -133,15 +140,18 @@ def build_instance_text_data(config):
     instance = InstanceMIPMatrix(config.problem_name, objective_matrix, constraints_matrix, rhs_constraints_vector)
     return instance
 
+
 def get_augmecon2_instance_name(whole_instance_name):
     # return the rest of the problem data name, Ex: "augmecon2_3kp40" -> "3kp40"
     return whole_instance_name[10:]
+
 
 def augmecon2_get_text_data_files(datasets_folder):
     path_objective_matrix = os.path.join(datasets_folder, "z3_40ctt.txt")
     path_constraints_matrix = os.path.join(datasets_folder, "z3_40att.txt")
     path_rhs_constraints_vector = os.path.join(datasets_folder, "z3_40btt.txt")
     return path_objective_matrix, path_constraints_matrix, path_rhs_constraints_vector
+
 
 def augmecon2_get_matrix_from_file(file_path, file_has_headers=True):
     # Read the file and extract data
@@ -160,6 +170,7 @@ def augmecon2_get_matrix_from_file(file_path, file_has_headers=True):
         matrix.append(complete_column)
     return matrix
 
+
 def augmecon2_get_rhs_vector_from_file(file_path):
     # Read the file and extract data
     with open(file_path, 'r') as file:
@@ -170,20 +181,27 @@ def augmecon2_get_rhs_vector_from_file(file_path):
     rhs_vector = [float(row[0]) for row in rows]
     return rhs_vector
 
+
 def check_already_computed(config):
     if os.path.exists(config.summary_filename):
         with open(config.summary_filename, 'r') as fsummary:
             summary = csv.DictReader(fsummary, delimiter=';')
             for row in summary:
-                if row["instance"] == config.data_name and row["problem"] == config.problem_name and row["solver_name"] == config.solver_name and row["front_strategy"] == config.front_strategy and row["solver_search_strategy"] == config.solver_search_strategy and row["fzn_optimisation_level"] == str(config.fzn_optimisation_level) and row["cores"] == str(config.cores) and row["solver_timeout_sec"] == str(config.solver_timeout_sec):
+                if row["instance"] == config.data_name and row["problem"] == config.problem_name and row[
+                    "solver_name"] == config.solver_name and row["front_strategy"] == config.front_strategy and row[
+                    "solver_search_strategy"] == config.solver_search_strategy and row["fzn_optimisation_level"] == str(
+                    config.fzn_optimisation_level) and row["cores"] == str(config.cores) and row[
+                    "solver_timeout_sec"] == str(config.solver_timeout_sec):
                     print(f"Skipping {config.uid()} because it is already in {config.summary_filename}")
                     sys.exit(0)
+
 
 def build_solver(model, instance, config, statistics):
     osolve = build_osolver(model, instance, config, statistics)
     front_generator_strategy = set_front_strategy(config, osolve)
     osolve_mo = build_MO(instance, statistics, front_generator_strategy, osolve)
     return osolve_mo, osolve_mo.pareto_front
+
 
 def build_model(instance, config):
     if instance.is_minizinc:
@@ -192,8 +210,10 @@ def build_model(instance, config):
     if not instance.is_minizinc:
         return get_model_by_problem_and_solver_name_(problem, config.solver_name, instance)
     else:
-        print("Error. You're trying to build a model from a Minizinc instance. Minizinc instances already have the model")
+        print(
+            "Error. You're trying to build a model from a Minizinc instance. Minizinc instances already have the model")
         sys.exit(1)
+
 
 def get_model_by_problem_and_solver_name_(problem_name, solver_name, instance):
     if problem_name == constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
@@ -225,6 +245,7 @@ def build_osolver(model, instance, config, statistics):
         else:
             return GurobiSolver(model, statistics, config.threads, free_search)
 
+
 def set_front_strategy(config, solver):
     if config.front_strategy == "saugmecon":
         return Saugmecon(solver, Timer(config.solver_timeout_sec))
@@ -232,6 +253,7 @@ def set_front_strategy(config, solver):
         return Gavanelli(solver, Timer(config.solver_timeout_sec))
     else:
         return Saugmecon(solver, Timer(config.solver_timeout_sec))
+
 
 def build_MO(instance, statistics, front_generator, osolve):
     return MOWithFrontGenerator(instance, statistics, front_generator)
@@ -242,12 +264,14 @@ def build_MO(instance, statistics, front_generator, osolve):
     else:
         return MOWithFrontGenerator(instance, statistics, front_generator)
 
+
 def csv_header(config):
     statistics = {}
     config.init_statistics(statistics)
     init_top_level_statistics(statistics)
     init_solution_details_statistics(statistics)
     return list(statistics.keys())
+
 
 def create_summary_file(config):
     """We create the CSV summary file if it does not exist yet.
@@ -259,6 +283,7 @@ def create_summary_file(config):
             writer = csv.DictWriter(summary, fieldnames=csv_header(config), delimiter=';')
             writer.writeheader()
 
+
 def statistics_to_csv(config, statistics):
     stats_keys = csv_header(config)
     csv_entry = ""
@@ -267,6 +292,7 @@ def statistics_to_csv(config, statistics):
             csv_entry += str(statistics[k])
         csv_entry += ";"
     return csv_entry[:-1] + "\n"
+
 
 def write_statistics(config, statistics):
     try:
