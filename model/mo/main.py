@@ -251,6 +251,8 @@ def set_front_strategy(config, solver):
         return Saugmecon(solver, Timer(config.solver_timeout_sec))
     elif config.front_strategy == "gavanelli":
         return Gavanelli(solver, Timer(config.solver_timeout_sec))
+    elif config.front_strategy == "gavanelli-opt":
+        return Gavanelli(solver, Timer(config.solver_timeout_sec), optimize=True)
     else:
         return Saugmecon(solver, Timer(config.solver_timeout_sec))
 
