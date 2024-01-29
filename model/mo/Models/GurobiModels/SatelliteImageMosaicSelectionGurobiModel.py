@@ -9,6 +9,10 @@ from model.mo.Models.SatelliteImageMosaicSelectionGeneralModel import SatelliteI
 class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaicSelectionGeneralModel):
 
     def __init__(self, instance):
+        # todo delete the line below
+        self.auxiliary_variables_for_resolution = []
+        self.images_covering_element = None
+        # todo end of delete
         self.elements = None
         self.areas = None
         self.images_id = None
@@ -21,7 +25,7 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
         SatelliteImageMosaicSelectionGeneralModel.__init__(self, instance)
 
     def is_numerically_possible_augment_objective(self):
-        return False # For Ortools-cp it is not possible
+        return False  # For Ortools-cp it is not possible
 
     def create_model(self):
         return gp.Model("SIMSModel")
@@ -38,6 +42,14 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
         # # resolution processing
         # self.resolution = gp.tupledict(zip(self.images_id, self.instance.resolution))
         # self.min_resolution = min(self.instance.resolution)
+        # images_covering_element = {}
+        # for i in self.images_id:
+        #     for e in self.images[i]:
+        #         if e not in images_covering_element:
+        #             images_covering_element[e] = [i]
+        #         else:
+        #             images_covering_element[e].append(i)
+        # self.images_covering_element = gp.tupledict(images_covering_element)
         # # incidence angle processing
         # self.incidence_angle = gp.tupledict(zip(self.images_id, self.instance.incidence_angle))
         # # multiply to convert to integers
@@ -52,8 +64,13 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
         # self.resolution_element = self.solver_model.addVars(self.elements, lb=self.min_resolution,
         #                                                     ub=max(self.resolution.values()), vtype=gp.GRB.INTEGER,
         #                                                     name="resolution_element_i")
-        # self.effective_image_resolution = self.solver_model.addVars(len(self.images), vtype=gp.GRB.INTEGER,
-        #                                                             name="effective_resolution_image_i")
+        # self.auxiliary_variables_for_resolution = [0] * len(self.elements)
+        # for element in self.elements:
+        #     self.auxiliary_variables_for_resolution[element] = {}
+        #     for image in self.images_covering_element[element]:
+        #         self.auxiliary_variables_for_resolution[element][image] = self.solver_model.addVar(
+        #             vtype=gp.GRB.BINARY,
+        #             name=f"auxiliary_variable_for_resolution{element}_{image}")
         # self.effective_incidence_angle = self.solver_model.addVars(len(self.images), vtype=gp.GRB.INTEGER,
         #                                                            name="effective_incidence_angle_i")
         # self.current_max_incidence_angle = self.solver_model.addVar(vtype=gp.GRB.INTEGER, name="max_allowed_incidence_angle")
@@ -65,11 +82,17 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
         self.objectives.append(
             self.total_area_clouds - (gp.quicksum(self.cloud_covered[c] * self.area_clouds[c]
                                                   for c in self.clouds_id)))
-        # todo uncomment after check the speed
+        # todo uncomment after check with cost and cloud
         # # for resolution
         # self.objectives.append(gp.quicksum(self.resolution_element[e] for e in self.elements))
         # # for incidence angle
         # self.objectives.append(self.current_max_incidence_angle)
+
+    def review_objective_values(self, objective_values):
+        # for the current model the resolution value cannot be obtained from Gurobi, so it is calculated manually
+        selected_images = self.get_solution_values()
+        # todo uncomment after check with cost and cloud
+        # objective_values[2] = self.calculate_resolution(selected_images)
 
     def add_constraints_to_model(self):
         # cover constraint
@@ -84,16 +107,24 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
                                      self.cloud_covered[c] * len(self.images) for c in self.clouds_id))
 
         # calculate resolution for each element
-        # todo uncomment after check the speed
-        # max_resolution = max(self.resolution.values())
-        # big_resolution = 2 * max_resolution
-        # self.constraints.append(self.solver_model.addConstrs(((self.select_image[i] == 0) >> (self.effective_image_resolution[i] == big_resolution)
-        #                               for i in self.images_id)))
-        # self.constraints.append(self.solver_model.addConstrs(((self.select_image[i] == 1) >> (self.effective_image_resolution[i] == self.resolution[i])
-        #                               for i in self.images_id)))
-        # self.constraints.append(self.solver_model.addConstrs(self.resolution_element[e] == gp.min_(self.effective_image_resolution[i] for i in
-        #                                                                    self.images_id if e in self.images[i])
-        #                              for e in self.elements))
+        # todo uncomment after check with cost and cloud
+        # big_resolution = max(self.resolution.values()) + 1
+        # for element in self.elements:
+        #     total_auxiliary_variables = len(self.auxiliary_variables_for_resolution[element])
+        #     self.constraints.append(
+        #         self.solver_model.addConstr(gp.quicksum(
+        #             self.auxiliary_variables_for_resolution[element][i] for i in
+        #             self.auxiliary_variables_for_resolution[element]) == total_auxiliary_variables - 1,
+        #                                     name=f"constraint_auxiliary_variables_for_resolution{element}"))
+        #
+        # self.constraints.append(self.solver_model.addConstrs(self.resolution_element[e] >=
+        #                                                      self.resolution[i] * self.select_image[i] +
+        #                                                      big_resolution * (1 - self.select_image[i]) -
+        #                                                      2 * big_resolution * (
+        #                                                          self.auxiliary_variables_for_resolution[e][i])
+        #                                                      for e in self.elements
+        #                                                      for i in self.images_id
+        #                                                      if e in self.images[i]))
         # # incidence angle constraint
         # # The below approach using indicator constraints is faster than the one commented below
         # self.constraints.append(self.solver_model.addConstrs(((self.select_image[i] == 0) >> (self.effective_incidence_angle[i] == 0)

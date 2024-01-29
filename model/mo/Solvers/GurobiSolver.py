@@ -44,6 +44,7 @@ class GurobiSolver(Solver):
                 one_solution.append(self.model.objectives[i].getValue())
         # make sure the values of the objectives are rounded down to the nearest integer
         one_solution = [int(round(x, 0)) for x in one_solution]
+        self.model.review_objective_values(one_solution)
         return one_solution
 
     def set_minimization(self):

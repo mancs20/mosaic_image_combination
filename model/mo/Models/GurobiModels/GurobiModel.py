@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 
 import sys
 import os
@@ -20,3 +20,7 @@ class GurobiModel(GenericModel, ABC):
 
     def set_solver_name(self):
         self.solver_name = constants.Solver.GUROBI.value
+
+    @abstractmethod
+    def review_objective_values(self, objective_values):
+        pass
