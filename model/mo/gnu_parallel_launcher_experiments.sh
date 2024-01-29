@@ -40,7 +40,7 @@ PYTHON="python"
 PYTHON_SCRIPT="main.py"
 CORES=$((SLURM_CPUS_PER_TASK / 2))
 SOLVER_TIMEOUT=3600
-SUMMARY_FILE="../summary_sims_two_objectives_cost_and_clouds.csv"
+SUMMARY_FILE="../summary_sims_2_objectives_cost_and_clouds.csv"
 FIXED_PARAMETERS="--minizinc_data 1 --model_mzn ../mosaic_cloud2.mzn --dzn_dir ../data_sets/ --solver_timeout_sec $SOLVER_TIMEOUT --summary $SUMMARY_FILE --cores $CORES --solver_search_strategy free --fzn_optimisation_level 1"
 
 HOSTNAME=$(hostname)
