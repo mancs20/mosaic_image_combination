@@ -78,7 +78,6 @@ class SatelliteImageMosaicSelectionGeneralModel(GenericModel, ABC):
                 covered_elements.add(element)
         assert len(covered_elements) == len(self.instance.areas)
 
-
     def assert_cost(self, selected_images, cost):
         total_cost = 0
         for image in selected_images:
@@ -98,6 +97,10 @@ class SatelliteImageMosaicSelectionGeneralModel(GenericModel, ABC):
         assert total_area_clouds - total_cloud_covered == cloud_uncovered
 
     def assert_resolution(self, selected_images, resolution):
+        calculated_total_resolution = self.calculate_resolution(selected_images)
+        assert calculated_total_resolution == resolution
+
+    def calculate_resolution(self, selected_images):
         calculated_total_resolution = 0
         for element in range(len(self.instance.areas)):
             element_resolution = max(self.instance.resolution)
@@ -106,7 +109,7 @@ class SatelliteImageMosaicSelectionGeneralModel(GenericModel, ABC):
                     if self.instance.resolution[image] < element_resolution:
                         element_resolution = self.instance.resolution[image]
             calculated_total_resolution += element_resolution
-        assert calculated_total_resolution == resolution
+        return calculated_total_resolution
 
     def assert_incidence_angle(self, selected_images, incidence_angle):
         max_incidence_angle = 0
