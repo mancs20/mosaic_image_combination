@@ -16,6 +16,7 @@ from model.mo.Solvers.Solver import Solver
 from ortools.sat.python import cp_model
 from ortools.sat import sat_parameters_pb2
 
+
 class OrtoolsCPSolver(Solver):
     def __init__(self, model, statistics, threads, free_search=True):
         super().__init__(model, statistics, threads, free_search)

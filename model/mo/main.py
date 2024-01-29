@@ -50,7 +50,9 @@ def init_solution_details_statistics(statistics):
     statistics["total_nodes"] = 0
     statistics["time_solver_sec"] = 0  # Time spent in the solver.
     statistics["minizinc_time_fzn_sec"] = 0
+    statistics["hypervolume_current_solutions"] = []
     statistics["solutions_time_list"] = []
+    statistics["pareto_solutions_time_list"] = []
     statistics["pareto_front"] = ""
     statistics["solutions_pareto_front"] = ""
 
@@ -77,8 +79,8 @@ def main():
         print("Execption raised: " + str(e))
         logging.error(traceback.format_exc())
     statistics["hypervolume"] = pareto_front.hypervolume()
-    solution_times_list = [statistics["solutions_time_list"][x] for x in pareto_front.front]
-    statistics["solutions_time_list"] = solution_times_list
+    pareto_solutions_time_list = [statistics["solutions_time_list"][x] for x in pareto_front.front]
+    statistics["pareto_solutions_time_list"] = pareto_solutions_time_list
     print("end of solving statistics: " + str(statistics))
     write_statistics(config, statistics)
 

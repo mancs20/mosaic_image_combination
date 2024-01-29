@@ -21,6 +21,7 @@ class MOWithFrontGenerator:
     def init_statistics(self):
         self.statistics["pareto_front"] = ""
         self.statistics["solutions_pareto_front"] = ""
+        self.statistics["hypervolume_current_solutions"] = []
 
     def solve(self):
         for x in self.front_generator_strategy.solve():
@@ -39,6 +40,8 @@ class MOWithFrontGenerator:
             print(f"Previous solutions: {self.pareto_front.solutions}")
         self.statistics["pareto_front"] = self.pareto_front.to_str()
         self.statistics["solutions_pareto_front"] = self.pareto_front.solutions_to_str()
+        # create list from string
+        self.statistics["hypervolume_current_solutions"].append(self.pareto_front.hypervolume())
         if error:
             raise Exception(error_msg)
 
