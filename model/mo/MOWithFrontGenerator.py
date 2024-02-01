@@ -44,6 +44,7 @@ class MOWithFrontGenerator:
         self.statistics["hypervolume_current_solutions"].append(self.pareto_front.hypervolume())
         if error:
             raise Exception(error_msg)
+        return added_to_front
 
     def print_statistics_of_recent_solution(self, solution):
         if self.verbose:
@@ -51,3 +52,8 @@ class MOWithFrontGenerator:
             print(self.statistics["pareto_front"])
             print(self.pareto_front.front_constraint_mzn())  # todo this print is only usefull in Gavenelli, remove it
             print(solution.statistics)
+
+    def process_last_incomplete_solution(self):
+        if self.front_generator_strategy.solution_incomplete_due_timeout is not None:
+            return self.add_solution_pareto_front(self.front_generator_strategy.solution_incomplete_due_timeout)
+        return False

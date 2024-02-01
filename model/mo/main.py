@@ -55,6 +55,7 @@ def init_solution_details_statistics(statistics):
     statistics["pareto_solutions_time_list"] = []
     statistics["pareto_front"] = ""
     statistics["solutions_pareto_front"] = ""
+    statistics["incomplete_timeout_solution_added_to_front"] = False
 
 
 def main():
@@ -69,12 +70,19 @@ def main():
     solver, pareto_front = build_solver(model, instance, config, statistics)
     try:
         statistics["exhaustive"] = False
+        statistics["incomplete_timeout_solution_added_to_front"] = False
         for x in solver.solve():
             pass
         print("Problem completely explored.")
         statistics["exhaustive"] = True
     except TimeoutError:
-        print("Timeout triggered")
+        print("Timeout triggered getting last incomplete solution")
+        if solver.process_last_incomplete_solution():
+            # the last incomplete solution was added to the pareto front
+            print("Last incomplete solution added to the pareto front")
+            statistics["incomplete_timeout_solution_added_to_front"] = True
+        else:
+            print("There were not incomplete solution or tha last incomplete solution was not added to the pareto front")
     except Exception as e:
         print("Execption raised: " + str(e))
         logging.error(traceback.format_exc())

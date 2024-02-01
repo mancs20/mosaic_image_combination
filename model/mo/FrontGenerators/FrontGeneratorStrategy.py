@@ -9,6 +9,7 @@ class FrontGeneratorStrategy(ABC):
         self.solver = solver
         self.timer = timer
         self.not_evaluate_always_add_new_solutions_to_front = False
+        self.solution_incomplete_due_timeout = None
 
     @abstractmethod
     def solve(self):
@@ -21,15 +22,30 @@ class FrontGeneratorStrategy(ABC):
     def get_solver_solution_for_timeout(self, optimize_not_satisfy):
         print("Start the solver...")
         timeout = float(self.timer.time_budget_sec)
+        # check if the timeout is already reached, sometimes the solver doesn't stop in the exact time that
+        # the timeout is reached. For example, if the timeout is 10 seconds, the solver can stop in 10.0001 seconds.
+        if timeout <= 0:
+            raise TimeoutError()
         self.solver.set_time_limit(timeout)
         self.timer.resume()
         self.solver.solve(optimize_not_satisfy=optimize_not_satisfy)
         solution_sec = self.timer.pause()
         if self.solver.status_time_limit():
-            print("Solver timed out...")
-            raise TimeoutError()
+            self.deal_with_timeout(solution_sec)
         print("Got a result from the solver...")
         return solution_sec
+
+    def deal_with_timeout(self, solution_sec):
+        self.solution_incomplete_due_timeout = self.process_feasible_solution(solution_sec)
+        print("Solver timed out...")
+        raise TimeoutError()
+
+    def process_feasible_solution(self, solution_sec):
+        # update statistics
+        self.solver.update_statistics(solution_sec)
+        # record the solution
+        formatted_solution = self.prepare_solution()
+        return formatted_solution
 
     def prepare_solution(self):
         one_solution = self.solver.get_solution_objective_values()

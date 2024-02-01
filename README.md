@@ -108,6 +108,7 @@ front, but all the intermediate solutions.
 * `pareto_solutions_time_list`: The time in which each solution that belongs to the Pareto front was found by the solver.
 * `pareto_front`: A list with the objective values of the solutions that belong to the Pareto.
 * `solutions_pareto_front`: A list with the image ids selected for the solutions that belong to the Pareto front.
+* `incomplete_timeout_solution_added_to_front`: A value of `TRUE` means that if the solver couldn't finish in the given time, the last incomplete solution (the solver couldn't find or prove the optimum for that case) was added to the front.
 
 
 

@@ -19,10 +19,7 @@ class Gavanelli(FrontGeneratorStrategy):
             if self.solver.status_infeasible():
                 whole_front_found = True
             else:
-                # update statistics
-                self.solver.update_statistics(solution_sec)
-                # record the solution
-                formatted_solution = self.prepare_solution()
+                formatted_solution = self.process_feasible_solution(solution_sec)
                 one_solution = formatted_solution["objs"]
                 self.solver.add_or_all_objectives_constraint(one_solution, id_or_constraint)
                 id_or_constraint += 1

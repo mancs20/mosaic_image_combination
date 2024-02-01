@@ -109,10 +109,7 @@ class Saugmecon(FrontGeneratorStrategy):
                 else:
                     # update previous_solutions
                     previous_solutions.add(str_solution_values)
-                    # update statistics
-                    self.solver.update_statistics(solution_sec)
-                    # record the solution
-                    formatted_solution = self.prepare_solution()
+                    formatted_solution = self.process_feasible_solution(solution_sec)
                     one_solution = formatted_solution["objs"]
                     self.save_solution_information(ef_array, one_solution, previous_solution_information)
                     # the line below is for testing purposes, uncomment when necessary
@@ -273,9 +270,8 @@ class Saugmecon(FrontGeneratorStrategy):
         self.solver.set_optimization_sense(sense)
         solution_sec = self.get_solver_solution_for_timeout(optimize_not_satisfy=True)
         print("The solver found min of objective " + str(id_objective) + " in " + str(solution_sec) + " seconds")
-        formatted_solution = self.prepare_solution()
+        formatted_solution = self.process_feasible_solution(solution_sec)
         objective_val = formatted_solution['objs'][id_objective]
-        self.solver.update_statistics(solution_sec)
         self.solver.reset()
         return formatted_solution, objective_val
 
