@@ -103,7 +103,9 @@ front, but all the intermediate solutions.
 * `total_nodes`: The total number of nodes explored by the solver.
 * `time_solver_sec`: The time in seconds used by the solver.
 * `minizinc_time_fzn_sec`: The time in seconds used by the solver to generate the fzn file. Only valid if minizinc was used.
+* `hypervolume_current_solutions`: The hypervolume of the Pareto front found by the solver at each iteration. It has the same amount of values as the number of solutions found by the solver (`solutions_time_list`).
 * `solutions_time_list`: The time in which each solution was found by the solver.
+* `pareto_solutions_time_list`: The time in which each solution that belongs to the Pareto front was found by the solver.
 * `pareto_front`: A list with the objective values of the solutions that belong to the Pareto.
 * `solutions_pareto_front`: A list with the image ids selected for the solutions that belong to the Pareto front.
 
