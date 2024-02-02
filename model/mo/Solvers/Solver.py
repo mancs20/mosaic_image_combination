@@ -11,6 +11,7 @@ class Solver(ABC):
         self.free_search = free_search
         self.statistics = statistics
         self.set_threads(threads)
+        self.lexicographic_obj = []
         Solver.init_statistics(statistics)
 
     @abstractmethod
@@ -36,8 +37,22 @@ class Solver(ABC):
         statistics["minizinc_time_fzn_sec"] = 0
         statistics["solutions_time_list"] = []
 
+    def solve(self, optimize_not_satisfy=True):
+        if len(self.lexicographic_obj) == 0:
+            self.opt_one_objective_or_satisfy(optimize_not_satisfy=optimize_not_satisfy)
+        else:
+            self.perform_lexicographic_optimization()
+
     @abstractmethod
-    def solve(self, optimize_not_satisfy = True):
+    def opt_one_objective_or_satisfy(self, optimize_not_satisfy=True):
+        pass
+
+    def set_lexicographic_optimization(self, objectives_list):
+        self.lexicographic_obj = objectives_list
+        self.set_single_objective(self.lexicographic_obj[0])
+
+    @abstractmethod
+    def perform_lexicographic_optimization(self):
         pass
 
     def set_optimization_sense(self, sense):
@@ -100,6 +115,7 @@ class Solver(ABC):
     @abstractmethod
     def status_infeasible(self):
         pass
+
     # status end-------------------------------------------------
 
     def update_statistics(self, seconds):
@@ -126,6 +142,3 @@ class Solver(ABC):
 
     def get_flat_time_secs(self, solution):
         return 0
-
-
-

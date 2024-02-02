@@ -5,6 +5,9 @@ import os
 
 # Get the root directory
 from pathlib import Path
+
+from model.mo.Timer import Timer
+
 script_path = Path(__file__).resolve()
 pre_root_dir = script_path.parents[2]
 root_dir = os.path.dirname(pre_root_dir)
@@ -79,7 +82,7 @@ class OrtoolsCPSolver(Solver):
     def set_threads(self, threads):
         self.solver.parameters = sat_parameters_pb2.SatParameters(num_search_workers=threads)
 
-    def solve(self, optimize_not_satisfy=True):
+    def opt_one_objective_or_satisfy(self, optimize_not_satisfy=True):
         self.status = self.solver.Solve(self.model.solver_model)
         if self.status == cp_model.INFEASIBLE:
             print("infeasible")
@@ -87,6 +90,32 @@ class OrtoolsCPSolver(Solver):
             print("ortools-sat solver timeout")
         else:
             self.add_solution_values_to_model_solver_values()
+
+    def perform_lexicographic_optimization(self):
+        current_timeout_time = self.solver.parameters.max_time_in_seconds
+        timer_lex = Timer(current_timeout_time)
+        if len(self.lexicographic_obj) == 0:
+            raise Exception("No lexicographic objective list is set.")
+        lexico_constraints = []
+        for i in range(len(self.lexicographic_obj)):
+            self.set_single_objective(self.lexicographic_obj[i])
+            if self.model.is_a_minimization_model():
+                self.set_minimization()
+            else:
+                self.set_maximization()
+            timeout = float(timer_lex.time_budget_sec)
+            self.set_time_limit(timeout)
+            if timeout <= 0:
+                raise TimeoutError()
+            timer_lex.resume()
+            self.solver.Solve(self.model.solver_model)
+            timer_lex.pause()
+            # todo check how this could be infeasible
+            one_solution = self.get_solution_objective_values()
+            lexico_constraints.append(self.add_constraints_eq(self.lexicographic_obj[i], one_solution[i]))
+        for constraints in lexico_constraints:
+            self.remove_constraints(constraints)
+        self.add_solution_values_to_model_solver_values()
 
     def add_solution_values_to_model_solver_values(self):
         self.model.solver_values = []

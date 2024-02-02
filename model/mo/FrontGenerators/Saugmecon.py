@@ -10,12 +10,6 @@ class Saugmecon(FrontGeneratorStrategy):
         self.best_objective_values = None
         self.nadir_objectives_values = None
         self.constraint_objectives = [0] * (len(self.solver.model.objectives) - 1) # all objectives except objective[0]
-        if self.solver.model.is_a_minimization_model():
-            self.model_optimization_sense = "min"
-            self.step = -1
-        else:
-            self.model_optimization_sense = "max"
-            self.step = 1
 
     def always_add_new_solutions_to_front(self):
         if self.not_evaluate_always_add_new_solutions_to_front:

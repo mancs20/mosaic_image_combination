@@ -96,10 +96,14 @@ class GurobiSolver(Solver):
     def remove_constraints(self, constraint):
         self.model.solver_model.remove(constraint)
 
-    def solve(self, optimize_not_satisfy=True):
+    def opt_one_objective_or_satisfy(self, optimize_not_satisfy=True):
         if not optimize_not_satisfy:
             self.model.solver_model.Params.solutionLimit = 1
         self.model.solver_model.optimize()
+
+    def perform_lexicographic_optimization(self):
+        print("Performing lexicographic optimization is not implemnted yet for GurobiSolver.")
+        raise NotImplementedError()
 
     def add_or_all_objectives_constraint(self, rhs, id_constraint=0, sense_min=True):
         y = self.model.solver_model.addVars(len(self.model.objectives), vtype=gp.GRB.BINARY,

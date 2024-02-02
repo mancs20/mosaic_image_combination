@@ -4,6 +4,8 @@ import os
 # Get the root directory
 from pathlib import Path
 
+from model.mo.FrontGenerators.CoverageGridPoint import CoverageGridPoint
+
 script_path = Path(__file__).resolve()
 pre_root_dir = script_path.parents[1]
 root_dir = os.path.dirname(pre_root_dir)
@@ -263,6 +265,8 @@ def set_front_strategy(config, solver):
         return Gavanelli(solver, Timer(config.solver_timeout_sec))
     elif config.front_strategy == "gavanelli-opt":
         return Gavanelli(solver, Timer(config.solver_timeout_sec), optimize=True)
+    elif config.front_strategy == "augmecon-coverage":
+        return CoverageGridPoint(solver, Timer(config.solver_timeout_sec))
     else:
         return Saugmecon(solver, Timer(config.solver_timeout_sec))
 
