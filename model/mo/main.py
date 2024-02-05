@@ -84,7 +84,7 @@ def main():
             print("Last incomplete solution added to the pareto front")
             statistics["incomplete_timeout_solution_added_to_front"] = True
         else:
-            print("There were not incomplete solution or tha last incomplete solution was not added to the pareto front")
+            print("There were not incomplete solution or the last incomplete solution was not added to the pareto front")
     except Exception as e:
         print("Execption raised: " + str(e))
         logging.error(traceback.format_exc())
