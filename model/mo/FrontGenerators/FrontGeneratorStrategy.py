@@ -42,7 +42,10 @@ class FrontGeneratorStrategy(ABC):
         return solution_sec
 
     def deal_with_timeout(self, solution_sec):
-        self.solution_incomplete_due_timeout = self.process_feasible_solution(solution_sec)
+        try:
+            self.solution_incomplete_due_timeout = self.process_feasible_solution(solution_sec)
+        except Exception as e:
+            print("Couldn't get the last incomplete solution")
         print("Solver timed out...")
         raise TimeoutError()
 

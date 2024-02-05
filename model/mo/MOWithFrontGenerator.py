@@ -29,19 +29,20 @@ class MOWithFrontGenerator:
             self.print_statistics_of_recent_solution(x)
             yield x
 
-    def add_solution_pareto_front(self, solution):
+    def add_solution_pareto_front(self, solution, added_to_front_verification=True):
         added_to_front = self.pareto_front.join(solution)
         error = False
         error_msg = (f"Error!! solution {solution} is a new solution which is dominated by some of the previous. "
                      f"Previous solutions: {self.pareto_front.solutions}")
-        if not added_to_front and self.front_generator_strategy.always_add_new_solutions_to_front():
+        if added_to_front_verification and not added_to_front and self.front_generator_strategy.always_add_new_solutions_to_front():
             error = True
             print(f"Error!! solution {solution} is a new solution which is dominated by some of the previous")
             print(f"Previous solutions: {self.pareto_front.solutions}")
-        self.statistics["pareto_front"] = self.pareto_front.to_str()
-        self.statistics["solutions_pareto_front"] = self.pareto_front.solutions_to_str()
-        # create list from string
-        self.statistics["hypervolume_current_solutions"].append(self.pareto_front.hypervolume())
+        if added_to_front:
+            self.statistics["pareto_front"] = self.pareto_front.to_str()
+            self.statistics["solutions_pareto_front"] = self.pareto_front.solutions_to_str()
+            # create list from string
+            self.statistics["hypervolume_current_solutions"].append(self.pareto_front.hypervolume())
         if error:
             raise Exception(error_msg)
         return added_to_front
@@ -54,6 +55,8 @@ class MOWithFrontGenerator:
             print(solution.statistics)
 
     def process_last_incomplete_solution(self):
+        added_to_front = False
         if self.front_generator_strategy.solution_incomplete_due_timeout is not None:
-            return self.add_solution_pareto_front(self.front_generator_strategy.solution_incomplete_due_timeout)
-        return False
+            added_to_front = self.add_solution_pareto_front(
+                self.front_generator_strategy.solution_incomplete_due_timeout, added_to_front_verification=False)
+        return added_to_front
