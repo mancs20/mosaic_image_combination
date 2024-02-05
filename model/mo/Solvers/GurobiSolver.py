@@ -3,6 +3,7 @@ import os
 
 # Get the root directory
 from pathlib import Path
+
 script_path = Path(__file__).resolve()
 pre_root_dir = script_path.parents[2]
 root_dir = os.path.dirname(pre_root_dir)
@@ -70,10 +71,10 @@ class GurobiSolver(Solver):
 
     def build_objective_e_constraint_saugmecon(self, range_array, augmentation):
         obj = self.model.objectives[0]
-        delta = 0.001 # delta should be between 0.001 and 0.000001
+        delta = 0.001  # delta should be between 0.001 and 0.000001
         rest_obj = 0
         for i in range(len(range_array)):
-            rest_obj += self.model.objectives[i+1]/range_array[i]
+            rest_obj += self.model.objectives[i + 1] / range_array[i]
         if augmentation:
             obj = obj + (delta * rest_obj)
         self.set_single_objective(obj)
@@ -113,11 +114,23 @@ class GurobiSolver(Solver):
         big_m = self.get_big_m_for_or_all_objectives(rhs)
         for i in range(len(self.model.objectives)):
             if self.model.is_a_minimization_model():
-                self.model.solver_model.addConstr(self.model.objectives[i] <=
-                                                  rhs[i] + (big_m[i] * (1 -y[i])))
+                if self.can_big_m_introduce_problems(big_m[i]):
+                    self.model.solver_model.addConstr((y[i] == 1) >> (self.model.objectives[i] <= rhs[i]),
+                                                      name=f"indicator_const{id_constraint}_{i}")
+                    self.model.solver_model.addConstr((y[i] == 0) >> (self.model.objectives[i] <= rhs[i] + big_m[i]),
+                                                      name=f"indicator_const{id_constraint}_{i}")
+                else:
+                    self.model.solver_model.addConstr(self.model.objectives[i] <=
+                                                      rhs[i] + (big_m[i] * (1 - y[i])))
             else:
-                self.model.solver_model.addConstr(self.model.objectives[i] >=
-                                                  rhs[i] - (big_m[i] * (1 - y[i])))
+                if self.can_big_m_introduce_problems(big_m[i]):
+                    self.model.solver_model.addConstr((y[i] == 1) >> (self.model.objectives[i] >= rhs[i]),
+                                                      name=f"indicator_const{id_constraint}_{i}")
+                    self.model.solver_model.addConstr((y[i] == 0) >> (self.model.objectives[i] >= rhs[i] - big_m[i]),
+                                                      name=f"indicator_const{id_constraint}_{i}")
+                else:
+                    self.model.solver_model.addConstr(self.model.objectives[i] >=
+                                                      rhs[i] - (big_m[i] * (1 - y[i])))
 
     def get_big_m_for_or_all_objectives(self, rhs):
         big_m = []
@@ -125,3 +138,8 @@ class GurobiSolver(Solver):
         for i in range(len(rhs)):
             big_m.append(abs(nadir_objectives[i] - rhs[i]))
         return big_m
+
+    def can_big_m_introduce_problems(self, big_m):
+        if big_m * self.model.solver_model.Params.IntFeasTol >= 1:
+            return True
+        return False
