@@ -21,7 +21,6 @@ class SatelliteImageMosaicSelectionGeneralModel(GenericModel, ABC):
         self.select_image = None
         self.cloud_covered = None
         self.resolution_element = []
-        self.effective_image_resolution = None
         self.effective_incidence_angle = None
         self.current_max_incidence_angle = None
         self.total_area_clouds = None
