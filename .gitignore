@@ -13,3 +13,6 @@ my_tests
 results/*test
 results/*backup
 *.sh
+__pycache__/
+*.pyc
+venv/

@@ -4,7 +4,6 @@ import os
 # Get the root directory
 from pathlib import Path
 
-from model.mo.FrontGenerators.CoverageGridPoint import CoverageGridPoint
 
 script_path = Path(__file__).resolve()
 pre_root_dir = script_path.parents[1]
@@ -23,7 +22,8 @@ import traceback
 import logging
 from filelock import FileLock, Timeout
 
-from MOWithFrontGenerator import MOWithFrontGenerator
+from model.mo.FrontGenerators.CoverageGridPoint import CoverageGridPoint
+from model.mo.MOWithFrontGenerator import MOWithFrontGenerator
 from model.mo.FrontGenerators.Gavanelli import Gavanelli
 from model.mo.FrontGenerators.Saugmecon import Saugmecon
 from model.mo.Instances.InstanceMIPMatrix import InstanceMIPMatrix
