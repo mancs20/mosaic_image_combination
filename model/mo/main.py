@@ -156,8 +156,12 @@ def build_instance_text_data(config):
 
 def mokp_get_text_data_files(datasets_folder, data_name):
     # data_name is in the form 3kp40, get first character and the ones after kp two characters
-    number_objs = data_name[0]
-    number_items = data_name[2:]
+    datasets_folder = "data_sets"
+    data_name = "3kp40"
+
+    kp_index = data_name.find("kp")
+    number_objs = data_name[:kp_index]
+    number_items = data_name[kp_index + 2:]
 
     path_objective_matrix = os.path.join(datasets_folder, f"z{number_objs}_{number_items}ctt.txt")
     path_constraints_matrix = os.path.join(datasets_folder, f"z{number_objs}_{number_items}att.txt")
