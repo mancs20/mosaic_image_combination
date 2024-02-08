@@ -9,6 +9,9 @@ class MultiobjectiveKnapsackOrtoolsCPModel(OrtoolsCPModel, MultiobjectiveKnapsac
         OrtoolsCPModel.__init__(self)
         MultiobjectiveKnapsackGenericModel.__init__(self, instance)
 
+    def add_necessary_solver_configuration(self):
+        print("No necessary solver configuration needed for MultiobjectiveKnapsackOrtoolsCPModel")
+
     def get_data_from_instance(self):
         self.number_items = len(self.instance.objective_matrix[0])
 
