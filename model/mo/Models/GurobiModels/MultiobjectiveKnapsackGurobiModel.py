@@ -7,6 +7,12 @@ from model.mo.Models.MultiobjectiveKnapsackGenericModel import MultiobjectiveKna
 
 class MultiobjectiveKnapsackGurobiModel(GurobiModel, MultiobjectiveKnapsackGenericModel):
 
+    def review_objective_values(self, objective_values):
+        pass
+
+    def add_necessary_solver_configuration(self):
+        print("Extra solver configuration no needed")
+
     def __init__(self, instance: InstanceMIPMatrix):
         MultiobjectiveKnapsackGenericModel.__init__(self, instance)
 

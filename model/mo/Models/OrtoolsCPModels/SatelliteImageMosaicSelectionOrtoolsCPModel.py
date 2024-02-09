@@ -14,6 +14,7 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel, SatelliteImage
         self.total_cost = None
         self.total_cloudy_area = None
         self.total_resolution = None
+        self.effective_image_resolution = None
         # this variable has the current objective to optimize
         self.current_objective = None
         self.tackle_numerical_problems()

@@ -4,7 +4,6 @@ import os
 # Get the root directory
 from pathlib import Path
 
-
 script_path = Path(__file__).resolve()
 pre_root_dir = script_path.parents[1]
 root_dir = os.path.dirname(pre_root_dir)
@@ -26,6 +25,7 @@ from model.mo.FrontGenerators.CoverageGridPoint import CoverageGridPoint
 from model.mo.MOWithFrontGenerator import MOWithFrontGenerator
 from model.mo.FrontGenerators.Gavanelli import Gavanelli
 from model.mo.FrontGenerators.Saugmecon import Saugmecon
+from model.mo.FrontGenerators.CoverageGridPoint import CoverageGridPoint
 from model.mo.Instances.InstanceMIPMatrix import InstanceMIPMatrix
 from model.mo.Instances.InstanceMinizinc import InstanceMinizinc
 from model.mo.Instances.InstanceSIMS import InstanceSIMS
@@ -135,17 +135,13 @@ def build_instance_text_data(config):
     constraints_matrix = []
     rhs_constraints_vector = []
     if config.problem_name == constants.Problem.MULTI_OBJECTIVE_KNAPSACK_PROBLEM.value:
-        if config.data_name.startswith("augmecon2"):
-            datasets_folder = os.path.join(config.data_sets_folder, "augmecon2",
-                                           get_augmecon2_instance_name(config.data_name))
-            path_objective_matrix, path_constraints_matrix, path_rhs_constraints_vector = \
-                augmecon2_get_text_data_files(datasets_folder)
-            objective_matrix = augmecon2_get_matrix_from_file(path_objective_matrix)
-            constraints_matrix = augmecon2_get_matrix_from_file(path_constraints_matrix)
-            rhs_constraints_vector = augmecon2_get_rhs_vector_from_file(path_rhs_constraints_vector)
-        else:
-            print("Error: There is no data name with that prefix. Try prefix 'augmecon2'")
-            sys.exit(1)
+        datasets_folder = os.path.join(config.data_sets_folder, "mokp",
+                                       config.data_name)
+        path_objective_matrix, path_constraints_matrix, path_rhs_constraints_vector = \
+            mokp_get_text_data_files(datasets_folder)
+        objective_matrix = mokp_get_matrix_from_file(path_objective_matrix)
+        constraints_matrix = mokp_get_matrix_from_file(path_constraints_matrix)
+        rhs_constraints_vector = mokp_get_rhs_vector_from_file(path_rhs_constraints_vector)
     else:
         print("Error: problem name not recognized")
         sys.exit(1)
@@ -153,19 +149,14 @@ def build_instance_text_data(config):
     return instance
 
 
-def get_augmecon2_instance_name(whole_instance_name):
-    # return the rest of the problem data name, Ex: "augmecon2_3kp40" -> "3kp40"
-    return whole_instance_name[10:]
-
-
-def augmecon2_get_text_data_files(datasets_folder):
+def mokp_get_text_data_files(datasets_folder):
     path_objective_matrix = os.path.join(datasets_folder, "z3_40ctt.txt")
     path_constraints_matrix = os.path.join(datasets_folder, "z3_40att.txt")
     path_rhs_constraints_vector = os.path.join(datasets_folder, "z3_40btt.txt")
     return path_objective_matrix, path_constraints_matrix, path_rhs_constraints_vector
 
 
-def augmecon2_get_matrix_from_file(file_path, file_has_headers=True):
+def mokp_get_matrix_from_file(file_path, file_has_headers=True):
     # Read the file and extract data
     with open(file_path, 'r') as file:
         lines = file.readlines()
@@ -183,7 +174,7 @@ def augmecon2_get_matrix_from_file(file_path, file_has_headers=True):
     return matrix
 
 
-def augmecon2_get_rhs_vector_from_file(file_path):
+def mokp_get_rhs_vector_from_file(file_path):
     # Read the file and extract data
     with open(file_path, 'r') as file:
         lines = file.readlines()
