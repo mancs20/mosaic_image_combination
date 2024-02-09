@@ -197,6 +197,7 @@ def mokp_get_rhs_vector_from_file(file_path):
 
 def check_already_computed(config):
     if os.path.exists(config.summary_filename):
+        csv.field_size_limit(sys.maxsize)
         with open(config.summary_filename, 'r') as fsummary:
             summary = csv.DictReader(fsummary, delimiter=';')
             for row in summary:
