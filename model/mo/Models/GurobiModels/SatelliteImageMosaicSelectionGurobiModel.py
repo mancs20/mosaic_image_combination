@@ -9,10 +9,8 @@ from model.mo.Models.SatelliteImageMosaicSelectionGeneralModel import SatelliteI
 class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaicSelectionGeneralModel):
 
     def __init__(self, instance):
-        # todo delete the line below
         self.auxiliary_variables_for_resolution = []
         self.images_covering_element = None
-        # todo end of delete
         self.elements = None
         self.areas = None
         self.images_id = None
@@ -53,7 +51,6 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
         # # incidence angle processing
         # self.incidence_angle = gp.tupledict(zip(self.images_id, self.instance.incidence_angle))
         # # multiply to convert to integers
-
 
     def add_variables_to_model(self):
         # decision variables
