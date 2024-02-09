@@ -21,7 +21,6 @@ import traceback
 import logging
 from filelock import FileLock, Timeout
 
-from model.mo.FrontGenerators.CoverageGridPoint import CoverageGridPoint
 from model.mo.MOWithFrontGenerator import MOWithFrontGenerator
 from model.mo.FrontGenerators.Gavanelli import Gavanelli
 from model.mo.FrontGenerators.Saugmecon import Saugmecon
