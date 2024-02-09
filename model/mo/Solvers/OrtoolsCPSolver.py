@@ -79,6 +79,22 @@ class OrtoolsCPSolver(Solver):
         else:
             self.current_objective = self.model.objectives[0]
 
+    def build_objective_e_constraint_augmecon2(self, range_array, augmentation):
+        if len(self.model.objectives) != 2:
+            raise Exception("The augmecon2 is implemented for 2 objectives only.")
+        obj = self.model.solver_model.NewIntVar(name="obj")
+        constraint_objectives = []
+        if augmentation:
+            delta = 1000
+            s2 = self.model.solver_model.NewIntVar(name="s2")
+            self.model.solver_model.Add(obj == self.model.objectives[0] * delta + s2)
+            constraint_objectives.append(self.model.objectives[1] - s2)
+        else:
+            self.model.solver_model.Add(obj == self.model.objectives[0])
+            constraint_objectives.append(self.model.objectives[1])
+        self.current_objective = obj
+        return constraint_objectives
+
     def set_threads(self, threads):
         self.solver.parameters = sat_parameters_pb2.SatParameters(num_search_workers=threads)
 

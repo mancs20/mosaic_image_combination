@@ -79,6 +79,9 @@ class GurobiSolver(Solver):
             obj = obj + (delta * rest_obj)
         self.set_single_objective(obj)
 
+    def build_objective_e_constraint_augmecon2(self, range_array, augmentation):
+        raise NotImplementedError()
+
     def set_single_objective(self, objective_expression):
         self.model.solver_model.setObjective(objective_expression)
 

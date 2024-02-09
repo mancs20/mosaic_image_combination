@@ -96,6 +96,10 @@ class Solver(ABC):
         pass
 
     @abstractmethod
+    def build_objective_e_constraint_augmecon2(self, range_array, augmentation):
+        pass
+
+    @abstractmethod
     def reset(self):
         pass
 

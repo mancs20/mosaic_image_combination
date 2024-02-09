@@ -81,7 +81,7 @@ class Saugmecon(FrontGeneratorStrategy):
         exit_from_loop_with_acceleration = False
         one_solution = []
         previous_solution_relaxation, previous_solution_values = \
-            self.search_previous_solutions_relaxation(ef_array, previous_solution_information)
+            Saugmecon.search_previous_solutions_relaxation(ef_array, previous_solution_information)
         if previous_solution_relaxation:
             if type(previous_solution_values) is str:
                 # the previous solution is infeasible
@@ -205,18 +205,20 @@ class Saugmecon(FrontGeneratorStrategy):
                     break
         return less_constraint
 
-    def search_previous_solutions_relaxation(self, ef_array_actual_solution, previous_solution_information):
+    @staticmethod
+    def search_previous_solutions_relaxation(ef_array_actual_solution, previous_solution_information):
         # is there a previous problem with less tighten constraint ef_array_actual_solution
         # find closer relaxation and check if the solution satisfy the ef_array_actual_solution
-        previous_closer_relaxation = self.get_closer_relaxation(ef_array_actual_solution, previous_solution_information)
+        previous_closer_relaxation = Saugmecon.get_closer_relaxation(ef_array_actual_solution, previous_solution_information)
         if previous_closer_relaxation is False:
             return False, None
         else:
             f_solution_values = previous_closer_relaxation[1]
             return True, f_solution_values
 
-    def get_closer_relaxation(self, ef_array_actual_solution, previous_solution_information):
-        idx = self.get_less_constrained_previous_solutions(ef_array_actual_solution, previous_solution_information)
+    @staticmethod
+    def get_closer_relaxation(ef_array_actual_solution, previous_solution_information):
+        idx = Saugmecon.get_less_constrained_previous_solutions(ef_array_actual_solution, previous_solution_information)
         if idx < 0:
             return False
         return previous_solution_information[idx]
