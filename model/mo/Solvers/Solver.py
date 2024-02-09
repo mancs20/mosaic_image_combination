@@ -133,7 +133,7 @@ class Solver(ABC):
         pass
 
     @abstractmethod
-    def add_or_all_objectives_constraint(self, rhs, id_constraint=0, sense_min=True):
+    def add_or_all_objectives_constraint(self, rhs, id_constraint=0):
         pass
 
     @abstractmethod

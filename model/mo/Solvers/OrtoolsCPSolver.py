@@ -179,7 +179,7 @@ class OrtoolsCPSolver(Solver):
         # todo check if this is the best statistic to show
         return self.solver.NumBranches()
 
-    def add_or_all_objectives_constraint(self, rhs, id_constraint=0, sense_min=True):
+    def add_or_all_objectives_constraint(self, rhs, id_constraint=0):
         if self.model.is_a_minimization_model():
             obj_constraints = [self.model.objectives[i] < rhs[i] for i in range(len(rhs))]
         else:

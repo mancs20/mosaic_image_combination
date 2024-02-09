@@ -106,11 +106,14 @@ class GurobiSolver(Solver):
         print("Performing lexicographic optimization is not implemnted yet for GurobiSolver.")
         raise NotImplementedError()
 
-    def add_or_all_objectives_constraint(self, rhs, id_constraint=0, sense_min=True):
+    def add_or_all_objectives_constraint(self, rhs, id_constraint=0):
         y = self.model.solver_model.addVars(len(self.model.objectives), vtype=gp.GRB.BINARY,
                                             name=f"temp_y_{id_constraint}")
         self.model.solver_model.addConstr(gp.quicksum(y) == 1)
-        rhs = [rhs[i] - 1 for i in range(len(rhs))]
+        if self.model.is_a_minimization_model():
+            rhs = [rhs[i] - 1 for i in range(len(rhs))]
+        else:
+            rhs = [rhs[i] + 1 for i in range(len(rhs))]
         big_m = self.get_big_m_for_or_all_objectives(rhs)
         for i in range(len(self.model.objectives)):
             if self.model.is_a_minimization_model():
