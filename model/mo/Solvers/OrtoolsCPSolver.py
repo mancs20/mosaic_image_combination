@@ -2,6 +2,7 @@ import math
 
 import sys
 import os
+from enum import Enum
 
 # Get the root directory
 from pathlib import Path
@@ -25,6 +26,7 @@ class OrtoolsCPSolver(Solver):
         super().__init__(model, statistics, threads, free_search)
         self.status = None
         self.current_objective = None
+        self.last_optimization = LastOptimization.NONE
 
     def assert_right_solver(self, model):
         if model.solver_name != constants.Solver.ORTOOLS_PY.value:
@@ -79,21 +81,43 @@ class OrtoolsCPSolver(Solver):
         else:
             self.current_objective = self.model.objectives[0]
 
-    def build_objective_e_constraint_augmecon2(self, range_array, augmentation):
+    def build_objective_e_constraint_augmecon2(self, best_constrain_obj_list, nadir_constrain_obj_list, augmentation):
         if len(self.model.objectives) != 2:
             raise Exception("The augmecon2 is implemented for 2 objectives only.")
-        obj = self.model.solver_model.NewIntVar(name="obj")
+        # todo add lb and up to the variables
         constraint_objectives = []
         if augmentation:
             delta = 1000
-            s2 = self.model.solver_model.NewIntVar(name="s2")
-            self.model.solver_model.Add(obj == self.model.objectives[0] * delta + s2)
-            constraint_objectives.append(self.model.objectives[1] - s2)
+            max_s2 = abs(best_constrain_obj_list[1]-nadir_constrain_obj_list[1])
+            s2 = self.model.solver_model.NewIntVar(lb=0, ub=max_s2, name="s2")
+            # main objective
+            min_obj = delta * min(nadir_constrain_obj_list[0], best_constrain_obj_list[0])
+            max_obj = delta * max(nadir_constrain_obj_list[0], best_constrain_obj_list[0]) + max_s2
+            obj = self.model.solver_model.NewIntVar(lb=min_obj, ub=max_obj, name="obj")
+            self.model.solver_model.Add(obj == self.model.objectives[0] * delta + s2).WithName("obj_augmecon2")
+            # constraint objectives
+            min_obji = min(nadir_constrain_obj_list[1], best_constrain_obj_list[1])
+            max_obji = max(nadir_constrain_obj_list[1], best_constrain_obj_list[1])
+            obji_minus_s2 = self.model.solver_model.NewIntVar(lb=min_obji, ub=max_obji, name="obji_minus_s2_variable")
+            self.model.solver_model.Add(obji_minus_s2 == self.model.objectives[1] - s2).WithName(
+                "obji_minus_s2_constraint")
+            constraint_objectives.append(obji_minus_s2)
+            self.current_objective = obj
         else:
-            self.model.solver_model.Add(obj == self.model.objectives[0])
+            self.current_objective = self.model.objectives[0]
             constraint_objectives.append(self.model.objectives[1])
-        self.current_objective = obj
         return constraint_objectives
+
+    def change_objective_sense(self, id_objective):
+        objective_to_change = self.model.objectives[id_objective]
+        objective_proto = objective_to_change.Proto()
+        lb = objective_proto.domain[0]
+        ub = objective_proto.domain[1]
+        objective_changed = self.model.solver_model.NewIntVar(lb=-ub, ub=-lb,
+                                                              name=f"var_reversed_objective_{id_objective}")
+        self.model.solver_model.Add(objective_changed == -objective_to_change).WithName(
+            f"constrain_reversed_objective_{id_objective}")
+        self.model.objectives[id_objective] = objective_changed
 
     def set_threads(self, threads):
         self.solver.parameters = sat_parameters_pb2.SatParameters(num_search_workers=threads)
@@ -110,15 +134,17 @@ class OrtoolsCPSolver(Solver):
     def perform_lexicographic_optimization(self):
         current_timeout_time = self.solver.parameters.max_time_in_seconds
         timer_lex = Timer(current_timeout_time)
-        if len(self.lexicographic_obj) == 0:
+        if len(self.lexicographic_obj_order) == 0:
             raise Exception("No lexicographic objective list is set.")
         lexico_constraints = []
-        for i in range(len(self.lexicographic_obj)):
-            self.set_single_objective(self.lexicographic_obj[i])
-            if self.model.is_a_minimization_model():
+        for i in range(len(self.lexicographic_obj_order)):
+            self.set_single_objective(self.model.objectives[self.lexicographic_obj_order[i]])
+            if self.last_optimization == LastOptimization.MINIMIZATION:
                 self.set_minimization()
-            else:
+            elif self.last_optimization == LastOptimization.MAXIMIZATION:
                 self.set_maximization()
+            else:
+                raise Exception("No optimization sense is set.")
             timeout = float(timer_lex.time_budget_sec)
             self.set_time_limit(timeout)
             if timeout <= 0:
@@ -128,7 +154,8 @@ class OrtoolsCPSolver(Solver):
             timer_lex.pause()
             # todo check how this could be infeasible
             one_solution = self.get_solution_objective_values()
-            lexico_constraints.append(self.add_constraints_eq(self.lexicographic_obj[i], one_solution[i]))
+            lexico_constraints.append(self.add_constraints_eq(self.model.objectives[self.lexicographic_obj_order[i]],
+                                                              one_solution[self.lexicographic_obj_order[i]]))
         for constraints in lexico_constraints:
             self.remove_constraints(constraints)
         self.add_solution_values_to_model_solver_values()
@@ -159,9 +186,11 @@ class OrtoolsCPSolver(Solver):
 
     def set_minimization(self):
         self.model.solver_model.Minimize(self.current_objective)
+        self.last_optimization = LastOptimization.MINIMIZATION
 
     def set_maximization(self):
         self.model.solver_model.Maximize(self.current_objective)
+        self.last_optimization = LastOptimization.MAXIMIZATION
 
     def set_time_limit(self, timeout):
         self.solver.parameters.max_time_in_seconds = timeout
@@ -196,7 +225,7 @@ class OrtoolsCPSolver(Solver):
         return self.solver.NumBranches()
 
     def add_or_all_objectives_constraint(self, rhs, id_constraint=0, sense_min=True):
-        if self.model.is_a_minimization_model():
+        if sense_min:
             obj_constraints = [self.model.objectives[i] < rhs[i] for i in range(len(rhs))]
         else:
             obj_constraints = [self.model.objectives[i] > rhs[i] for i in range(len(rhs))]
@@ -213,3 +242,9 @@ class OrtoolsCPSolver(Solver):
         for i in range(1, len(list_to_gcd)):
             gcd = math.gcd(gcd, list_to_gcd[i])
         return gcd
+
+
+class LastOptimization(Enum):
+    MINIMIZATION = 1
+    MAXIMIZATION = 2
+    NONE = 3

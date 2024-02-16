@@ -21,7 +21,8 @@ class Gavanelli(FrontGeneratorStrategy):
             else:
                 formatted_solution = self.process_feasible_solution(solution_sec)
                 one_solution = formatted_solution["objs"]
-                self.solver.add_or_all_objectives_constraint(one_solution, id_or_constraint)
+                self.solver.add_or_all_objectives_constraint(one_solution, id_or_constraint,
+                                                             self.solver.model.is_a_minimization_model())
                 id_or_constraint += 1
                 yield formatted_solution
 

@@ -79,7 +79,10 @@ class GurobiSolver(Solver):
             obj = obj + (delta * rest_obj)
         self.set_single_objective(obj)
 
-    def build_objective_e_constraint_augmecon2(self, range_array, augmentation):
+    def build_objective_e_constraint_augmecon2(self, best_constrain_obj_list, nadir_constrain_obj_list, augmentation):
+        raise NotImplementedError()
+
+    def change_objective_sense(self, id_objective):
         raise NotImplementedError()
 
     def set_single_objective(self, objective_expression):
@@ -116,7 +119,7 @@ class GurobiSolver(Solver):
         rhs = [rhs[i] - 1 for i in range(len(rhs))]
         big_m = self.get_big_m_for_or_all_objectives(rhs)
         for i in range(len(self.model.objectives)):
-            if self.model.is_a_minimization_model():
+            if sense_min:
                 if self.can_big_m_introduce_problems(big_m[i]):
                     self.model.solver_model.addConstr((y[i] == 1) >> (self.model.objectives[i] <= rhs[i]),
                                                       name=f"indicator_const{id_constraint}_{i}")

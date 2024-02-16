@@ -11,7 +11,7 @@ class Solver(ABC):
         self.free_search = free_search
         self.statistics = statistics
         self.set_threads(threads)
-        self.lexicographic_obj = []
+        self.lexicographic_obj_order = []
         Solver.init_statistics(statistics)
 
     @abstractmethod
@@ -38,7 +38,7 @@ class Solver(ABC):
         statistics["solutions_time_list"] = []
 
     def solve(self, optimize_not_satisfy=True):
-        if len(self.lexicographic_obj) == 0:
+        if len(self.lexicographic_obj_order) == 0:
             self.opt_one_objective_or_satisfy(optimize_not_satisfy=optimize_not_satisfy)
         else:
             self.perform_lexicographic_optimization()
@@ -47,9 +47,9 @@ class Solver(ABC):
     def opt_one_objective_or_satisfy(self, optimize_not_satisfy=True):
         pass
 
-    def set_lexicographic_optimization(self, objectives_list):
-        self.lexicographic_obj = objectives_list
-        self.set_single_objective(self.lexicographic_obj[0])
+    def set_lexicographic_optimization(self, objectives_list_order):
+        self.lexicographic_obj_order = objectives_list_order
+        self.set_single_objective(self.model.objectives[objectives_list_order[0]])
 
     @abstractmethod
     def perform_lexicographic_optimization(self):
@@ -96,7 +96,11 @@ class Solver(ABC):
         pass
 
     @abstractmethod
-    def build_objective_e_constraint_augmecon2(self, range_array, augmentation):
+    def build_objective_e_constraint_augmecon2(self, best_constrain_obj_list, nadir_constrain_obj_list, augmentation):
+        pass
+
+    @abstractmethod
+    def change_objective_sense(self, id_objective):
         pass
 
     @abstractmethod

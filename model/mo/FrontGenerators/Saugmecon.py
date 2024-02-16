@@ -144,20 +144,23 @@ class Saugmecon(FrontGeneratorStrategy):
         return rwv
 
     @staticmethod
-    def save_solution_information(ef_array, solution, previous_solution_information):
+    def save_solution_information(ef_array, solution, previous_solution_information, min_sense=True):
         ef_array_to_insert = ef_array.copy()
         # insert the new solution in the correct position
-        lo = Saugmecon.id_insort_right_previous_solutions(ef_array_to_insert, previous_solution_information)
+        if min_sense:
+            lo = Saugmecon.id_insort_right_previous_solutions(ef_array_to_insert, previous_solution_information)
+        else:
+            lo = Saugmecon.id_insort_left_previous_solutions(ef_array_to_insert, previous_solution_information)
         previous_solution_information.insert(lo, [ef_array_to_insert, solution])
         return previous_solution_information
 
     @staticmethod
     def id_insort_right_previous_solutions(ef_array, previous_solution_information):
-        lo = Saugmecon.bisect_right_previous_solutions(ef_array, previous_solution_information)
+        lo = Saugmecon.bisect_right_previous_solutions_sorted_descending(ef_array, previous_solution_information)
         return lo
 
     @staticmethod
-    def bisect_right_previous_solutions(ef_array, previous_solution_information):
+    def bisect_right_previous_solutions_sorted_descending(ef_array, previous_solution_information):
         lo = 0
         hi = len(previous_solution_information)
         while lo < hi:
@@ -169,21 +172,45 @@ class Saugmecon(FrontGeneratorStrategy):
         return lo
 
     @staticmethod
-    def get_less_constrained_previous_solutions(ef_array, previous_solution_information):
+    def id_insort_left_previous_solutions(ef_array, previous_solution_information):
+        lo = Saugmecon.bisect_left_previous_solutions_sorted_descending(ef_array, previous_solution_information)
+        return lo
+
+    @staticmethod
+    def bisect_left_previous_solutions_sorted_descending(ef_array, previous_solution_information):
+        lo = 0
+        hi = len(previous_solution_information)
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if ef_array < previous_solution_information[mid][0]:
+                hi = mid
+            else:
+                lo = mid + 1
+        return lo
+
+    @staticmethod
+    def get_less_constrained_previous_solutions(ef_array, previous_solution_information, min_sense=True):
         if len(previous_solution_information) == 0:
             return -1
         # get position to start searching
-        idx = Saugmecon.bisect_right_previous_solutions(ef_array, previous_solution_information) - 1
+        if min_sense:
+            idx = (Saugmecon.bisect_right_previous_solutions_sorted_descending(ef_array, previous_solution_information)
+                   - 1)
+        else:
+            idx = (Saugmecon.bisect_left_previous_solutions_sorted_descending(ef_array, previous_solution_information)
+                   - 1)
         solution_with_more_relaxation_found = False
         while not solution_with_more_relaxation_found and idx > -1:
-            if Saugmecon.ef_array1_less_constraint_ef_array2(previous_solution_information[idx][0], ef_array, min_sense=True):
+            if Saugmecon.ef_array1_less_constraint_ef_array2(previous_solution_information[idx][0], ef_array,
+                                                             min_sense=min_sense):
                 f_solution_values = previous_solution_information[idx][1]
                 # check if the solution is not infeasible. If it is infeasible return True and in the loop call Exit with
                 # acceleration
                 solution_with_more_relaxation_found = True
                 if type(f_solution_values) is not str:
                     f_solution_values_for_constraint = f_solution_values[1:len(f_solution_values)]
-                    if not Saugmecon.solution_satisfy_ef_arr(f_solution_values_for_constraint, ef_array):
+                    if not Saugmecon.solution_satisfy_ef_arr(f_solution_values_for_constraint, ef_array,
+                                                             min_sense=min_sense):
                         solution_with_more_relaxation_found = False
                         idx -= 1
             else:
@@ -206,10 +233,11 @@ class Saugmecon(FrontGeneratorStrategy):
         return less_constraint
 
     @staticmethod
-    def search_previous_solutions_relaxation(ef_array_actual_solution, previous_solution_information):
+    def search_previous_solutions_relaxation(ef_array_actual_solution, previous_solution_information, min_sense=True):
         # is there a previous problem with less tighten constraint ef_array_actual_solution
         # find closer relaxation and check if the solution satisfy the ef_array_actual_solution
-        previous_closer_relaxation = Saugmecon.get_closer_relaxation(ef_array_actual_solution, previous_solution_information)
+        previous_closer_relaxation = Saugmecon.get_closer_relaxation(ef_array_actual_solution,
+                                                                     previous_solution_information, min_sense=min_sense)
         if previous_closer_relaxation is False:
             return False, None
         else:
@@ -217,16 +245,18 @@ class Saugmecon(FrontGeneratorStrategy):
             return True, f_solution_values
 
     @staticmethod
-    def get_closer_relaxation(ef_array_actual_solution, previous_solution_information):
-        idx = Saugmecon.get_less_constrained_previous_solutions(ef_array_actual_solution, previous_solution_information)
+    def get_closer_relaxation(ef_array_actual_solution, previous_solution_information, min_sense=True):
+        idx = Saugmecon.get_less_constrained_previous_solutions(ef_array_actual_solution, previous_solution_information,
+                                                                min_sense=min_sense)
         if idx < 0:
             return False
         return previous_solution_information[idx]
 
     @staticmethod
-    def solution_satisfy_ef_arr(solution_values, ef_arr):
+    def solution_satisfy_ef_arr(solution_values, ef_arr, min_sense=True):
         i = 0
-        while i < len(ef_arr) and solution_values[i] <= ef_arr[i]:
+        sense_sign = -1 if min_sense else 1
+        while i < len(ef_arr) and (sense_sign*(ef_arr[i] - solution_values[i]) <= 0):
             i += 1
         return i == len(ef_arr)
 

@@ -87,7 +87,10 @@ class MinizincSolver(Solver):
     def build_objective_e_constraint_saugmecon(self, range_array, augmentation):
         raise NotImplementedError()
 
-    def build_objective_e_constraint_augmecon2(self, range_array, augmentation):
+    def build_objective_e_constraint_augmecon2(self, best_constrain_obj_list, nadir_constrain_obj_list, augmentation):
+        raise NotImplementedError()
+
+    def change_objective_sense(self, id_objective):
         raise NotImplementedError()
 
     def reset(self):
