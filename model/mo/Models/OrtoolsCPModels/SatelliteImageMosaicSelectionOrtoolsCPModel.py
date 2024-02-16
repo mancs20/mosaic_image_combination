@@ -54,12 +54,15 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel, SatelliteImage
     def define_objectives(self):
         # cost objective
         self.total_cost = self.solver_model.NewIntVar(0, sum(self.instance.costs), "cost")
-        self.solver_model.Add(self.total_cost == sum(self.select_image[i] * self.instance.costs[i] for i in range(len(self.select_image))))
+        (self.solver_model.Add(self.total_cost == sum(self.select_image[i] * self.instance.costs[i]
+                                                     for i in range(len(self.select_image)))).
+         WithName("cost_obj_constraint"))
         self.objectives.append(self.total_cost)
         # cloud covered objective
         # todo try with model equivalent to minizinc, instead of covering the clouds, maximize the clean parts
         self.total_cloudy_area = self.solver_model.NewIntVar(0, self.total_area_clouds, "total_cloudy_area")
-        self.solver_model.Add(self.total_cloudy_area == sum(self.cloud_area[i] for i in self.cloud_area))
+        (self.solver_model.Add(self.total_cloudy_area == sum(self.cloud_area[i] for i in self.cloud_area)).
+         WithName("cloud_covered_obj_constraint"))
         self.objectives.append(self.total_cloudy_area)
 
         # todo uncomment after check the speed
