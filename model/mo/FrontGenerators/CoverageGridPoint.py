@@ -153,7 +153,6 @@ class CoverageGridPoint(FrontGeneratorStrategy):
 
     def update_objective_constraints(self, ef_array):
         for i in range(len(ef_array)):
-            # todo uncomment below
             if self.constraint_objectives[i] != 0:
                 self.solver.remove_constraints(self.constraint_objectives[i])
             self.constraint_objectives[i] = self.solver.add_constraints_eq(self.constraint_objectives_lhs[i],

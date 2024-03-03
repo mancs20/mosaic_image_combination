@@ -84,7 +84,6 @@ class OrtoolsCPSolver(Solver):
     def build_objective_e_constraint_augmecon2(self, best_constrain_obj_list, nadir_constrain_obj_list, augmentation):
         if len(self.model.objectives) != 2:
             raise Exception("The augmecon2 is implemented for 2 objectives only.")
-        # todo add lb and up to the variables
         constraint_objectives = []
         if augmentation:
             delta = 1000
@@ -152,7 +151,6 @@ class OrtoolsCPSolver(Solver):
             timer_lex.resume()
             self.solver.Solve(self.model.solver_model)
             timer_lex.pause()
-            # todo check how this could be infeasible
             one_solution = self.get_solution_objective_values()
             lexico_constraints.append(self.add_constraints_eq(self.model.objectives[self.lexicographic_obj_order[i]],
                                                               one_solution[self.lexicographic_obj_order[i]]))
