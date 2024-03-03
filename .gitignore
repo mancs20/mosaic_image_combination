@@ -13,3 +13,4 @@ my_tests
 results/*test
 results/*backup
 *.sh
+AnalysisResult/**/*.pdf
