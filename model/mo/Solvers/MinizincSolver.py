@@ -111,7 +111,7 @@ class MinizincSolver(Solver):
     def get_complete_solution(self):
         return self.solver_solution
 
-    def add_or_all_objectives_constraint(self, rhs, id_constraint=0, sense_min=True):
+    def add_or_all_objectives_constraint(self, rhs, id_constraint=0):
         cons = []
         for i, minimize in enumerate(self.solver_solution['minimize_objs']):
             # obj_value = int(self.solver_solution["objs"][i])

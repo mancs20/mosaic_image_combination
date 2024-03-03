@@ -83,7 +83,9 @@ def main():
             print("Last incomplete solution added to the pareto front")
             statistics["incomplete_timeout_solution_added_to_front"] = True
         else:
-            print("There were not incomplete solution or the last incomplete solution was not added to the pareto front")
+            print("There were not incomplete solution or the last incomplete solution was not added to "
+                  "the pareto front")
+            set_right_time_after_timeout(statistics, config.solver_timeout_sec)
     except Exception as e:
         print("Execption raised: " + str(e))
         logging.error(traceback.format_exc())
@@ -92,6 +94,10 @@ def main():
     statistics["pareto_solutions_time_list"] = pareto_solutions_time_list
     print("end of solving statistics: " + str(statistics))
     write_statistics(config, statistics)
+
+
+def set_right_time_after_timeout(statistics, config_timeout_sec):
+    statistics["time_solver_sec"] = config_timeout_sec
 
 
 def build_instance(config):
@@ -137,7 +143,7 @@ def build_instance_text_data(config):
         datasets_folder = os.path.join(config.data_sets_folder, "mokp",
                                        config.data_name)
         path_objective_matrix, path_constraints_matrix, path_rhs_constraints_vector = \
-            mokp_get_text_data_files(datasets_folder)
+            mokp_get_text_data_files(datasets_folder, config.data_name)
         objective_matrix = mokp_get_matrix_from_file(path_objective_matrix)
         constraints_matrix = mokp_get_matrix_from_file(path_constraints_matrix)
         rhs_constraints_vector = mokp_get_rhs_vector_from_file(path_rhs_constraints_vector)
@@ -148,10 +154,15 @@ def build_instance_text_data(config):
     return instance
 
 
-def mokp_get_text_data_files(datasets_folder):
-    path_objective_matrix = os.path.join(datasets_folder, "z3_40ctt.txt")
-    path_constraints_matrix = os.path.join(datasets_folder, "z3_40att.txt")
-    path_rhs_constraints_vector = os.path.join(datasets_folder, "z3_40btt.txt")
+def mokp_get_text_data_files(datasets_folder, data_name):
+    # data_name is in the form 3kp40, get first character and the ones after kp two characters
+    kp_index = data_name.find("kp")
+    number_objs = data_name[:kp_index]
+    number_items = data_name[kp_index + 2:]
+
+    path_objective_matrix = os.path.join(datasets_folder, f"z{number_objs}_{number_items}ctt.txt")
+    path_constraints_matrix = os.path.join(datasets_folder, f"z{number_objs}_{number_items}att.txt")
+    path_rhs_constraints_vector = os.path.join(datasets_folder, f"z{number_objs}_{number_items}btt.txt")
     return path_objective_matrix, path_constraints_matrix, path_rhs_constraints_vector
 
 
@@ -186,6 +197,7 @@ def mokp_get_rhs_vector_from_file(file_path):
 
 def check_already_computed(config):
     if os.path.exists(config.summary_filename):
+        csv.field_size_limit(sys.maxsize)
         with open(config.summary_filename, 'r') as fsummary:
             summary = csv.DictReader(fsummary, delimiter=';')
             for row in summary:

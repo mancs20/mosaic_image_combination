@@ -16,3 +16,4 @@ results/*backup
 __pycache__/
 *.pyc
 venv/
+AnalysisResult/**/*.pdf
