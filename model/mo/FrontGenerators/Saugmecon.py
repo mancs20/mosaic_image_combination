@@ -52,7 +52,7 @@ class Saugmecon(FrontGeneratorStrategy):
 
     def update_objective_constraints(self, ef_array):
         for constraint in self.constraint_objectives:
-            self.solver.remove_constraints(constraint)
+            self.solver.remove_constraint(constraint)
         self.add_objectives_as_constraints(ef_array)
 
     def saugmecon_loop(self, ef_array, rwv, id_objective, previous_solution_information, previous_solutions):
@@ -285,10 +285,6 @@ class Saugmecon(FrontGeneratorStrategy):
                  break
         return formatted_solutions, objectives_values
 
-    def get_nadir_objectives(self):
-        nadir_objectives = self.solver.model.get_nadir_bound_estimation()
-        return nadir_objectives
-
     def optimize_single_objectives(self, sense, id_objective):
         objective = self.solver.model.objectives[id_objective]
         print("Start the solver to get the min of objective " + str(id_objective))
@@ -309,7 +305,7 @@ class Saugmecon(FrontGeneratorStrategy):
             solution_to_test = solutions[i]
             if i > 0:
                 for constraint in constraint_objectives_values:
-                    self.solver.remove_constraints(constraint)
+                    self.solver.remove_constraint(constraint)
             for j in range(len(solution_to_test)):
                 constraint = self.solver.add_constraints_eq(self.solver.model.objectives[j], solution_to_test[j])
                 constraint_objectives_values[j] = constraint

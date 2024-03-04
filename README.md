@@ -67,6 +67,7 @@ presented in Constraint Model for the Satellite Image Mosaic Selection Problem. 
   * `gavanelli`
   * `gavanelli-opt`
   * `augmecon-coverage`
+  * `unsatisfaction`
 * `--solver_timeout_sec`: The timeout in seconds for the solver. The experiments were performed with a value of `3600`.
 * `--summary`: The path to the summary file. A file with the results of the experiments, generated in CSV format.
 * `--cores`: The number of cores to use.

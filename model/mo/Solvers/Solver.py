@@ -72,7 +72,7 @@ class Solver(ABC):
         pass
 
     @abstractmethod
-    def remove_constraints(self, constraint):
+    def remove_constraint(self, constraint):
         pass
 
     @abstractmethod
@@ -142,6 +142,10 @@ class Solver(ABC):
 
     @abstractmethod
     def add_or_all_objectives_constraint(self, rhs, id_constraint=0):
+        pass
+
+    @abstractmethod
+    def add_or_constraints_leq(self, constraint, rhs):
         pass
 
     @abstractmethod

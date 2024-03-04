@@ -67,6 +67,10 @@ class GenericModel(ABC):
         pass
 
     @abstractmethod
+    def get_ideal_bound_estimation(self):
+        pass
+
+    @abstractmethod
     def get_ref_points_for_hypervolume(self):
         pass
 

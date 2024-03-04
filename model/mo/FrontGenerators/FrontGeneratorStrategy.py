@@ -68,6 +68,14 @@ class FrontGeneratorStrategy(ABC):
         minizinc_formatted_solution = MinizincResultFormat(status=status, solution=solution, statistics=statistics)
         return minizinc_formatted_solution
 
+    def get_nadir_objectives(self):
+        nadir_objectives = self.solver.model.get_nadir_bound_estimation()
+        return nadir_objectives
+
+    def get_ideal_objectives(self):
+        ideal_objectives = self.solver.model.get_ideal_bound_estimation()
+        return ideal_objectives
+
 
 @dataclass
 class MinizincResultFormat:

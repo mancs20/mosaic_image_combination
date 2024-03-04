@@ -50,6 +50,10 @@ class SatelliteImageMosaicSelectionGeneralModel(GenericModel, ABC):
         # ref_points[3] = 900
         return ref_points
 
+    def get_ideal_bound_estimation(self):
+        ideal_objectives = [0] * len(self.objectives)
+        return ideal_objectives
+
     def get_resolution_nadir_for_ref_point(self):
         resolution_parts_max = {}
         for idx, image in enumerate(self.instance.images):

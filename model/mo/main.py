@@ -25,6 +25,7 @@ from model.mo.MOWithFrontGenerator import MOWithFrontGenerator
 from model.mo.FrontGenerators.Gavanelli import Gavanelli
 from model.mo.FrontGenerators.Saugmecon import Saugmecon
 from model.mo.FrontGenerators.CoverageGridPoint import CoverageGridPoint
+from model.mo.FrontGenerators.ByUnsatisfaction import ByUnsatisfaction
 from model.mo.Instances.InstanceMIPMatrix import InstanceMIPMatrix
 from model.mo.Instances.InstanceMinizinc import InstanceMinizinc
 from model.mo.Instances.InstanceSIMS import InstanceSIMS
@@ -269,6 +270,8 @@ def set_front_strategy(config, solver):
         return Gavanelli(solver, Timer(config.solver_timeout_sec), optimize=True)
     elif config.front_strategy == "augmecon-coverage":
         return CoverageGridPoint(solver, Timer(config.solver_timeout_sec))
+    elif config.front_strategy == "unsatisfaction":
+        return ByUnsatisfaction(solver, Timer(config.solver_timeout_sec))
     else:
         return Saugmecon(solver, Timer(config.solver_timeout_sec))
 

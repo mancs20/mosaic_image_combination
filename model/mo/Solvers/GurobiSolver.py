@@ -100,7 +100,7 @@ class GurobiSolver(Solver):
         new_constraint = self.model.solver_model.addConstr(constraint >= rhs)
         return new_constraint
 
-    def remove_constraints(self, constraint):
+    def remove_constraint(self, constraint):
         self.model.solver_model.remove(constraint)
 
     def opt_one_objective_or_satisfy(self, optimize_not_satisfy=True):
@@ -140,6 +140,9 @@ class GurobiSolver(Solver):
                 else:
                     self.model.solver_model.addConstr(self.model.objectives[i] >=
                                                       rhs[i] - (big_m[i] * (1 - y[i])))
+
+    def add_or_constraints_leq(self, constraint, rhs):
+        raise NotImplementedError()
 
     def get_big_m_for_or_all_objectives(self, rhs):
         big_m = []

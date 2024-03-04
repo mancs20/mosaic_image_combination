@@ -32,6 +32,9 @@ class MultiobjectiveKnapsackGenericModel(GenericModel, ABC):
         nadir_objectives = [0]*len(self.objectives)
         return nadir_objectives
 
+    def get_ideal_bound_estimation(self):
+        raise NotImplementedError
+
     def get_ref_points_for_hypervolume(self):
         ref_points = [0]*len(self.objectives)
         return ref_points

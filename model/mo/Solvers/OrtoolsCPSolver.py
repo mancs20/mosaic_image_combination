@@ -155,7 +155,7 @@ class OrtoolsCPSolver(Solver):
             lexico_constraints.append(self.add_constraints_eq(self.model.objectives[self.lexicographic_obj_order[i]],
                                                               one_solution[self.lexicographic_obj_order[i]]))
         for constraints in lexico_constraints:
-            self.remove_constraints(constraints)
+            self.remove_constraint(constraints)
         self.add_solution_values_to_model_solver_values()
 
     def add_solution_values_to_model_solver_values(self):
@@ -179,7 +179,7 @@ class OrtoolsCPSolver(Solver):
         new_constraint = self.model.solver_model.Add(constraint >= rhs)
         return new_constraint
 
-    def remove_constraints(self, constraint):
+    def remove_constraint(self, constraint):
         constraint.Proto().Clear()
 
     def set_minimization(self):
@@ -234,6 +234,8 @@ class OrtoolsCPSolver(Solver):
         pareto_constraints = self.model.solver_model.AddAtLeastOne(bool_vars)
         return pareto_constraints
 
+    def add_or_constraints_leq(self, constraint, rhs):
+        raise NotImplementedError()
 
     def gcd(self, list_to_gcd):
         gcd = list_to_gcd[0]

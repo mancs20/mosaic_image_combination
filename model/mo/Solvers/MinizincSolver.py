@@ -69,7 +69,7 @@ class MinizincSolver(Solver):
     def add_constraints_geq(self, constraint, rhs):
         raise NotImplementedError()
 
-    def remove_constraints(self, constraint):
+    def remove_constraint(self, constraint):
         raise NotImplementedError()
 
     def set_minimization(self):
@@ -122,6 +122,9 @@ class MinizincSolver(Solver):
                 cons.append(f"objs[{i + 1}] > {obj_value}")
         all_objective_or_cons = " \\/ ".join(cons)
         self.add_local_constraint(all_objective_or_cons)
+
+    def add_or_constraints_leq(self, constraint, rhs):
+        raise NotImplementedError()
 
     def get_nodes_solution(self, solution):
         nodes = 0
