@@ -122,7 +122,7 @@ class GurobiSolver(Solver):
             rhs = [rhs[i] + 1 for i in range(len(rhs))]
         big_m = self.get_big_m_for_or_all_objectives(rhs)
         for i in range(len(self.model.objectives)):
-            if sense_min:
+            if self.model.is_a_minimization_model():
                 if self.can_big_m_introduce_problems(big_m[i]):
                     self.model.solver_model.addConstr((y[i] == 1) >> (self.model.objectives[i] <= rhs[i]),
                                                       name=f"indicator_const{id_constraint}_{i}")
