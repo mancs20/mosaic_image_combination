@@ -145,7 +145,7 @@ class Solver(ABC):
         pass
 
     @abstractmethod
-    def add_or_constraints_leq(self, constraint, rhs):
+    def chained_constraints_leq_with_or(self, constraints_lhs, rhs, id_constraint=0):
         pass
 
     @abstractmethod

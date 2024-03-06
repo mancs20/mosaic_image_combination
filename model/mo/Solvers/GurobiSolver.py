@@ -141,8 +141,22 @@ class GurobiSolver(Solver):
                     self.model.solver_model.addConstr(self.model.objectives[i] >=
                                                       rhs[i] - (big_m[i] * (1 - y[i])))
 
-    def add_or_constraints_leq(self, constraint, rhs):
-        raise NotImplementedError()
+    def chained_constraints_leq_with_or(self, constraints_lhs, rhs, id_constraint=0):
+        y = self.model.solver_model.addVars(len(constraints_lhs), vtype=gp.GRB.BINARY,
+                                            name=f"temp_y_{id_constraint}")
+        new_constraints = [self.model.solver_model.addConstr(gp.quicksum(y) == 1)]
+        big_m = self.get_big_m_for_or_all_objectives(rhs)
+        for i in range(len(constraints_lhs)):
+            if self.can_big_m_introduce_problems(big_m[i]):
+                new_constraints.append(self.model.solver_model.addConstr((y[i] == 1) >> (constraints_lhs[i] <= rhs[i]),
+                                                                         name=f"indicator_const{id_constraint}_{i}"))
+                new_constraints.append(self.model.solver_model.addConstr((y[i] == 0) >> (constraints_lhs[i] <= rhs[i] +
+                                                                                         big_m[i]),
+                                                                         name=f"indicator_const{id_constraint}_{i}"))
+            else:
+                new_constraints.append(self.model.solver_model.addConstr(constraints_lhs[i] <=
+                                                                         rhs[i] + (big_m[i] * (1 - y[i]))))
+        return new_constraints
 
     def get_big_m_for_or_all_objectives(self, rhs):
         big_m = []

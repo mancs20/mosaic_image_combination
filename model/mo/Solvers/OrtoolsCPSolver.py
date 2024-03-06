@@ -234,8 +234,15 @@ class OrtoolsCPSolver(Solver):
         pareto_constraints = self.model.solver_model.AddAtLeastOne(bool_vars)
         return pareto_constraints
 
-    def add_or_constraints_leq(self, constraint, rhs):
-        raise NotImplementedError()
+    def chained_constraints_leq_with_or(self, constraints_lhs, rhs, id_constraint=0):
+        or_constraints = [constraints_lhs[i] <= rhs[i] for i in range(len(rhs))]
+        bool_vars = [self.model.solver_model.NewBoolVar(f"bool_var_for_or_chain_constraints_{id_constraint}_{i}") for
+                     i in range(len(rhs))]
+        or_chain_constraints = []
+        for i in range(len(rhs)):
+            or_chain_constraints.append(self.model.solver_model.Add(or_constraints[i]).OnlyEnforceIf(bool_vars[i]))
+        or_chain_constraints.append(self.model.solver_model.AddAtLeastOne(bool_vars))
+        return or_chain_constraints
 
     def gcd(self, list_to_gcd):
         gcd = list_to_gcd[0]
