@@ -106,6 +106,8 @@ class GurobiSolver(Solver):
     def opt_one_objective_or_satisfy(self, optimize_not_satisfy=True):
         if not optimize_not_satisfy:
             self.model.solver_model.Params.solutionLimit = 1
+            self.model.solver_model.Params.MIPFocus = 1
+            self.model.solver_model.Params.Cuts = 3
         self.model.solver_model.optimize()
 
     def perform_lexicographic_optimization(self):
