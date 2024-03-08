@@ -60,3 +60,12 @@ class MinizincPseudoModel(GenericModel):
 
     def get_ref_points_for_hypervolume(self):
         return self.solver.solver_solution.solution.ref_point
+
+    def get_nadir_bound_estimation(self):
+        pass
+
+    def get_ideal_bound_estimation(self):
+        pass
+
+    def add_necessary_solver_configuration(self):
+        pass
