@@ -76,7 +76,7 @@ class OrtoolsCPSolver(Solver):
                 obj_multiplier = [int(x/gcd) for x in obj_multiplier]
             main_obj = self.model.solver_model.NewIntVar(sum(lb_list), sum(up_list), "main_obj")
             self.model.solver_model.Add(main_obj == sum(self.model.objectives[i] * obj_multiplier[i]
-                                  for i in range(len(self.model.objectives))))
+                                                        for i in range(len(self.model.objectives))))
             self.current_objective = main_obj
         else:
             self.current_objective = self.model.objectives[0]
@@ -121,16 +121,22 @@ class OrtoolsCPSolver(Solver):
     def set_threads(self, threads):
         self.solver.parameters = sat_parameters_pb2.SatParameters(num_search_workers=threads)
 
-    def opt_one_objective_or_satisfy(self, optimize_not_satisfy=True):
+    def opt_one_objective_or_satisfy(self, optimize_not_satisfy=True, verbose=False):
+        if verbose:
+            self.activate_complex_verbose()
         self.status = self.solver.Solve(self.model.solver_model)
         if self.status == cp_model.INFEASIBLE:
             print("infeasible")
         elif self.status == cp_model.UNKNOWN:
             print("ortools-sat solver timeout")
         else:
+            if verbose:
+                self.show_simple_solution_info()
             self.add_solution_values_to_model_solver_values()
 
-    def perform_lexicographic_optimization(self):
+    def perform_lexicographic_optimization(self, verbose=False):
+        if verbose:
+            self.activate_complex_verbose()
         current_timeout_time = self.solver.parameters.max_time_in_seconds
         timer_lex = Timer(current_timeout_time)
         if len(self.lexicographic_obj_order) == 0:
@@ -156,12 +162,14 @@ class OrtoolsCPSolver(Solver):
                                                               one_solution[self.lexicographic_obj_order[i]]))
         for constraints in lexico_constraints:
             self.remove_constraint(constraints)
+        if verbose:
+            self.show_simple_solution_info()
         self.add_solution_values_to_model_solver_values()
 
     def add_solution_values_to_model_solver_values(self):
         self.model.solver_values = []
         for values in self.model.solution_variables:
-            if type(values) == list:
+            if type(values) is list:
                 for value in values:
                     self.model.solver_values.append(self.solver.Value(value))
             else:
@@ -249,6 +257,17 @@ class OrtoolsCPSolver(Solver):
         for i in range(1, len(list_to_gcd)):
             gcd = math.gcd(gcd, list_to_gcd[i])
         return gcd
+
+    def activate_complex_verbose(self):
+        self.solver.parameters.log_search_progress = True
+        # todo cehck this
+        self.solver.parameters.debug_crash_on_bad_hint = True
+
+    def show_simple_solution_info(self):
+        print("=====Start of simple Solution Stats:======")
+        print(self.solver.SolutionInfo())
+        print(self.solver.ResponseStats())
+        print("=====End of simple Solution Stats:======")
 
 
 class LastOptimization(Enum):

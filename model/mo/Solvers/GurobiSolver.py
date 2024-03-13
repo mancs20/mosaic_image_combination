@@ -39,7 +39,7 @@ class GurobiSolver(Solver):
     def get_solution_objective_values(self):
         one_solution = []
         for i in range(len(self.model.objectives)):
-            if type(self.model.objectives[i]) == gp.Var:
+            if type(self.model.objectives[i]) is gp.Var:
                 one_solution.append(self.model.objectives[i].x)
             else:
                 one_solution.append(self.model.objectives[i].getValue())
@@ -103,14 +103,14 @@ class GurobiSolver(Solver):
     def remove_constraint(self, constraint):
         self.model.solver_model.remove(constraint)
 
-    def opt_one_objective_or_satisfy(self, optimize_not_satisfy=True):
+    def opt_one_objective_or_satisfy(self, optimize_not_satisfy=True, verbose=False):
         if not optimize_not_satisfy:
             self.model.solver_model.Params.solutionLimit = 1
             self.model.solver_model.Params.MIPFocus = 1
             self.model.solver_model.Params.Cuts = 3
         self.model.solver_model.optimize()
 
-    def perform_lexicographic_optimization(self):
+    def perform_lexicographic_optimization(self, verbose=False):
         print("Performing lexicographic optimization is not implemnted yet for GurobiSolver.")
         raise NotImplementedError()
 

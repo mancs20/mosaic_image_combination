@@ -25,7 +25,7 @@ class FrontGeneratorStrategy(ABC):
     def always_add_new_solutions_to_front(self):
         pass
 
-    def get_solver_solution_for_timeout(self, optimize_not_satisfy):
+    def get_solver_solution_for_timeout(self, optimize_not_satisfy, verbose=False):
         print("Start the solver...")
         timeout = float(self.timer.time_budget_sec)
         # check if the timeout is already reached, sometimes the solver doesn't stop in the exact time that
@@ -34,7 +34,7 @@ class FrontGeneratorStrategy(ABC):
             raise TimeoutError()
         self.solver.set_time_limit(timeout)
         self.timer.resume()
-        self.solver.solve(optimize_not_satisfy=optimize_not_satisfy)
+        self.solver.solve(optimize_not_satisfy=optimize_not_satisfy, verbose=verbose)
         solution_sec = self.timer.pause()
         if self.solver.status_time_limit():
             self.deal_with_timeout(solution_sec)
@@ -92,11 +92,10 @@ class MinizincResultFormat:
         else:
             return getattr(self.solution, key)
 
+
 @dataclass
 class Solution:
     objs: List[int]
     minimize_objs: List[bool]
     solution_values: List[bool]
     ref_point: List[int]
-
-

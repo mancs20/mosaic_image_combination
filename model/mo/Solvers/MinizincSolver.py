@@ -30,14 +30,13 @@ class MinizincSolver(Solver):
         self.local_constraints = ""
         super().__init__(model, statistics, threads, free_search)
 
-
     def set_solver(self):
         return None
 
     def set_threads(self, threads):
         self.threads = threads
 
-    def opt_one_objective_or_satisfy(self, optimize_not_satisfy=True):
+    def opt_one_objective_or_satisfy(self, optimize_not_satisfy=True, verbose=False):
         with self.instance.branch() as child:
             child.add_string(self.local_constraints)
             while True:
@@ -59,7 +58,7 @@ class MinizincSolver(Solver):
         elif self.solver_solution.status == Status.ERROR:
             raise Exception("CP solver error\n")
 
-    def perform_lexicographic_optimization(self):
+    def perform_lexicographic_optimization(self, verbose=False):
         print("Performing lexicographic optimization is not implemnted yet for GurobiSolver.")
         raise NotImplementedError()
 
@@ -79,7 +78,7 @@ class MinizincSolver(Solver):
         raise NotImplementedError()
 
     def set_time_limit(self, timeout):
-        self.timeout = timedelta(seconds = timeout)
+        self.timeout = timedelta(seconds=timeout)
 
     def set_single_objective(self, objective_expression):
         raise NotImplementedError()
