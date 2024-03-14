@@ -101,15 +101,16 @@ class ImageSpaceDecompositionFeasibleHyperrectangles(FrontGeneratorStrategy):
         constraints_efficient_corners = []
         for efficient_corner in feasible_hyperrectangle_solution_space.efficient_corners:
             if efficient_corner[0] == feasible_hyperrectangle_solution_space.lower_corner[0]:
-                constraints_efficient_corners.extend(self.solver.add_constraints_geq(self.solver.model.objectives[0],
+                constraints_efficient_corners.append(self.solver.add_constraints_geq(self.solver.model.objectives[0],
                                                                                      efficient_corner[0] + 1))
-                constraints_efficient_corners.extend(self.solver.add_constraints_leq(self.solver.model.objectives[1],
+                constraints_efficient_corners.append(self.solver.add_constraints_leq(self.solver.model.objectives[1],
                                                                                      efficient_corner[1] - 1))
             elif efficient_corner[1] == feasible_hyperrectangle_solution_space.lower_corner[1]:
-                constraints_efficient_corners.extend(self.solver.add_constraints_leq(self.solver.model.objectives[0],
+                constraints_efficient_corners.append(self.solver.add_constraints_leq(self.solver.model.objectives[0],
                                                                                      efficient_corner[0] - 1))
-                constraints_efficient_corners.extend(self.solver.add_constraints_geq(self.solver.model.objectives[1],
+                constraints_efficient_corners.append(self.solver.add_constraints_geq(self.solver.model.objectives[1],
                                                                                      efficient_corner[1] + 1))
+        return constraints_efficient_corners
 
     def add_constraints_efficient_corners_or_constraints(self, feasible_hyperrectangle_solution_space):
         constraints_efficient_corners = []
