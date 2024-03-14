@@ -56,9 +56,11 @@ class FrontGeneratorStrategy(ABC):
         formatted_solution = self.prepare_solution()
         return formatted_solution
 
-    def prepare_solution(self):
-        one_solution = self.solver.get_solution_objective_values()
-        solution_values = self.solver.model.get_solution_values()
+    def prepare_solution(self, one_solution=None, solution_values=None):
+        if one_solution is None:
+            one_solution = self.solver.get_solution_objective_values()
+        if solution_values is None:
+            solution_values = self.solver.model.get_solution_values()
         ref_points = self.solver.model.get_ref_points_for_hypervolume()
         minimize_objs = [self.solver.model.is_a_minimization_model()] * len(one_solution)
         solution = Solution(objs=one_solution, solution_values=solution_values,
