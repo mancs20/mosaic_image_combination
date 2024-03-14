@@ -26,6 +26,7 @@ from model.mo.FrontGenerators.Gavanelli import Gavanelli
 from model.mo.FrontGenerators.Saugmecon import Saugmecon
 from model.mo.FrontGenerators.CoverageGridPoint import CoverageGridPoint
 from model.mo.FrontGenerators.ByUnsatisfaction import ByUnsatisfaction
+from model.mo.FrontGenerators.TestUnsatisfaction import TestUnsatisfaction
 from model.mo.Instances.InstanceMIPMatrix import InstanceMIPMatrix
 from model.mo.Instances.InstanceMinizinc import InstanceMinizinc
 from model.mo.Instances.InstanceSIMS import InstanceSIMS
@@ -272,8 +273,26 @@ def set_front_strategy(config, solver):
         return CoverageGridPoint(solver, Timer(config.solver_timeout_sec))
     elif config.front_strategy == "unsatisfaction":
         return ByUnsatisfaction(solver, Timer(config.solver_timeout_sec))
+    elif config.front_strategy == "test_unsatisfaction":
+        # get the list of solutions
+        row_with_data = get_row_for_instance(config, front_strategy="unsatisfaction")
+        return TestUnsatisfaction(solver, Timer(config.solver_timeout_sec), row_with_data)
     else:
         return Saugmecon(solver, Timer(config.solver_timeout_sec))
+
+
+def get_row_for_instance(config, front_strategy):
+    # get the list of solutions from the csv file "file_with_solutions.csv"
+    import pandas as pd
+    df = pd.read_csv("file_with_solutions.csv", delimiter=";")
+    row = df.loc[(df["problem"] == config.problem_name) & (df["instance"] == config.data_name) &
+                 (df["solver_name"] == config.solver_name) & (df["front_strategy"] == front_strategy) &
+                 (df["solver_search_strategy"] == config.solver_search_strategy) &
+                 (df["fzn_optimisation_level"] == config.fzn_optimisation_level) &
+                 (df["cores"] == config.cores) & (df["solver_timeout_sec"] == config.solver_timeout_sec)]
+    if len(row) == 0:
+        raise Exception("No row found in the file_with_solutions.csv")
+    return row
 
 
 def build_MO(instance, statistics, front_generator, osolve):
