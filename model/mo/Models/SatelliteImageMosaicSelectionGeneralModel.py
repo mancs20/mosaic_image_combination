@@ -82,12 +82,21 @@ class SatelliteImageMosaicSelectionGeneralModel(GenericModel, ABC):
         assert len(covered_elements) == len(self.instance.areas)
 
     def assert_cost(self, selected_images, cost):
+        total_cost = self.calculate_cost(selected_images)
+        assert total_cost == cost
+
+    def calculate_objective(self, selected_images):
+        obj = [0] * len(self.objectives)
+        obj[1] = self.calculate_cost(selected_images)
+        obj[2] = self.calculate_cloud_covered(selected_images)
+
+    def calculate_cost(self, selected_images):
         total_cost = 0
         for image in selected_images:
             total_cost += self.instance.costs[image]
-        assert total_cost == cost
+        return total_cost
 
-    def assert_cloud_covered(self, selected_images, cloud_uncovered):
+    def calculate_cloud_covered(self, selected_images):
         total_cloud_covered = 0
         cloud_covered = set()
         for image in selected_images:
@@ -97,7 +106,11 @@ class SatelliteImageMosaicSelectionGeneralModel(GenericModel, ABC):
                         cloud_covered.add(cloud)
                         total_cloud_covered += self.instance.clouds_id_area[cloud]
         total_area_clouds = int(sum(self.instance.clouds_id_area.values()))
-        assert total_area_clouds - total_cloud_covered == cloud_uncovered
+        return total_area_clouds - total_cloud_covered
+
+    def assert_cloud_covered(self, selected_images, cloud_uncovered):
+        calculated_total_cloud_covered = self.calculate_cloud_covered(selected_images)
+        assert calculated_total_cloud_covered == cloud_uncovered
 
     def assert_resolution(self, selected_images, resolution):
         calculated_total_resolution = self.calculate_resolution(selected_images)

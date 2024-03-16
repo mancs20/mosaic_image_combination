@@ -26,6 +26,8 @@ from model.mo.FrontGenerators.Gavanelli import Gavanelli
 from model.mo.FrontGenerators.Saugmecon import Saugmecon
 from model.mo.FrontGenerators.CoverageGridPoint import CoverageGridPoint
 from model.mo.FrontGenerators.ByUnsatisfaction import ByUnsatisfaction
+from model.mo.FrontGenerators.ByUnsatisfactionLazyConstraint import ByUnsatisfactionLazyConstraint
+from model.mo.FrontGenerators.ByUnsatisfactionConstrainPreviousDecisionVariables import ByUnsatisfactionConstrainPreviousDecisionVariables
 from model.mo.FrontGenerators.TestUnsatisfaction import TestUnsatisfaction
 from model.mo.Instances.InstanceMIPMatrix import InstanceMIPMatrix
 from model.mo.Instances.InstanceMinizinc import InstanceMinizinc
@@ -273,6 +275,10 @@ def set_front_strategy(config, solver):
         return CoverageGridPoint(solver, Timer(config.solver_timeout_sec))
     elif config.front_strategy == "unsatisfaction":
         return ByUnsatisfaction(solver, Timer(config.solver_timeout_sec))
+    elif config.front_strategy == "unsatisfaction_lazy":
+        return ByUnsatisfactionLazyConstraint(solver, Timer(config.solver_timeout_sec))
+    elif config.front_strategy == "unsatisfaction_constrain_previous_decision_variables":
+        return ByUnsatisfactionConstrainPreviousDecisionVariables(solver, Timer(config.solver_timeout_sec))
     elif config.front_strategy == "test_unsatisfaction":
         # get the list of solutions
         row_with_data = get_row_for_instance(config, front_strategy="unsatisfaction")

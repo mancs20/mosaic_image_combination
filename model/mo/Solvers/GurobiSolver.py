@@ -19,6 +19,10 @@ class GurobiSolver(Solver):
 
     def __init__(self, model, statistics, threads, free_search=True):
         super().__init__(model, statistics, threads, free_search)
+        self.temp_unsatisfaction_constraints = []
+        self.latest_solution = None
+        self.latest_values_decision_variables = None
+        self.use_lazy_constraints = False
 
     def assert_right_solver(self, model):
         if model.solver_name != constants.Solver.GUROBI.value:
@@ -35,6 +39,7 @@ class GurobiSolver(Solver):
 
     def get_nodes_solution(self, solution):
         return solution.NodeCount
+        # return solution.SolCount
 
     def get_solution_objective_values(self):
         one_solution = []
@@ -107,8 +112,14 @@ class GurobiSolver(Solver):
         if not optimize_not_satisfy:
             self.model.solver_model.Params.solutionLimit = 1
             self.model.solver_model.Params.MIPFocus = 1
-            self.model.solver_model.Params.Cuts = 3
-        self.model.solver_model.optimize()
+            # self.model.solver_model.Params.Cuts = 3
+        if self.use_lazy_constraints:
+            self.model.solver_model.Params.lazyConstraints = 1
+            self.latest_solution = None
+            self.latest_values_decision_variables = None
+            self.model.solver_model.optimize(self.add_unsatisfaction_constraint_callback)
+        else:
+            self.model.solver_model.optimize()
 
     def perform_lexicographic_optimization(self, verbose=False):
         print("Performing lexicographic optimization is not implemnted yet for GurobiSolver.")
@@ -171,3 +182,21 @@ class GurobiSolver(Solver):
         if big_m * self.model.solver_model.Params.IntFeasTol >= 1:
             return True
         return False
+
+    def add_unsatisfaction_constraint_callback(self, model, where):
+        if where == gp.GRB.Callback.MIPSOL:
+            # Get the solution
+            # solution = model.cbGetSolution(self.model.objectives)
+            selected_images = model.cbGetSolution(self.model.select_image)
+            obj = [self.model.calculate_cost(selected_images), self.model.calculate_cloud_covered(selected_images)]
+            self.latest_solution = obj
+            self.latest_values_decision_variables = selected_images
+            # Get the unsatisfaction
+            temp_constraints = []
+            for i in range(len(self.model.objectives)):
+                a = model.cbLazy(self.model.objectives[i] <= obj[i] - 1)
+                temp_constraints.append(a)
+            self.temp_unsatisfaction_constraints.extend(temp_constraints)
+
+    def lazy_constraints_possible(self):
+        return True
