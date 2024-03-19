@@ -89,6 +89,7 @@ class SatelliteImageMosaicSelectionGeneralModel(GenericModel, ABC):
         obj = [0] * len(self.objectives)
         obj[1] = self.calculate_cost(selected_images)
         obj[2] = self.calculate_cloud_covered(selected_images)
+        return obj
 
     def calculate_cost(self, selected_images):
         total_cost = 0
