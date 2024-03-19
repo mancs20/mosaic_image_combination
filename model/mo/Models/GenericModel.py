@@ -59,7 +59,7 @@ class GenericModel(ABC):
         pass
 
     @abstractmethod
-    def get_solution_values(self):
+    def get_solution_values(self, solution_from_solver=None):
         pass
 
     @abstractmethod

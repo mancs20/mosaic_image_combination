@@ -34,9 +34,8 @@ class MultiobjectiveKnapsackOrtoolsCPModel(OrtoolsCPModel, MultiobjectiveKnapsac
             self.solver_model.Add(objective == sum(objective_vector[j] * self.select_item[j] for j in range(self.number_items)))
             self.objectives.append(objective)
 
-    def get_solution_values(self):
-        selected_items = [index for index in range(len(self.select_item)) if
-                           self.solver_values[index] == 1]
+    def get_solution_values(self, solution_from_solver=None):
+        selected_items = [index for index in range(len(self.select_item)) if self.solver_values[index] == 1]
         return selected_items
 
     def is_numerically_possible_augment_objective(self):

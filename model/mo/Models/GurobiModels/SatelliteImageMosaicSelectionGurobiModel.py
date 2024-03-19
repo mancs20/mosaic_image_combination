@@ -20,6 +20,7 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
         self.resolution = None
         self.min_resolution = None
         self.incidence_angle = None
+        self.objectives_val = []
         SatelliteImageMosaicSelectionGeneralModel.__init__(self, instance)
 
     def is_numerically_possible_augment_objective(self):
@@ -79,6 +80,10 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
         self.objectives.append(
             self.total_area_clouds - (gp.quicksum(self.cloud_covered[c] * self.area_clouds[c]
                                                   for c in self.clouds_id)))
+        self.objectives_val = [0] * len(self.objectives)
+        for i in range(len(self.objectives)):
+            self.objectives_val[i] = self.solver_model.addVar(vtype=gp.GRB.INTEGER, name=f"objective_{i}")
+        self.solver_model.addConstrs(self.objectives_val[i] == self.objectives[i] for i in range(len(self.objectives)))
         # todo uncomment after check with cost and cloud
         # # for resolution
         # self.objectives.append(gp.quicksum(self.resolution_element[e] for e in self.elements))
@@ -137,11 +142,16 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
         # FINISH of commented section__________
         # constraints end--------------------------------------------------------------
 
-    def get_solution_values(self):
+    def get_solution_values(self, solution_from_solver=None):
         selected_images = []
-        for image in self.select_image.keys():
-            if abs(self.select_image[image].x) > 1e-6:
-                selected_images.append(image)
+        if solution_from_solver is None:
+            for image in self.select_image.keys():
+                if abs(self.select_image[image].x) > 1e-6:
+                    selected_images.append(image)
+        else:
+            for i in range(len(solution_from_solver)):
+                if abs(solution_from_solver[i]) > 1e-6:
+                    selected_images.append(i)
         return selected_images
 
     def add_necessary_solver_configuration(self):

@@ -41,7 +41,7 @@ class MultiobjectiveKnapsackGurobiModel(GurobiModel, MultiobjectiveKnapsackGener
     def is_a_minimization_model(self):
         return False
 
-    def get_solution_values(self):
+    def get_solution_values(self, solution_from_solver=None):
         selected_items = []
         for item in self.select_item:
             if abs(self.select_item[item].x) > 1e-6:

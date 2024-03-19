@@ -103,8 +103,7 @@ class SatelliteImageMosaicSelectionOrtoolsCPModel(OrtoolsCPModel, SatelliteImage
     def get_images_covering_cloud(self, cloud):
         return [i for i in self.instance.cloud_covered_by_image if cloud in self.instance.cloud_covered_by_image[i]]
 
-
-    def get_solution_values(self):
+    def get_solution_values(self, solution_from_solver=None):
         selected_images = [index for index in range(len(self.select_image)) if
                            self.solver_values[index] == 1]
         return selected_images

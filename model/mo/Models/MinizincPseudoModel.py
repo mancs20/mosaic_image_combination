@@ -49,7 +49,7 @@ class MinizincPseudoModel(GenericModel):
               "minimization model")
         return True
 
-    def get_solution_values(self):
+    def get_solution_values(self, solution_from_solver=None):
         return "This is not implemented when using Minizinc"
 
     def is_numerically_possible_augment_objective(self):
