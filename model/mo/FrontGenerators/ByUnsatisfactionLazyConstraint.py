@@ -7,10 +7,10 @@ class ByUnsatisfactionLazyConstraint(ImageSpaceDecompositionFeasibleHyperrectang
     # When only one objective has to be reduce, use optimization hint
     def __init__(self, solver, timer):
         super().__init__(solver, timer)
+        solver.model.solver_model._vars = solver.model.select_image
         # todo implement the min transormation to be used in maximization models
 
     def get_solution_inside_hyperrectangle(self, feasible_hyperrectangle):
-        # todo write the gurobi model to check if the lazy constraints are being removed in the secpodn iteration
         found_solution = False
         time_to_find_solution = 0
         formatted_solution = None
@@ -27,11 +27,6 @@ class ByUnsatisfactionLazyConstraint(ImageSpaceDecompositionFeasibleHyperrectang
         previous_upper_bound_corner = feasible_hyperrectangle.upper_corner
         upper_bound_corner = feasible_hyperrectangle.upper_corner
         case = UpperBoundConstraintCase.ALL_OBJECTIVES_SMALLER
-        # todo delete below is for debugging
-        intermediate_solution_count = 0
-        print(f"Starting to find a solution inside Hyperrectangle: {feasible_hyperrectangle}")
-        intermediate_solutions = []
-        # todo end delete
         if self.solver.lazy_constraints_possible():
             self.solver.use_lazy_constraints = True
         while not found_solution:
@@ -39,13 +34,12 @@ class ByUnsatisfactionLazyConstraint(ImageSpaceDecompositionFeasibleHyperrectang
             constraints_upper_bound_corner = self.constraint_solution_space_with_upper_bound_corner(
                 upper_bound_corner, previous_upper_bound_corner, case)
             # solve
-            solution_sec = self.get_solver_solution_for_timeout(optimize_not_satisfy=False, verbose=True)
+            if case != UpperBoundConstraintCase.OBJECTIVE_I_SMALLER_THE_REST_EQUAL:
+                optimize = False
+            else:
+                optimize = True
+            solution_sec = self.get_solver_solution_for_timeout(optimize_not_satisfy=optimize, verbose=True)
             time_to_find_solution += solution_sec
-            # todo delete Just for debugging
-            intermediate_solution_count += 1
-            print(f"Time to get intermediate solution {intermediate_solution_count}: {solution_sec}. "
-                  f"Total time: {time_to_find_solution}")
-            # todo end delete
             # if latest_solution is None, then the problem is infeasible, if not then the problem was feasible and I have to
             # to change the case to AT_LEAST_ONE_OBJECTIVE_SMALLER_THE_REST_EQUAL
             if self.solver.latest_solution is None:
@@ -57,11 +51,20 @@ class ByUnsatisfactionLazyConstraint(ImageSpaceDecompositionFeasibleHyperrectang
                     upper_bound_corner = formatted_solution["objs"]
                     if case == UpperBoundConstraintCase.AT_LEAST_ONE_OBJECTIVE_SMALLER_THE_REST_EQUAL:
                         case = UpperBoundConstraintCase.OBJECTIVE_I_SMALLER_THE_REST_EQUAL
+                    elif case == UpperBoundConstraintCase.OBJECTIVE_I_SMALLER_THE_REST_EQUAL:lution = True
             else:
-                formatted_solution = self.prepare_solution(self.solver.latest_solution, self.solver.latest_values_decision_variables)
-                self.deactivate_callbacks()
-                if case == UpperBoundConstraintCase.ALL_OBJECTIVES_SMALLER:
-                    case = UpperBoundConstraintCase.AT_LEAST_ONE_OBJECTIVE_SMALLER_THE_REST_EQUAL
+                formatted_solution = self.prepare_solution(
+                    self.solver.latest_solution,
+                    self.solver.model.get_solution_values(self.solver.latest_values_decision_variables))
+                # todo this is to test the atleast one objective smaller uncomment, false value was the original
+                test_atleast_one_objective_smaller = True
+                if test_atleast_one_objective_smaller:
+                    found_solution = True
+                else:
+                    self.deactivate_callbacks()
+                    if case == UpperBoundConstraintCase.ALL_OBJECTIVES_SMALLER:
+                        case = UpperBoundConstraintCase.AT_LEAST_ONE_OBJECTIVE_SMALLER_THE_REST_EQUAL
+                    upper_bound_corner = formatted_solution["objs"]
             # remove constraints smaller than upper_bound_corner
             for i in range(len(constraints_upper_bound_corner)):
                 self.solver.remove_constraint(constraints_upper_bound_corner[i])
@@ -70,14 +73,6 @@ class ByUnsatisfactionLazyConstraint(ImageSpaceDecompositionFeasibleHyperrectang
             self.solver.remove_constraint(constraints_lower_bound_corner[i])
         for i in range(len(constraints_efficient_corners)):
             self.solver.remove_constraint(constraints_efficient_corners[i])
-        # todo delete below is for debugging
-        print(f"Get a final solution from Hyperrectangle: {feasible_hyperrectangle}")
-        # todo end delete
-        # delete lazy constraints
-        # todo write the gurobi model to check if the lazy constraints are being removed
-        for i in range(len(self.solver.temp_unsatisfaction_constraints)):
-            if self.solver.temp_unsatisfaction_constraints[i] is not None:
-                self.solver.remove_constraint(self.solver.temp_unsatisfaction_constraints[i])
         return formatted_solution, time_to_find_solution
 
     def deactivate_callbacks(self):
