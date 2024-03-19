@@ -1,5 +1,3 @@
-import numpy as np
-
 from model.mo.FrontGenerators.FrontGeneratorStrategy import FrontGeneratorStrategy
 from model.mo.FrontGenerators.Saugmecon import Saugmecon
 
@@ -14,10 +12,7 @@ class CoverageGridPoint(FrontGeneratorStrategy):
     """
     def __init__(self, solver, timer):
         super().__init__(solver, timer)
-        self.best_objective_values = None
-        self.nadir_objectives_values = None
         self.check_number_of_objectives()
-        self.front_solutions = []
         self.constraint_objectives_lhs = None
         self.constraint_objectives = [0] * (len(self.solver.model.objectives) - 1)
         self.is_a_minimization_model_originally = False
@@ -125,26 +120,6 @@ class CoverageGridPoint(FrontGeneratorStrategy):
     def get_best_worst_values(self):
         if len(self.solver.model.objectives) == 2:
             yield from self.get_best_worst_for_2obj_lexicographically()
-
-    def get_best_worst_for_2obj_lexicographically(self):
-        self.best_objective_values = [0] * len(self.solver.model.objectives)
-        self.nadir_objectives_values = [0] * len(self.solver.model.objectives)
-        for i in range(len(self.solver.model.objectives)):
-            if i == 0:
-                obj_lexicographic = [0, 1]
-                j = 1
-            else:
-                j = 0
-                obj_lexicographic = [1, 0]
-            self.solver.set_lexicographic_optimization(obj_lexicographic)
-            self.solver.set_optimization_sense(self.model_optimization_sense)
-            solution_sec = self.get_solver_solution_for_timeout(optimize_not_satisfy=True)
-            formatted_solution = self.process_feasible_solution(solution_sec)
-            self.front_solutions.append(formatted_solution)
-            yield formatted_solution
-            self.best_objective_values[i] = formatted_solution['objs'][i]
-            self.nadir_objectives_values[j] = formatted_solution['objs'][j]
-        self.solver.lexicographic_obj_order = []
 
     def set_augmecon2_objective_model(self):
         self.constraint_objectives_lhs = self.solver.build_objective_e_constraint_augmecon2(

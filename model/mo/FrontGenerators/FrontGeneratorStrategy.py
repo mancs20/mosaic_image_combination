@@ -8,6 +8,9 @@ class FrontGeneratorStrategy(ABC):
     def __init__(self, solver, timer):
         self.solver = solver
         self.timer = timer
+        self.best_objective_values = None
+        self.nadir_objectives_values = None
+        self.front_solutions = []
         self.not_evaluate_always_add_new_solutions_to_front = False
         self.solution_incomplete_due_timeout = None
         if self.solver.model.is_a_minimization_model():
@@ -77,6 +80,29 @@ class FrontGeneratorStrategy(ABC):
     def get_ideal_objectives(self):
         ideal_objectives = self.solver.model.get_ideal_bound_estimation()
         return ideal_objectives
+
+    def get_best_worst_for_2obj_lexicographically(self):
+        if len(self.solver.model.objectives) != 2:
+            raise Exception("Error. get_best_worst_for_2obj_lexicographically method was called for a problem with "
+                            "more thant 2 objectives.")
+        self.best_objective_values = [0] * len(self.solver.model.objectives)
+        self.nadir_objectives_values = [0] * len(self.solver.model.objectives)
+        for i in range(len(self.solver.model.objectives)):
+            if i == 0:
+                obj_lexicographic = [0, 1]
+                j = 1
+            else:
+                j = 0
+                obj_lexicographic = [1, 0]
+            self.solver.set_lexicographic_optimization(obj_lexicographic)
+            self.solver.set_optimization_sense(self.model_optimization_sense)
+            solution_sec = self.get_solver_solution_for_timeout(optimize_not_satisfy=True)
+            formatted_solution = self.process_feasible_solution(solution_sec)
+            self.front_solutions.append(formatted_solution)
+            yield formatted_solution
+            self.best_objective_values[i] = formatted_solution['objs'][i]
+            self.nadir_objectives_values[j] = formatted_solution['objs'][j]
+        self.solver.lexicographic_obj_order = []
 
 
 @dataclass
