@@ -26,7 +26,10 @@ class MOWithFrontGenerator:
     def solve(self):
         for x in self.front_generator_strategy.solve():
             self.add_solution_pareto_front(x)
-            self.print_statistics_of_recent_solution(x)
+            if x is not None:
+                self.print_statistics_of_recent_solution(x)
+            else:
+                print("Intermediate unfeasible solution")
             yield x
 
     def add_solution_pareto_front(self, solution, added_to_front_verification=True):
@@ -34,7 +37,7 @@ class MOWithFrontGenerator:
         error = False
         error_msg = (f"Error!! solution {solution} is a new solution which is dominated by some of the previous. "
                      f"Previous solutions: {self.pareto_front.solutions}")
-        if added_to_front_verification and not added_to_front and self.front_generator_strategy.always_add_new_solutions_to_front():
+        if solution is not None and added_to_front_verification and not added_to_front and self.front_generator_strategy.always_add_new_solutions_to_front():
             error = True
             print(f"Error!! solution {solution} is a new solution which is dominated by some of the previous")
             print(f"Previous solutions: {self.pareto_front.solutions}")

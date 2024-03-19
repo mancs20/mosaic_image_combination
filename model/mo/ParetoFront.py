@@ -80,7 +80,7 @@ class ParetoFront:
         idx = len(self.solutions)
         self.solutions.append(x)
 
-        if not self.join_front(idx):
+        if x is None or not self.join_front(idx):
             return False
         return True
 
