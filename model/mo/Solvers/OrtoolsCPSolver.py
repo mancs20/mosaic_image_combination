@@ -121,10 +121,22 @@ class OrtoolsCPSolver(Solver):
     def set_threads(self, threads):
         self.solver.parameters = sat_parameters_pb2.SatParameters(num_search_workers=threads)
 
-    def opt_one_objective_or_satisfy(self, optimize_not_satisfy=True, verbose=False):
+    def opt_one_objective_or_satisfy(self, optimize_not_satisfy=True, verbose=False, hint=None):
         if verbose:
             self.activate_complex_verbose()
+        hints = []
+        if hint is not None:
+            self.model.solver_model._CpModel__model.solution_hint.Clear()
+            # hint is a list where each element is a 2 element list, where the first element is the variable and the
+            # second element is the value
+            for hint_element in hint:
+                if type(hint_element[0]) is list:
+                    for i in range(len(hint_element[0])):
+                        self.model.solver_model.AddHint(hint_element[0][i], hint_element[1][i])
+                else:
+                    self.model.solver_model.AddHint(hint_element[0], hint_element[1])
         self.status = self.solver.Solve(self.model.solver_model)
+
         if self.status == cp_model.INFEASIBLE:
             print("infeasible")
         elif self.status == cp_model.UNKNOWN:
@@ -242,7 +254,20 @@ class OrtoolsCPSolver(Solver):
         pareto_constraints = self.model.solver_model.AddAtLeastOne(bool_vars)
         return pareto_constraints
 
-    def chained_constraints_leq_with_or(self, constraints_lhs, rhs, id_constraint=0):
+    def add_at_least_one_bool_different(self, bool_vars, bool_var_diff_values):
+        # Creating a list to hold the negation of the pattern conditions
+        pattern_conditions = []
+        for var, pattern_value in zip(bool_vars, bool_var_diff_values):
+            if pattern_value == 1:
+                # If the pattern value is 1, we want to add the condition that the variable is not True
+                pattern_conditions.append(var.Not())
+            else:
+                # If the pattern value is 0, we add the condition that the variable is not False (i.e., it is True)
+                pattern_conditions.append(var)
+        # Ensure that not all variables match the pattern to exclude
+        return self.model.solver_model.AddBoolOr(pattern_conditions)
+
+    def objs_smaller_equal_at_least_one_smaller(self, constraints_lhs, rhs, id_constraint=0):
         or_constraints = [constraints_lhs[i] <= rhs[i] for i in range(len(rhs))]
         bool_vars = [self.model.solver_model.NewBoolVar(f"bool_var_for_or_chain_constraints_{id_constraint}_{i}") for
                      i in range(len(rhs))]
@@ -260,8 +285,6 @@ class OrtoolsCPSolver(Solver):
 
     def activate_complex_verbose(self):
         self.solver.parameters.log_search_progress = True
-        # todo cehck this
-        self.solver.parameters.debug_crash_on_bad_hint = True
 
     def show_simple_solution_info(self):
         print("=====Start of simple Solution Stats:======")

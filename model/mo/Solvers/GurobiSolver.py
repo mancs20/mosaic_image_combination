@@ -14,15 +14,21 @@ import constants
 from model.mo.Solvers.Solver import Solver
 import gurobipy as gp
 
+# todo this callback apparently is working
+# def add_unsatisfaction_constraint_callback(model, where):
+#     if where == gp.GRB.Callback.MIPSOL:
+#         selected_images = model.cbGetSolution(model._vars)
+#         model._vals = selected_images
+
 
 class GurobiSolver(Solver):
 
     def __init__(self, model, statistics, threads, free_search=True):
         super().__init__(model, statistics, threads, free_search)
-        self.temp_unsatisfaction_constraints = []
         self.latest_solution = None
         self.latest_values_decision_variables = None
         self.use_lazy_constraints = False
+        self.auxiliary_variables_objs_smaller_equal_at_least_one_smaller = None
 
     def assert_right_solver(self, model):
         if model.solver_name != constants.Solver.GUROBI.value:
@@ -117,7 +123,14 @@ class GurobiSolver(Solver):
             self.model.solver_model.Params.lazyConstraints = 1
             self.latest_solution = None
             self.latest_values_decision_variables = None
-            self.model.solver_model.optimize(self.add_unsatisfaction_constraint_callback)
+            # self.model.solver_model.optimize(self.add_unsatisfaction_constraint_callback)
+            self.model.solver_model._objectivesval = self.model.objectives_val
+            # todo the commented line below was working with the method outside the class
+            self.model.solver_model._vars = self.model.select_image
+            # self.model.solver_model._vals = None
+            # self.model.solver_model.optimize(add_unsatisfaction_constraint_callback)
+            self.model.solver_model.optimize(
+                lambda model, where: self.add_unsatisfaction_constraint_callback(model, where))
         else:
             self.model.solver_model.optimize()
 
@@ -154,22 +167,20 @@ class GurobiSolver(Solver):
                     self.model.solver_model.addConstr(self.model.objectives[i] >=
                                                       rhs[i] - (big_m[i] * (1 - y[i])))
 
-    def chained_constraints_leq_with_or(self, constraints_lhs, rhs, id_constraint=0):
-        y = self.model.solver_model.addVars(len(constraints_lhs), vtype=gp.GRB.BINARY,
-                                            name=f"temp_y_{id_constraint}")
-        new_constraints = [self.model.solver_model.addConstr(gp.quicksum(y) == 1)]
-        big_m = self.get_big_m_for_or_all_objectives(rhs)
-        for i in range(len(constraints_lhs)):
-            if self.can_big_m_introduce_problems(big_m[i]):
-                new_constraints.append(self.model.solver_model.addConstr((y[i] == 1) >> (constraints_lhs[i] <= rhs[i]),
-                                                                         name=f"indicator_const{id_constraint}_{i}"))
-                new_constraints.append(self.model.solver_model.addConstr((y[i] == 0) >> (constraints_lhs[i] <= rhs[i] +
-                                                                                         big_m[i]),
-                                                                         name=f"indicator_const{id_constraint}_{i}"))
-            else:
-                new_constraints.append(self.model.solver_model.addConstr(constraints_lhs[i] <=
-                                                                         rhs[i] + (big_m[i] * (1 - y[i]))))
+    def objs_smaller_equal_at_least_one_smaller(self, obj_constraints_lhs, rhs, id_constraint=0):
+        new_constraints = []
+        for i in range(len(obj_constraints_lhs)):
+            new_constraints.append(self.model.solver_model.addConstr(
+                obj_constraints_lhs[i] <= rhs[i] - self.auxiliary_variables_objs_smaller_equal_at_least_one_smaller[i]))
         return new_constraints
+
+    # todo create this method for all solvers in constraint solvers it will be empty
+    def create_variable_for_constraint_objs_smaller_equal_at_least_one_smaller(self):
+        if self.auxiliary_variables_objs_smaller_equal_at_least_one_smaller is None:
+            self.auxiliary_variables_objs_smaller_equal_at_least_one_smaller = self.model.solver_model.addVars(
+                len(self.model.objectives), vtype=gp.GRB.BINARY)
+            auxiliary_constraint = self.model.solver_model.addConstr(gp.quicksum(
+                self.auxiliary_variables_objs_smaller_equal_at_least_one_smaller) >= 1)
 
     def get_big_m_for_or_all_objectives(self, rhs):
         big_m = []
@@ -186,17 +197,23 @@ class GurobiSolver(Solver):
     def add_unsatisfaction_constraint_callback(self, model, where):
         if where == gp.GRB.Callback.MIPSOL:
             # Get the solution
-            # solution = model.cbGetSolution(self.model.objectives)
-            selected_images = model.cbGetSolution(self.model.select_image)
-            obj = [self.model.calculate_cost(selected_images), self.model.calculate_cloud_covered(selected_images)]
-            self.latest_solution = obj
-            self.latest_values_decision_variables = selected_images
+            deciaion_variables_value = model.cbGetSolution(model._vars)
+            # selected_images = []
+            # for i in range(len(selected_images_model)):
+            #     if selected_images_model[i] > 0.5:
+            #         selected_images.append(i)
+            # model._vals = selected_images
+            # obj = [self.model.calculate_cost(selected_images), self.model.calculate_cloud_covered(selected_images)]
+            obj_model = model.cbGetSolution(model._objectivesval)
+            # if obj_model != obj:
+            #     stop_debug = True
+            #     print("IMPORTANT THIS SHOULD NOT HAPPEN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            self.latest_solution = obj_model
+            self.latest_values_decision_variables = deciaion_variables_value
             # Get the unsatisfaction
-            temp_constraints = []
             for i in range(len(self.model.objectives)):
-                a = model.cbLazy(self.model.objectives[i] <= obj[i] - 1)
-                temp_constraints.append(a)
-            self.temp_unsatisfaction_constraints.extend(temp_constraints)
+                self.model.solver_model.cbLazy(self.model.objectives[i] <= obj_model[i] -
+                                               self.auxiliary_variables_objs_smaller_equal_at_least_one_smaller[i])
 
     def lazy_constraints_possible(self):
         return True

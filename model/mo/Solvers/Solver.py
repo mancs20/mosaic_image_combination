@@ -143,7 +143,7 @@ class Solver(ABC):
         pass
 
     @abstractmethod
-    def chained_constraints_leq_with_or(self, constraints_lhs, rhs, id_constraint=0):
+    def objs_smaller_equal_at_least_one_smaller(self, constraints_lhs, rhs, id_constraint=0):
         pass
 
     @abstractmethod

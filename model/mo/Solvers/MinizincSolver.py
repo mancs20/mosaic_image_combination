@@ -122,7 +122,7 @@ class MinizincSolver(Solver):
         all_objective_or_cons = " \\/ ".join(cons)
         self.add_local_constraint(all_objective_or_cons)
 
-    def chained_constraints_leq_with_or(self, constraints_lhs, rhs, id_constraint=0):
+    def objs_smaller_equal_at_least_one_smaller(self, constraints_lhs, rhs, id_constraint=0):
         raise NotImplementedError()
 
     def get_nodes_solution(self, solution):
