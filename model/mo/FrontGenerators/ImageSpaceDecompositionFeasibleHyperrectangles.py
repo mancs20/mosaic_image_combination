@@ -10,6 +10,7 @@ class ImageSpaceDecompositionFeasibleHyperrectangles(FrontGeneratorStrategy):
         super().__init__(solver, timer)
         self.id_constraint_or = 0
         self.possible_feasible_hyperrectangles = self.initialize_possible_feasible_hyperrectangles()
+        self.add_auxiliary_variables()
         # todo implement the min transormation to be used in maximization models
 
     def initialize_possible_feasible_hyperrectangles(self):
@@ -17,9 +18,26 @@ class ImageSpaceDecompositionFeasibleHyperrectangles(FrontGeneratorStrategy):
         if not self.solver.model.is_a_minimization_model():
             raise NotImplementedError("This method is only implemented for minimization models so far.")
         # add the initial feasible hyperrectangle solution space, delimited by the worst and best estimation values
-        best_estimation_value = tuple(self.get_ideal_objectives())
-        worst_estimation_value = tuple(self.get_nadir_objectives())
+        if len(self.solver.model.objectives) == 2:
+            initial_hyperrectangle_mode = InitializeFeasibleHyperrenctangleMode.FIND_EXTREME_PARETO_POINTS_FOR_BI_OBJECTIVE
+        else:
+            initial_hyperrectangle_mode = InitializeFeasibleHyperrenctangleMode.MINIMIZE_ALL_OBJECTIVES
+        best_estimation_value, worst_estimation_value = (
+            self.calculate_intial_hyperrectangle_extreme_points(initial_hyperrectangle_mode))
         return [Hyperrectangle(best_estimation_value, worst_estimation_value)]
+
+    def calculate_intial_hyperrectangle_extreme_points(self, mode):
+        if mode == InitializeFeasibleHyperrenctangleMode.FIND_EXTREME_PARETO_POINTS_FOR_BI_OBJECTIVE:
+            self.get_best_worst_for_2obj_lexicographically()
+            return self.best_objective_values, self.nadir_objectives_values
+        elif mode == InitializeFeasibleHyperrenctangleMode.MINIMIZE_ALL_OBJECTIVES:
+            raise NotImplementedError("Error. This calculate_intial_hyperrectangle_extreme_points is only implemented "
+                                      "for bi-objective problems so far.")
+        else:
+            raise ValueError("Error. This mode is not implemented.")
+
+    def add_auxiliary_variables(self):
+        self.solver.create_variable_for_constraint_objs_smaller_equal_at_least_one_smaller()
 
     def solve(self):
         # get the first efficient solution
@@ -32,9 +50,9 @@ class ImageSpaceDecompositionFeasibleHyperrectangles(FrontGeneratorStrategy):
             # get the solution by unsatisfaction
             solution, time_to_find_solution = self.get_solution_inside_hyperrectangle(feasible_hyperrectangle)
             # if there is no solution, continue to the next hyperrectangle
+            self.solver.update_statistics(time_to_find_solution)
+            yield solution
             if solution is not None:
-                self.solver.update_statistics(time_to_find_solution)
-                yield solution
                 # define new hyperrectangle solution spaces, which is equal to 2^p - 2, where p is the number of
                 # objectives. The 2 discarded hyperrectangles are the ones that are completely dominated by the solution
                 # and the one that completely dominates the solution. In the first one any solutions that is found is
@@ -115,9 +133,8 @@ class ImageSpaceDecompositionFeasibleHyperrectangles(FrontGeneratorStrategy):
     def add_constraints_efficient_corners_or_constraints(self, feasible_hyperrectangle_solution_space):
         constraints_efficient_corners = []
         for efficient_corner in feasible_hyperrectangle_solution_space.efficient_corners:
-            rhs = [efficient_corner[i] - 1 for i in range(len(efficient_corner))]
-            temp_constraints = self.add_chained_constraints_leq_with_or(
-                self.solver.model.objectives, rhs)
+            temp_constraints = self.solver.objs_smaller_equal_at_least_one_smaller(self.solver.model.objectives,
+                                                                                   efficient_corner)
             constraints_efficient_corners.extend(temp_constraints)
         return constraints_efficient_corners
 
@@ -141,13 +158,9 @@ class ImageSpaceDecompositionFeasibleHyperrectangles(FrontGeneratorStrategy):
 
     def constraint_solution_space_at_least_one_objective_smaller_the_rest_equal_ub(self, upper_bound_corner):
         constraints_upper_bound_corner = []
-        for i in range(len(self.solver.model.objectives)):
-            constraints_upper_bound_corner.append(self.solver.add_constraints_leq(
-                self.solver.model.objectives[i], upper_bound_corner[i]))
         # constraint at least one objective smaller
-        rhs = [upper_bound_corner[i] - 1 for i in range(len(upper_bound_corner))]
-        constraints_upper_bound_corner.extend(self.add_chained_constraints_leq_with_or(
-            self.solver.model.objectives, rhs))
+        constraints_upper_bound_corner.extend(self.solver.objs_smaller_equal_at_least_one_smaller(
+            self.solver.model.objectives, upper_bound_corner))
         return constraints_upper_bound_corner
 
     def constraint_solution_space_obj_i_smaller_the_rest_equal_ub(self, upper_bound_corner,
@@ -157,13 +170,16 @@ class ImageSpaceDecompositionFeasibleHyperrectangles(FrontGeneratorStrategy):
             if upper_bound_corner[i] < previous_upper_bound_corner[i]:
                 constraints_upper_bound_corner.append(self.solver.add_constraints_leq(
                     self.solver.model.objectives[i], upper_bound_corner[i] - 1))
+                # optimize the objective i
+                self.solver.set_single_objective(self.solver.model.objectives[i])
+                self.solver.set_minimization()
             else:
                 constraints_upper_bound_corner.append(self.solver.add_constraints_eq(
                     self.solver.model.objectives[i], upper_bound_corner[i]))
         return constraints_upper_bound_corner
 
     def add_chained_constraints_leq_with_or(self, constraints_lhs, rhs):
-        constraints = self.solver.chained_constraints_leq_with_or(constraints_lhs, rhs)
+        constraints = self.solver.objs_smaller_equal_at_least_one_smaller(constraints_lhs, rhs)
         self.id_constraint_or += 1
         return constraints
 
@@ -185,3 +201,8 @@ class UpperBoundConstraintCase(Enum):
     AT_LEAST_ONE_OBJECTIVE_SMALLER_THE_REST_EQUAL = 2
     OBJECTIVE_I_SMALLER_THE_REST_EQUAL = 3
     # ALL_OBJECTIVES_EQUAL =
+
+class InitializeFeasibleHyperrenctangleMode:
+    MINIMIZE_ALL_OBJECTIVES = 1
+    FIND_EXTREME_PARETO_POINTS_FOR_BI_OBJECTIVE = 2
+    ESTIMATE_VALUES = 3
