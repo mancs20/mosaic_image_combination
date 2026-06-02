@@ -1,12 +1,12 @@
 #!/bin/bash -l
-#SBATCH --time=01:30:00
+#SBATCH --time=03:15:00
 #SBATCH --partition=batch
 #SBATCH --nodes=1
 #SBATCH --exclusive
 #SBATCH --mem=0
 #SBATCH --ntasks-per-node=8
-#SBATCH --cpus-per-task=16
-#SBATCH --qos=normal
+#SBATCH --ntasks-per-socket=1
+#SBATCH -c 16
 
 module purge
 module load compiler/GCC/10.2.0
@@ -38,10 +38,11 @@ SRUN="srun  --exclusive -n1 -c ${SLURM_CPUS_PER_TASK:=1} --cpu-bind=cores"
 #======================
 PYTHON="python"
 PYTHON_SCRIPT="main.py"
-CORES=$((SLURM_CPUS_PER_TASK / 2))
-SOLVER_TIMEOUT=3600
-SUMMARY_FILE="../summary_sims_2_objectives_cost_and_clouds.csv"
-FIXED_PARAMETERS="--minizinc_data 1 --model_mzn ../mosaic_cloud2.mzn --dzn_dir ../data_sets/ --solver_timeout_sec $SOLVER_TIMEOUT --summary $SUMMARY_FILE --cores $CORES --solver_search_strategy free --fzn_optimisation_level 1"
+#CORES=$((SLURM_CPUS_PER_TASK / 2))
+CORES=${SLURM_CPUS_PER_TASK:-16}               # Number of CPUs per task. Even if not all cores are used, we book the whole node to avoid possible interference.
+SOLVER_TIMEOUT=10800
+SUMMARY_FILE="../summary_sims_2_objectives_cost_and_clouds_single_thread.csv"
+FIXED_PARAMETERS="--minizinc_data 1 --model_mzn ../mosaic_cloud2.mzn --dzn_dir ../data_sets/ --solver_timeout_sec $SOLVER_TIMEOUT --summary $SUMMARY_FILE --cores 1 --solver_search_strategy free --fzn_optimisation_level 1"
 
 HOSTNAME=$(hostname)
 LOGS="logs.${TIMESTAMP}"

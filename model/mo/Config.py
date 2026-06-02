@@ -69,7 +69,7 @@ class Config:
         if not check_solver or "-p" in solver.stdFlags:
             if self.cores is None:
                 self.cores = multiprocessing.cpu_count()
-            self.threads = self.cores * 2
+            self.threads = self.cores # I use the same number of threads as cores to run experiments using only one thread like in Choco, it was for comparison purposes, but it can be changed to use more threads than cores if needed.
         else:
             self.cores = 1
             self.threads = 1
