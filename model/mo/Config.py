@@ -1,4 +1,5 @@
 import os
+import glob
 import argparse
 import multiprocessing
 
@@ -10,7 +11,7 @@ class Config:
             prog = 'multi_objective_cp',
             description = 'Multi-objective constraint programming. This program computes a Pareto front of an optimization constraint problem.')
         parser.add_argument('--instance_name', required=True)
-        parser.add_argument('--minizinc_data', required=True)
+        parser.add_argument('--minizinc_data', required=False)
         parser.add_argument('--model_mzn', required=False)
         parser.add_argument('--dzn_dir', required=False)
         parser.add_argument('--problem_name', required=True)
@@ -21,14 +22,26 @@ class Config:
         parser.add_argument('--cores', type=int)
         parser.add_argument('--solver_search_strategy', required=True)             # Must be "free" or the name of a CP strategy (only for information purposes, the strategy must be described in the model).
         parser.add_argument('--fzn_optimisation_level', required=True, type=int)
+        parser.add_argument('--compute_hypervolume_per_solution', type=int, default=1, required=False)
+        parser.add_argument('--benchmark_name', type=str, default="default", required=False)
+        parser.add_argument('--instance_path', required=False)
         args = parser.parse_args()
-        args.dzn_dir = self.clean_dir_name(args.dzn_dir)
-        self.minizinc_data = bool(int(args.minizinc_data))
+        # Bench mode: when --instance_path is given (same 4 fields as the bench CSVs: benchmark_name, problem,
+        # instance, instance_path), the model, the data and the kind of data are derived from that path.
+        # Without --instance_path nothing changes: --minizinc_data, --model_mzn and --dzn_dir are required.
+        self.bench_mode = args.instance_path is not None
         self.data_name = args.instance_name
-        self.data_sets_folder = args.dzn_dir
-        self.input_mzn = args.model_mzn
-        self.minizinc_model = os.path.basename(self.input_mzn)[:-4]
-        self.input_dzn = args.dzn_dir + "/" + args.problem_name + "/" + self.data_name + ".dzn"
+        if self.bench_mode:
+            self.init_data_files_from_bench_instance_path(args.instance_path)
+        else:
+            if args.minizinc_data is None or args.model_mzn is None or args.dzn_dir is None:
+                parser.error("--minizinc_data, --model_mzn and --dzn_dir are required unless --instance_path is given")
+            args.dzn_dir = self.clean_dir_name(args.dzn_dir)
+            self.minizinc_data = bool(int(args.minizinc_data))
+            self.data_sets_folder = args.dzn_dir
+            self.input_mzn = args.model_mzn
+            self.minizinc_model = os.path.basename(self.input_mzn)[:-4]
+            self.input_dzn = args.dzn_dir + "/" + args.problem_name + "/" + self.data_name + ".dzn"
         self.solver_name = args.solver_name
         self.problem_name = args.problem_name
         self.front_strategy = args.front_strategy
@@ -38,6 +51,31 @@ class Config:
         self.fzn_optimisation_level = args.fzn_optimisation_level
         self.cores = args.cores
         self.threads = None
+        self.compute_hypervolume_per_solution = bool(int(args.compute_hypervolume_per_solution))
+        self.benchmark_name = args.benchmark_name
+        self.instance_path = args.instance_path
+
+    def init_data_files_from_bench_instance_path(self, instance_path):
+        """Derive model and data from the instance path: a .dzn/.fzn path means MiniZinc data
+        (the .dzn has the same name and the only .mzn of the folder is the model); any other extension (e.g. the
+        .dat of the MOOLibrary knapsacks) is read directly from that file."""
+        path = os.path.realpath(instance_path)
+        folder, filename = os.path.split(path)
+        base, extension = os.path.splitext(filename)
+        self.data_sets_folder = folder
+        if extension in (".dzn", ".fzn"):
+            self.minizinc_data = True
+            self.input_dzn = os.path.join(folder, base + ".dzn")
+            models = sorted(glob.glob(os.path.join(folder, "*.mzn")))
+            if len(models) != 1:
+                raise SystemExit(f"Expected exactly one .mzn model in {folder}, found {len(models)}: {models}")
+            self.input_mzn = models[0]
+            self.minizinc_model = os.path.basename(self.input_mzn)[:-4]
+        else:
+            self.minizinc_data = False
+            self.input_dzn = path
+            self.input_mzn = None
+            self.minizinc_model = ""
 
     @staticmethod
     def clean_dir_name(directory):

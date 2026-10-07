@@ -1,5 +1,7 @@
 import sys
 import os
+import json
+import ast
 
 # Get the root directory
 from pathlib import Path
@@ -61,7 +63,8 @@ def init_solution_details_statistics(statistics):
 
 def main():
     config = Config()
-    check_already_computed(config)
+    if not config.bench_mode:  # in bench mode the campaign (parallel --resume) decides what is already computed
+        check_already_computed(config)
     instance = build_instance(config)
     print("Start computing: " + config.uid())
     statistics = {}
@@ -99,6 +102,7 @@ def main():
         statistics["pareto_solutions_time_list"] = pareto_solutions_time_list
         print("end of solving statistics: " + str(statistics))
         write_statistics(config, statistics)
+        print_bench_json_protocol(config, statistics, pareto_front)
 
 
 def set_right_time_after_timeout(statistics, config_timeout_sec):
@@ -107,6 +111,8 @@ def set_right_time_after_timeout(statistics, config_timeout_sec):
 
 def build_instance(config):
     instance = None
+    if config.bench_mode:
+        return build_instance_bench(config)
     if use_minizinc_data(config):
         instance = build_instance_minizinc_data(config)
     else:
@@ -114,6 +120,38 @@ def build_instance(config):
         instance = build_instance_text_data(config)
 
     return instance
+
+
+def build_instance_bench(config):
+    """Bench mode: everything is derived from the instance path (see Config.init_data_files_from_bench_instance_path)."""
+    config.initialize_cores(solver=None, check_solver=False)
+    if config.minizinc_data:
+        # Only the data is needed: Gurobi is called directly, not through MiniZinc.
+        model = Model(config.input_mzn)
+        model.add_file(config.input_dzn, parse_data=True)
+        if config.problem_name.startswith("sims"):
+            return InstanceSIMS(model)
+    elif config.problem_name == "ukp":
+        objective_matrix, constraints_matrix, rhs_constraints_vector = read_moolibrary_ukp_dat(config.input_dzn)
+        return InstanceMIPMatrix(constants.Problem.MULTI_OBJECTIVE_KNAPSACK_PROBLEM.value, objective_matrix,
+                                 constraints_matrix, rhs_constraints_vector)
+    print(f"Error: problem {config.problem_name} with instance {config.instance_path} is not supported in bench mode")
+    sys.exit(1)
+
+
+def read_moolibrary_ukp_dat(file_path):
+    """MOOLibrary UKP .dat: number of objectives p, number of items n, capacity, p rows of profits (one list
+    literal), and the row of weights."""
+    with open(file_path, 'r') as file:
+        lines = [line.strip() for line in file if line.strip()]
+    if lines[0].startswith("#"):
+        raise NotImplementedError("vOptLib .dat files are not supported yet, only MOOLibrary UKP")
+    number_objectives, number_items, capacity = int(lines[0]), int(lines[1]), int(lines[2])
+    profits = ast.literal_eval(" ".join(lines[3:3 + number_objectives]))
+    weights = ast.literal_eval(lines[3 + number_objectives])
+    assert len(profits) == number_objectives and all(len(row) == number_items for row in profits)
+    assert len(weights) == number_items
+    return profits, [weights], [capacity]
 
 
 def use_minizinc_data(config) -> bool:
@@ -124,7 +162,7 @@ def build_instance_minizinc_data(config):
     # here we build the instance, it could from minizinc or from other format
     model = Model(config.input_mzn)
     model.add_file(config.input_dzn, parse_data=True)
-    if config.solver_name == "ortools-py":
+    if config.solver_name == "gurobi":
         mzn_solver = Solver.lookup("gurobi")
     else:
         mzn_solver = Solver.lookup(config.solver_name)
@@ -132,7 +170,9 @@ def build_instance_minizinc_data(config):
     instance = Instance(mzn_solver, model)
     problem_name = config.problem_name
     if config.solver_name == "gurobi" or config.solver_name == "ortools-py":
-        if problem_name == constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value:
+        if problem_name in (constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value,
+                            "sims_cost_clouds",
+                            "sims_cost_clouds_angle"):
             instance = InstanceSIMS(instance)
     else:
         instance = InstanceMinizinc(mzn_solver, model, problem_name)
@@ -218,7 +258,7 @@ def check_already_computed(config):
 def build_solver(model, instance, config, statistics):
     osolve = build_osolver(model, instance, config, statistics)
     front_generator_strategy = set_front_strategy(config, osolve)
-    osolve_mo = build_MO(instance, statistics, front_generator_strategy, osolve)
+    osolve_mo = build_MO(instance, statistics, front_generator_strategy, osolve, config)
     return osolve_mo, osolve_mo.pareto_front
 
 
@@ -258,7 +298,11 @@ def build_osolver(model, instance, config, statistics):
         return solver
     else:
         if config.solver_name == "gurobi":
-            return GurobiSolver(model, statistics, config.threads, free_search)
+            solver = GurobiSolver(model, statistics, config.threads, free_search)
+            if config.bench_mode:
+                # the Gurobi log of every single solve would end up in the bench JSON (MBs for a small instance)
+                model.solver_model.Params.OutputFlag = 0
+            return solver
         elif config.solver_name == "ortools-py":
             return OrtoolsCPSolver(model, statistics, config.threads, free_search)
         else:
@@ -278,8 +322,10 @@ def set_front_strategy(config, solver):
         return Saugmecon(solver, Timer(config.solver_timeout_sec))
 
 
-def build_MO(instance, statistics, front_generator, osolve):
-    return MOWithFrontGenerator(instance, statistics, front_generator)
+def build_MO(instance, statistics, front_generator, osolve, config):
+    # in bench mode the front is not printed after every solution (it would end up in the bench JSON)
+    return MOWithFrontGenerator(instance, statistics, front_generator, verbose=not config.bench_mode,
+                                 compute_hypervolume_per_solution=config.compute_hypervolume_per_solution)
     # MOCP is used to compute the pareto front with Gavanelli and Minizinc, is not used for the other solvers. It is
     # a bit faster than the current implementation of MOWithFrontGenerator when the solver is accessed through Minizinc
     if instance.is_minizinc:
@@ -327,6 +373,60 @@ def write_statistics(config, statistics):
     except Timeout:
         print("Could not acquire lock on summary file. Statistics will be printed on standard output instead.")
         print(statistics_to_csv(config, statistics))
+
+
+def get_solver_version(config):
+    """Version of the solver library that is actually running, e.g. "12.0.1" for Gurobi."""
+    if config.solver_name == "gurobi":
+        import gurobipy as gp
+        return ".".join(str(part) for part in gp.gurobi.version())
+    return "unknown"
+
+
+def print_bench_json_protocol(config, statistics, pareto_front):
+    """Print this run's result as the JSON-lines protocol that bench's dump.py/postprocess.py expect from the
+    Choco jar, so a Gurobi run can be post-processed into the same campaign CSV as the Choco runs.
+    Only what postprocess.py actually reads is included: pareto_front, reference_point, exhaustive and the
+    overall solving time. Fields that are Choco-specific (fails, backtracks, nodes, restarts, ...) are simply
+    left out, and postprocess.py already leaves those columns blank for a non-Choco solver."""
+    reference_point = None
+    pareto_front_points = []
+    if pareto_front.solutions:
+        reference_point = list(pareto_front.solutions[0]["ref_point"])
+        pareto_front_points = [list(pareto_front.solutions[f]["objs"]) for f in pareto_front.front]
+    # every feasible solution found, in the order found (the infeasible steps of the front generator are None)
+    all_solutions = [list(solution["objs"]) for solution in pareto_front.solutions if solution is not None]
+
+    # Plain text line: postprocess.py scans stdout for this to fill the "search_strategy" column.
+    print(f"solverSearchStrategy: {config.solver_search_strategy}")
+
+    print(json.dumps({
+        "type": "statistics",
+        "statistics": {
+            "time(s)": statistics["time_solver_sec"],
+            "sum_solutions_resolution_time(s)": statistics["time_solver_sec"],
+            "sum_number_solutions": statistics["number_of_solutions"],
+            # Gurobi branch-and-bound nodes summed over all the solver calls (Choco's "Nodes" column, not equivalent
+            # one to one). Gurobi has no fails/backtracks/restarts, those columns stay empty.
+            "sum_solutions_nodes": int(statistics["total_nodes"]),
+            # real version of the solver, it replaces the VERSION that dump.py writes from the launcher script
+            "solver_version": get_solver_version(config),
+        }
+    }))
+    print(json.dumps({
+        "type": "solutions-details",
+        "solutions-details": {
+            "pareto_front": pareto_front_points,
+            "all_solutions": all_solutions,
+            "reference_point": reference_point,
+            "exhaustive": statistics["exhaustive"],
+            # postprocess.py indexes solver_messages[-1] whenever exhaustive is truthy, so this must be a
+            # non-empty list; the text itself is only meaningful for Choco's own parsing, which is skipped
+            # for any solver whose name doesn't contain "choco".
+            "solver_messages": ["Search completed exhaustively." if statistics["exhaustive"]
+                                 else "Incomplete search due to timeout."],
+        }
+    }))
 
 
 if __name__ == "__main__":

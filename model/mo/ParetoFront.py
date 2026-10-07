@@ -79,6 +79,10 @@ class ParetoFront:
     """
         idx = len(self.solutions)
         self.solutions.append(x)
+        if x is None:
+            # infeasible intermediate problem of the front generator: keep its position in `solutions` (the
+            # statistics are indexed by it) but it can never be part of the front
+            return False
 
         if not self.join_front(idx):
             return False

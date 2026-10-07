@@ -10,12 +10,13 @@ class MOWithFrontGenerator:
         front_generator: A front generator strategy with a solver supporting `solve()`.
         verbose (Bool): If `True`, the solver prints the Pareto front, new objectives and statistics at each iteration."""
 
-    def __init__(self, instance, statistics, front_generator, verbose=True):
+    def __init__(self, instance, statistics, front_generator, verbose=True, compute_hypervolume_per_solution=True):
         self.instance = instance
         self.front_generator_strategy = front_generator
         self.pareto_front = ParetoFront()
         self.verbose = verbose
         self.statistics = statistics
+        self.compute_hypervolume_per_solution = compute_hypervolume_per_solution
         self.init_statistics()
 
     def init_statistics(self):
@@ -52,8 +53,8 @@ class MOWithFrontGenerator:
         if added_to_front:
             self.statistics["pareto_front"] = self.pareto_front.to_str()
             self.statistics["solutions_pareto_front"] = self.pareto_front.solutions_to_str()
-            # create list from string
-            self.statistics["hypervolume_current_solutions"].append(self.pareto_front.hypervolume())
+            if self.compute_hypervolume_per_solution:
+                self.statistics["hypervolume_current_solutions"].append(self.pareto_front.hypervolume())
         if error:
             raise Exception(error_msg)
         return added_to_front
