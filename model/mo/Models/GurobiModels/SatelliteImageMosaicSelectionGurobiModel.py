@@ -1,7 +1,6 @@
 from gurobipy import max_
 
 import gurobipy as gp
-from nbformat import convert
 
 from model.mo.Models.GurobiModels.GurobiModel import GurobiModel
 from model.mo.Models.SatelliteImageMosaicSelectionGeneralModel import SatelliteImageMosaicSelectionGeneralModel

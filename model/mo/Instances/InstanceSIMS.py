@@ -21,10 +21,24 @@ class InstanceSIMS(InstanceGeneric):
     self.images, self.clouds = self.correct_starting_indexes(minizinc_instance["images"], minizinc_instance["clouds"])
     self.costs = minizinc_instance["costs"]
     self.areas = minizinc_instance["areas"]
-    self.max_cloud_area = minizinc_instance["max_cloud_area"]
-    self.resolution = minizinc_instance["resolution"]
-    self.incidence_angle = minizinc_instance["incidence_angle"]
+    # The data has a different set of fields per variant (cost+clouds, cost+clouds+angle, ...):
+    # a field that is not in the data is None, and its objective is not part of the problem.
+    self.max_cloud_area = self.get_optional_field(minizinc_instance, "max_cloud_area")
+    self.resolution = self.get_optional_field(minizinc_instance, "resolution")
+    self.incidence_angle = self.get_optional_field(minizinc_instance, "incidence_angle")
+    self.active_objectives = ["cost", "clouds"]
+    if self.resolution is not None:
+      self.active_objectives.append("resolution")
+    if self.incidence_angle is not None:
+      self.active_objectives.append("incidence_angle")
     self.cloud_covered_by_image, self.clouds_id_area = self.get_clouds_covered_by_image()
+
+  @staticmethod
+  def get_optional_field(minizinc_instance, name):
+    try:
+      return minizinc_instance[name]
+    except KeyError:
+      return None
 
   def get_clouds_covered_by_image(self):
     cloud_covered_by_image = {}
