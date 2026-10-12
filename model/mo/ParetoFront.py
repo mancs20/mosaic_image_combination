@@ -19,6 +19,8 @@ class ParetoFront:
         self.minimize_objs = []
         self.solutions = []
         self.front = []
+        # objective vectors already received by `join`, for a fast rejection of repeated solutions
+        self.objs_seen = set()
 
     def num_found_solutions(self):
         return len(self.solutions)
@@ -83,10 +85,19 @@ class ParetoFront:
             # infeasible intermediate problem of the front generator: keep its position in `solutions` (the
             # statistics are indexed by it) but it can never be part of the front
             return False
-
+        key = tuple(int(obj) for obj in x['objs'])
+        if key in self.objs_seen:
+            # same objective values as a previous solution: it is equal to a solution of the front or dominated by
+            # the front, so it cannot enter, and there is no need to compare it with the whole front
+            return False
+        self.objs_seen.add(key)
         if not self.join_front(idx):
             return False
         return True
+
+    def is_repeated(self, x):
+        """`True` if a solution with the same objective values was already received by `join`."""
+        return x is not None and tuple(int(obj) for obj in x['objs']) in self.objs_seen
 
     def join_without_pareto_verification(self, x):
         """Add to the Pareto front the solution `x` without checking if it is dominated by any solution in the Pareto front.
@@ -114,6 +125,7 @@ class ParetoFront:
         idx_x = self.solutions.index(x)
         if idx_x not in self.front:
             return False
+        self.objs_seen.clear()  # the front is rebuilt by hand, forget the history so the shortcut in `join` stays exact
         # All solutions in the front added after `x` are not dominated by `x` (otherwise `x` is not in the Pareto front).
         self.front = [f for f in self.front if f > idx_x]
         for idx_y in range(0, idx_x):

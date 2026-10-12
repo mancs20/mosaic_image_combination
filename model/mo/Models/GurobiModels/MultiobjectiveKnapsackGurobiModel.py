@@ -49,6 +49,4 @@ class MultiobjectiveKnapsackGurobiModel(GurobiModel, MultiobjectiveKnapsackGener
         return selected_items
 
     def is_numerically_possible_augment_objective(self):
-        # todo maybe it is possible to do it, but it is necessary to review the method
-        #  OrtoolsCPSolver.build_objective_e_constraint_saugmecon when augmentation is True
-        return False
+        return True

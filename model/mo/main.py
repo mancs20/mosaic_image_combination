@@ -72,6 +72,7 @@ def main():
     init_top_level_statistics(statistics)
     model = build_model(instance, config)
     solver, pareto_front = build_solver(model, instance, config, statistics)
+    search_start = datetime.now()
     save_results = True
     try:
         statistics["exhaustive"] = False
@@ -94,6 +95,8 @@ def main():
         print("Error Execption raised: " + str(e))
         logging.error(traceback.format_exc())
         save_results = False
+    # wall-clock time of the whole search (solver and the Python work around it)
+    statistics["time_total_sec"] = (datetime.now() - search_start).total_seconds()
     if save_results:
         statistics["all_solutions"] = statistics["all_solutions"][:-1]
         statistics["all_solutions"] += "}"
@@ -309,17 +312,25 @@ def build_osolver(model, instance, config, statistics):
             return GurobiSolver(model, statistics, config.threads, free_search)
 
 
+def build_timer(config):
+    if config.bench_mode:
+        # the whole search counts against the timeout, not only the time inside the solver (with fast solvers the
+        # Python work between solver calls adds up over thousands of calls)
+        return WallClockTimer(config.solver_timeout_sec)
+    return Timer(config.solver_timeout_sec)
+
+
 def set_front_strategy(config, solver):
     if config.front_strategy == "saugmecon":
-        return Saugmecon(solver, Timer(config.solver_timeout_sec))
+        return Saugmecon(solver, build_timer(config))
     elif config.front_strategy == "gavanelli":
-        return Gavanelli(solver, Timer(config.solver_timeout_sec))
+        return Gavanelli(solver, build_timer(config))
     elif config.front_strategy == "gavanelli-opt":
-        return Gavanelli(solver, Timer(config.solver_timeout_sec), optimize=True)
+        return Gavanelli(solver, build_timer(config), optimize=True)
     elif config.front_strategy == "augmecon-coverage":
-        return CoverageGridPoint(solver, Timer(config.solver_timeout_sec))
+        return CoverageGridPoint(solver, build_timer(config))
     else:
-        return Saugmecon(solver, Timer(config.solver_timeout_sec))
+        return Saugmecon(solver, build_timer(config))
 
 
 def build_MO(instance, statistics, front_generator, osolve, config):
@@ -403,7 +414,7 @@ def print_bench_json_protocol(config, statistics, pareto_front):
     print(json.dumps({
         "type": "statistics",
         "statistics": {
-            "time(s)": statistics["time_solver_sec"],
+            "time(s)": statistics["time_total_sec"],
             "sum_solutions_resolution_time(s)": statistics["time_solver_sec"],
             "sum_number_solutions": statistics["number_of_solutions"],
             # Gurobi branch-and-bound nodes summed over all the solver calls (Choco's "Nodes" column, not equivalent

@@ -35,11 +35,11 @@ class MOWithFrontGenerator:
             yield x
 
     def add_solution_pareto_front(self, solution, added_to_front_verification=True):
+        is_repeated = self.pareto_front.is_repeated(solution)
         added_to_front = self.pareto_front.join(solution)
         error = False
-        error_msg = (f"Error!! solution {solution} is a new solution which is dominated by some of the previous. "
-                     f"Previous solutions: {self.pareto_front.solutions}")
-        if (solution is not None and added_to_front_verification and not added_to_front and
+        # a front generator (Saugmecon) can return the same solution again: it is not an error
+        if (solution is not None and added_to_front_verification and not added_to_front and not is_repeated and
                 self.front_generator_strategy.always_add_new_solutions_to_front()):
             error = True
             print(f"Error!! solution {solution} is a new solution which is dominated by some of the previous")
@@ -56,7 +56,10 @@ class MOWithFrontGenerator:
             if self.compute_hypervolume_per_solution:
                 self.statistics["hypervolume_current_solutions"].append(self.pareto_front.hypervolume())
         if error:
-            raise Exception(error_msg)
+            # the message is built only when needed: formatting all the previous solutions on every call costs
+            # O(n^2) over the whole search, and that time is not counted by the solver timer
+            raise Exception(f"Error!! solution {solution} is a new solution which is dominated by some of the "
+                            f"previous. Previous solutions: {self.pareto_front.solutions}")
         return added_to_front
 
     def print_statistics_of_recent_solution(self, solution):

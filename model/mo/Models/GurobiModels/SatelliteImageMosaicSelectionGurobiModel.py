@@ -23,7 +23,7 @@ class SatelliteImageMosaicSelectionGurobiModel(GurobiModel, SatelliteImageMosaic
         SatelliteImageMosaicSelectionGeneralModel.__init__(self, instance)
 
     def is_numerically_possible_augment_objective(self):
-        return False  # For Ortools-cp it is not possible
+        return True
 
     def get_nadir_bound_estimation(self):
         # Same values as SatelliteImageMosaicSelectionGeneralModel for cost and clouds, plus the objectives
