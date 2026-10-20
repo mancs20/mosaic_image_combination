@@ -36,11 +36,17 @@ class MOWithFrontGenerator:
 
     def add_solution_pareto_front(self, solution, added_to_front_verification=True):
         is_repeated = self.pareto_front.is_repeated(solution)
-        added_to_front = self.pareto_front.join(solution)
+        if (solution is not None and added_to_front_verification and
+                self.front_generator_strategy.add_new_solutions_without_dominance_check()):
+            # the front generator guarantees that its new solutions are Pareto optimal (Saugmecon): only repeated
+            # solutions are discarded, with a lookup in a dictionary, the rest of the front is not compared
+            added_to_front = self.pareto_front.join_without_pareto_verification(solution)
+        else:
+            added_to_front = self.pareto_front.join(solution)
         error = False
         # a front generator (Saugmecon) can return the same solution again: it is not an error
         if (solution is not None and added_to_front_verification and not added_to_front and not is_repeated and
-                self.front_generator_strategy.always_add_new_solutions_to_front()):
+                self.front_generator_strategy.add_new_solutions_to_front_and_remove_dominated()):
             error = True
             print(f"Error!! solution {solution} is a new solution which is dominated by some of the previous")
             print(f"Previous solutions: {self.pareto_front.solutions}")
@@ -48,7 +54,7 @@ class MOWithFrontGenerator:
         if solution is not None:
             self.statistics["all_solutions"] += str(solution["objs"])
         else:
-            self.statistics["all_solutions"] += "Unfeasible"
+            self.statistics["all_solutions"] += "Infeasible"
         self.statistics["all_solutions"] += ","
         if added_to_front:
             self.statistics["pareto_front"] = self.pareto_front.to_str()

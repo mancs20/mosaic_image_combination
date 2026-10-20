@@ -11,7 +11,9 @@ class FrontGeneratorStrategy(ABC):
         self.best_objective_values = None
         self.nadir_objectives_values = None
         self.front_solutions = []
-        self.not_evaluate_always_add_new_solutions_to_front = False
+        # True while the solutions yielded are not known to be Pareto optimal (in Saugmecon, the solutions of the single
+        # objectives), so the front has to check if they are dominated
+        self.new_solutions_require_dominance_check = False
         self.solution_incomplete_due_timeout = None
         if self.solver.model.is_a_minimization_model():
             self.model_optimization_sense = "min"
@@ -30,8 +32,15 @@ class FrontGeneratorStrategy(ABC):
         pass
 
     @abstractmethod
-    def always_add_new_solutions_to_front(self):
+    def add_new_solutions_to_front_and_remove_dominated(self):
+        # True if a new solution is never dominated by the previous ones: it is always added to the front, but it can
+        # dominate previous solutions, so the front removes them. If a new solution is dominated it is an error
         pass
+
+    def add_new_solutions_without_dominance_check(self):
+        # True if every new solution is Pareto optimal (it is not dominated and it does not dominate any previous
+        # solution), so the front can add it without comparing it with the rest of the front
+        return False
 
     def get_solver_solution_for_timeout(self, optimize_not_satisfy, verbose=False):
         print("Start the solver...")

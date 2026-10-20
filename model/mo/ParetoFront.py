@@ -19,8 +19,14 @@ class ParetoFront:
         self.minimize_objs = []
         self.solutions = []
         self.front = []
-        # objective vectors already received by `join`, for a fast rejection of repeated solutions
+        # objective vectors already received by `join` or `join_without_pareto_verification`, also the ones that were
+        # not added to the front because they were dominated: a dominated solution stays dominated, so if it arrives
+        # again it is rejected with a lookup, without comparing it with the front
         self.objs_seen = set()
+        # indices of the solutions added to the front by `join`, which compares them with the front (for Saugmecon, the
+        # solutions of the single objectives). `join_without_pareto_verification` compares its new solution only with
+        # these ones, because they are the only ones that can be dominated
+        self.solutions_added_with_comparison = []
 
     def num_found_solutions(self):
         return len(self.solutions)
@@ -72,7 +78,8 @@ class ParetoFront:
 
     def join(self, x):
         """Add to the Pareto front the solution `x` if it is not dominated by any solution in the Pareto front.
-       The Pareto front is also updated to remove all solutions dominated by `x`.
+       The Pareto front is also updated to remove all solutions dominated by `x`. `x` is compared with the whole front,
+       see `join_without_pareto_verification` for the version that does not.
         Args:
           x (Result): A solution to the constraint model described by `instance`.
         Returns:
@@ -91,17 +98,22 @@ class ParetoFront:
             # the front, so it cannot enter, and there is no need to compare it with the whole front
             return False
         self.objs_seen.add(key)
-        if not self.join_front(idx):
-            return False
-        return True
+        added_to_front = self.join_front(idx)  # compares x with the solutions in the front
+        if added_to_front:
+            self.solutions_added_with_comparison.append(idx)
+        return added_to_front
 
     def is_repeated(self, x):
-        """`True` if a solution with the same objective values was already received by `join`."""
+        """`True` if a solution with the same objective values was already received by `join` or
+       `join_without_pareto_verification`."""
         return x is not None and tuple(int(obj) for obj in x['objs']) in self.objs_seen
 
     def join_without_pareto_verification(self, x):
-        """Add to the Pareto front the solution `x` without checking if it is dominated by any solution in the Pareto front.
-       The Pareto front is also updated to remove all solutions dominated by `x`.
+        """Add to the Pareto front the solution `x` without comparing it with the whole Pareto front, so the cost does
+       not depend on the size of the front. It is discarded if a solution with the same objective values was already
+       received. The caller must be sure that `x` is not dominated by any solution in the Pareto front, and that it
+       does not dominate the solutions added by `join` (for example the solutions of the single objectives, which
+       can be dominated): only these are compared with `x`, and removed from the front if `x` dominates them.
         Args:
           x (Result): A solution to the constraint model described by `instance`.
         Returns:
@@ -110,6 +122,17 @@ class ParetoFront:
     """
         idx = len(self.solutions)
         self.solutions.append(x)
+        if x is None:
+            return False
+        key = tuple(int(obj) for obj in x['objs'])
+        if key in self.objs_seen:
+            return False
+        self.objs_seen.add(key)
+        for idx_previous in list(self.solutions_added_with_comparison):
+            if self.dominates(x, self.solutions[idx_previous]):
+                self.solutions_added_with_comparison.remove(idx_previous)
+                if idx_previous in self.front:
+                    self.front.remove(idx_previous)
         self.front.append(idx)
         return True
 

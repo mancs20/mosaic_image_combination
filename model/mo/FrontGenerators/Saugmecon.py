@@ -1,22 +1,29 @@
 import copy
 
 from model.mo.FrontGenerators.FrontGeneratorStrategy import FrontGeneratorStrategy
+from model.mo.FrontGenerators.SaugmeconAugmentation import compute_saugmecon_augmentation, DEFAULT_GUARD
 import numpy as np
 
 
 class Saugmecon(FrontGeneratorStrategy):
-    def __init__(self, solver, timer):
+    def __init__(self, solver, timer, guard=DEFAULT_GUARD):
         super().__init__(solver, timer)
+        self.guard = guard
         self.constraint_objectives = [0] * (len(self.solver.model.objectives) - 1)  # all objectives except objective[0]
+        # True when the objective is augmented: the solutions returned are Pareto optimal
+        self.augmentation_active = False
 
     def set_multiply_solution_by_minus_one(self):
         return False
 
-    def always_add_new_solutions_to_front(self):
-        if self.not_evaluate_always_add_new_solutions_to_front:
-            return False
-        else:
-            return self.solver.model.is_numerically_possible_augment_objective()
+    def add_new_solutions_to_front_and_remove_dominated(self):
+        # Saugmecon never aborts because of a dominated solution, see add_new_solutions_without_dominance_check
+        return False
+
+    def add_new_solutions_without_dominance_check(self):
+        # with the augmented objective the solver returns Pareto optimal solutions. The solutions of the single
+        # objectives are not added this way: they are not necessarily Pareto optimal, the front compares them
+        return self.augmentation_active and not self.new_solutions_require_dominance_check
 
     def solve(self):
         formatted_solutions, self.best_objective_values, self.nadir_objectives_values = (
@@ -24,13 +31,13 @@ class Saugmecon(FrontGeneratorStrategy):
         # check if the solver could find the optimum for each objective
         # The solutions obtained by optimizing only one objective are not necessarily on the Pareto front,
         # they are added just in case they are.
-        self.not_evaluate_always_add_new_solutions_to_front = True
+        self.new_solutions_require_dominance_check = True
         for formatted_solution in formatted_solutions:
             if formatted_solution is not None:
                 yield formatted_solution
             else:
                 raise TimeoutError()
-        self.not_evaluate_always_add_new_solutions_to_front = False
+        self.new_solutions_require_dominance_check = False
         # initialize loop-control variables with values equal to the nadir values + 1
         ef_array = [self.nadir_objectives_values[i] - self.step for i in range(len(self.nadir_objectives_values))]
         rwv = copy.deepcopy(self.best_objective_values)
@@ -268,6 +275,8 @@ class Saugmecon(FrontGeneratorStrategy):
         return i == len(ef_arr)
 
     def initialize_model_with_e_constraint(self):
+        # the best value of each objective must be exact, ask the solver to tell apart differences of 1
+        self.solver.configure_objective_resolution(1)
         formatted_solutions, best_constraint_objective_values = self.get_best_constraint_objective_values()
         if None in formatted_solutions:
             return formatted_solutions, best_constraint_objective_values, None
@@ -279,8 +288,24 @@ class Saugmecon(FrontGeneratorStrategy):
         return formatted_solutions, best_constraint_objective_values, nadir_objectives
 
     def optimize_e_constraint_saugmecon(self, range_array):
-        self.solver.build_objective_e_constraint_saugmecon(range_array, self.always_add_new_solutions_to_front())
+        augmentation = self.solver.model.is_numerically_possible_augment_objective()
+        if augmentation and self.solver.supports_real_valued_objective():
+            self.build_augmented_objective(range_array)
+        else:
+            # CP solvers: integer objective built by the solver
+            self.solver.build_objective_e_constraint_saugmecon(range_array, augmentation)
+        # with the augmented objective the solver returns Pareto optimal solutions, so the front adds the new ones
+        # without comparing them with the rest of the front
+        self.augmentation_active = augmentation
         self.solver.set_optimization_sense(self.model_optimization_sense)
+
+    def build_augmented_objective(self, range_array):
+        # objective = f_0 + delta * sum(f_i / r_i), see SaugmeconAugmentation
+        augmentation = compute_saugmecon_augmentation(range_array, self.guard)
+        self.solver.configure_objective_resolution(augmentation.min_difference)
+        self.solver.build_objective_with_delta(augmentation.delta, range_array)
+        print(f"Saugmecon augmented objective: delta {augmentation.delta}, guard {augmentation.guard}, smallest "
+              f"difference {augmentation.min_difference}")
 
     def get_best_constraint_objective_values(self):
         objectives_values = [0] * len(self.constraint_objectives)

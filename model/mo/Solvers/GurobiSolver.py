@@ -74,6 +74,18 @@ class GurobiSolver(Solver):
     def status_infeasible(self):
         return self.model.solver_model.Status == gp.GRB.INFEASIBLE
 
+    def supports_real_valued_objective(self):
+        return True
+
+    def configure_objective_resolution(self, min_difference):
+        params = self.model.solver_model.Params
+        # Gurobi stops when the relative gap (MIPGap * |objective|, 1e-4 by default) or the absolute gap (MIPGapAbs) is
+        # reached. The relative gap depends on the size of the objective, it could be much larger than min_difference
+        params.MIPGap = 0
+        # the solution returned is worse than the optimum by at most MIPGapAbs. If it is smaller than min_difference,
+        # the solution returned cannot be dominated by another one (it would be worse by at least min_difference)
+        params.MIPGapAbs = 0.95 * min_difference
+
     def build_objective_e_constraint_saugmecon(self, range_array, augmentation):
         obj = self.model.objectives[0]
         delta = 0.001  # delta should be between 0.001 and 0.000001

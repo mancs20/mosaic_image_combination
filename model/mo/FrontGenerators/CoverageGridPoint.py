@@ -159,7 +159,7 @@ class CoverageGridPoint(FrontGeneratorStrategy):
         if len(self.solver.model.objectives) > 2:
             raise ValueError("This implementation only works for 2 objectives.")
 
-    def always_add_new_solutions_to_front(self):
+    def add_new_solutions_to_front_and_remove_dominated(self):
         return False
 
 

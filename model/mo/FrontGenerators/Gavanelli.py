@@ -6,7 +6,7 @@ class Gavanelli(FrontGeneratorStrategy):
         super().__init__(solver, timer)
         self.optimize = optimize
 
-    def always_add_new_solutions_to_front(self):
+    def add_new_solutions_to_front_and_remove_dominated(self):
         return True
 
     def set_multiply_solution_by_minus_one(self):

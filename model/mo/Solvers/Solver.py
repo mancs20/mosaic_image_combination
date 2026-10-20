@@ -96,6 +96,28 @@ class Solver(ABC):
     def build_objective_e_constraint_saugmecon(self, range_array, augmentation):
         pass
 
+    # numerical resolution of the objective -------------------------------------------------
+    # Used by the augmented objective of Saugmecon (see FrontGenerators/SaugmeconAugmentation.py). A solver that works
+    # with real numbers (Gurobi, SCIP...) overrides these methods, the CP solvers work with integers and build the
+    # augmented objective themselves in build_objective_e_constraint_saugmecon.
+    def supports_real_valued_objective(self):
+        return False
+
+    def configure_objective_resolution(self, min_difference):
+        # set the solver tolerances (gaps...) so that differences >= min_difference are not ignored by the
+        # stop criteria of the solver
+        pass
+
+    def build_objective_with_delta(self, delta, range_array):
+        # augmented objective of Saugmecon: objectives[0] + delta * sum(objectives[i + 1] / range_array[i]). It works
+        # with any solver whose expressions accept "+" and "*" by a number
+        objective = self.model.objectives[0]
+        for other_objective, objective_range in zip(self.model.objectives[1:], range_array):
+            if objective_range > 0:
+                objective = objective + (delta / objective_range) * other_objective
+        self.set_single_objective(objective)
+    # ---------------------------------------------------------------------------------------
+
     @abstractmethod
     def build_objective_e_constraint_augmecon2(self, best_constrain_obj_list, nadir_constrain_obj_list, augmentation):
         pass
