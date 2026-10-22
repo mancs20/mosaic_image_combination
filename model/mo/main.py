@@ -42,6 +42,10 @@ from model.mo.Solvers.MinizincSolver import MinizincSolver
 from model.mo.Models.OrtoolsCPModels.SatelliteImageMosaicSelectionOrtoolsCPModel import \
     SatelliteImageMosaicSelectionOrtoolsCPModel
 from model.mo.Solvers.OrtoolsCPSolver import OrtoolsCPSolver
+from model.mo.Models.ScipModels.MultiobjectiveKnapsackScipModel import MultiobjectiveKnapsackScipModel
+from model.mo.Models.ScipModels.NQueensScipModel import NQueensScipModel
+from model.mo.Models.ScipModels.SatelliteImageMosaicSelectionScipModel import SatelliteImageMosaicSelectionScipModel
+from model.mo.Solvers.ScipSolver import ScipSolver
 
 
 def init_top_level_statistics(statistics):
@@ -182,13 +186,20 @@ def build_instance_minizinc_data(config):
     # here we build the instance, it could from minizinc or from other format
     model = Model(config.input_mzn)
     model.add_file(config.input_dzn, parse_data=True)
+    problem_name = config.problem_name
+    if config.solver_name == constants.Solver.SCIP.value:
+        # SCIP is called directly, MiniZinc only reads the data (as in bench mode)
+        config.initialize_cores(solver=None, check_solver=False)
+        if problem_name.startswith("sims"):
+            return InstanceSIMS(model)
+        print(f"Error: problem {problem_name} is not supported with SCIP")
+        sys.exit(1)
     if config.solver_name == "gurobi":
         mzn_solver = Solver.lookup("gurobi")
     else:
         mzn_solver = Solver.lookup(config.solver_name)
     config.initialize_cores(mzn_solver)
     instance = Instance(mzn_solver, model)
-    problem_name = config.problem_name
     if config.solver_name == "gurobi" or config.solver_name == "ortools-py":
         if problem_name in (constants.Problem.SATELLITE_IMAGE_SELECTION_PROBLEM.value,
                             "sims_cost_clouds",
@@ -300,14 +311,20 @@ def get_model_by_problem_and_solver_name_(problem_name, solver_name, instance):
             return SatelliteImageMosaicSelectionGurobiModel(instance)
         elif solver_name == "ortools-py":
             return SatelliteImageMosaicSelectionOrtoolsCPModel(instance)
+        elif solver_name == constants.Solver.SCIP.value:
+            return SatelliteImageMosaicSelectionScipModel(instance)
     elif problem_name == constants.Problem.MULTI_OBJECTIVE_KNAPSACK_PROBLEM.value:
         if solver_name == "gurobi":
             return MultiobjectiveKnapsackGurobiModel(instance)
         elif solver_name == "ortools-py":
             return MultiobjectiveKnapsackOrtoolsCPModel(instance)
+        elif solver_name == constants.Solver.SCIP.value:
+            return MultiobjectiveKnapsackScipModel(instance)
     elif problem_name == constants.Problem.MULTI_OBJECTIVE_N_QUEENS_PROBLEM.value:
         if solver_name == "gurobi":
             return NQueensGurobiModel(instance)
+        elif solver_name == constants.Solver.SCIP.value:
+            return NQueensScipModel(instance)
 
 
 def build_osolver(model, instance, config, statistics):
@@ -328,6 +345,11 @@ def build_osolver(model, instance, config, statistics):
             return solver
         elif config.solver_name == "ortools-py":
             return OrtoolsCPSolver(model, statistics, config.threads, free_search)
+        elif config.solver_name == constants.Solver.SCIP.value:
+            if config.bench_mode:
+                # same reason as for Gurobi: the SCIP log of every solve would end up in the bench JSON
+                model.solver_model.hideOutput()
+            return ScipSolver(model, statistics, config.threads, free_search)
         else:
             return GurobiSolver(model, statistics, config.threads, free_search)
 
@@ -411,6 +433,10 @@ def get_solver_version(config):
     if config.solver_name == "gurobi":
         import gurobipy as gp
         return ".".join(str(part) for part in gp.gurobi.version())
+    if config.solver_name == constants.Solver.SCIP.value:
+        from pyscipopt import Model as ScipModel
+        scip = ScipModel()
+        return f"{scip.getMajorVersion()}.{scip.getMinorVersion()}.{scip.getTechVersion()}"
     return "unknown"
 
 

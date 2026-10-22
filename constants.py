@@ -23,6 +23,7 @@ class Problem(Enum):
 # solver names
 class Solver(Enum):
     GUROBI = 'gurobi'
+    SCIP = 'scip'
     ORTOOLS_PY = 'ortools-py'
     MINIZINC = 'minizinc'
 
