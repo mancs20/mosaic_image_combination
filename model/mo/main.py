@@ -29,8 +29,10 @@ from model.mo.FrontGenerators.Saugmecon import Saugmecon
 from model.mo.FrontGenerators.CoverageGridPoint import CoverageGridPoint
 from model.mo.Instances.InstanceMIPMatrix import InstanceMIPMatrix
 from model.mo.Instances.InstanceMinizinc import InstanceMinizinc
+from model.mo.Instances.InstanceNQueens import InstanceNQueens
 from model.mo.Instances.InstanceSIMS import InstanceSIMS
 from model.mo.Models.GurobiModels.MultiobjectiveKnapsackGurobiModel import MultiobjectiveKnapsackGurobiModel
+from model.mo.Models.GurobiModels.NQueensGurobiModel import NQueensGurobiModel
 from model.mo.Models.GurobiModels.SatelliteImageMosaicSelectionGurobiModel import \
     SatelliteImageMosaicSelectionGurobiModel
 from model.mo.Models.OrtoolsCPModels.MultiobjectiveKnapsackOrtoolsCPModel import MultiobjectiveKnapsackOrtoolsCPModel
@@ -138,6 +140,9 @@ def build_instance_bench(config):
         objective_matrix, constraints_matrix, rhs_constraints_vector = read_moolibrary_ukp_dat(config.input_dzn)
         return InstanceMIPMatrix(constants.Problem.MULTI_OBJECTIVE_KNAPSACK_PROBLEM.value, objective_matrix,
                                  constraints_matrix, rhs_constraints_vector)
+    elif config.problem_name == constants.Problem.MULTI_OBJECTIVE_N_QUEENS_PROBLEM.value:
+        n, score_matrices = read_n_queens_dat(config.input_dzn)
+        return InstanceNQueens(constants.Problem.MULTI_OBJECTIVE_N_QUEENS_PROBLEM.value, n, score_matrices)
     print(f"Error: problem {config.problem_name} with instance {config.instance_path} is not supported in bench mode")
     sys.exit(1)
 
@@ -155,6 +160,18 @@ def read_moolibrary_ukp_dat(file_path):
     assert len(profits) == number_objectives and all(len(row) == number_items for row in profits)
     assert len(weights) == number_items
     return profits, [weights], [capacity]
+
+
+def read_n_queens_dat(file_path):
+    """Multi-objective N-Queens .dat: number of objectives p, number of queens n, then p score matrices n x n."""
+    with open(file_path, 'r') as file:
+        numbers = [int(value) for value in file.read().split()]
+    number_objectives, n = numbers[0], numbers[1]
+    scores = numbers[2:]
+    assert len(scores) == number_objectives * n * n, f"{file_path}: expected {number_objectives} matrices {n}x{n}"
+    score_matrices = [[scores[(p * n + i) * n:(p * n + i + 1) * n] for i in range(n)]
+                      for p in range(number_objectives)]
+    return n, score_matrices
 
 
 def use_minizinc_data(config) -> bool:
@@ -288,6 +305,9 @@ def get_model_by_problem_and_solver_name_(problem_name, solver_name, instance):
             return MultiobjectiveKnapsackGurobiModel(instance)
         elif solver_name == "ortools-py":
             return MultiobjectiveKnapsackOrtoolsCPModel(instance)
+    elif problem_name == constants.Problem.MULTI_OBJECTIVE_N_QUEENS_PROBLEM.value:
+        if solver_name == "gurobi":
+            return NQueensGurobiModel(instance)
 
 
 def build_osolver(model, instance, config, statistics):
