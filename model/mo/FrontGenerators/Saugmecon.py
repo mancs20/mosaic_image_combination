@@ -93,8 +93,10 @@ class Saugmecon(FrontGeneratorStrategy):
     def solve_saugmecon_most_inner_loop(self, ef_array, rwv, previous_solution_information, previous_solutions):
         exit_from_loop_with_acceleration = False
         one_solution = []
+        # the search and the insertion in previous_solution_information depend on the optimization sense
+        min_sense = self.model_optimization_sense == "min"
         previous_solution_relaxation, previous_solution_values = \
-            Saugmecon.search_previous_solutions_relaxation(ef_array, previous_solution_information)
+            Saugmecon.search_previous_solutions_relaxation(ef_array, previous_solution_information, min_sense)
         if previous_solution_relaxation:
             if type(previous_solution_values) is str:
                 # the previous solution is infeasible
@@ -106,7 +108,7 @@ class Saugmecon(FrontGeneratorStrategy):
             self.update_objective_constraints(ef_array)
             solution_sec = self.get_solver_solution_for_timeout(optimize_not_satisfy=True)
             if self.solver.status_infeasible():
-                self.save_solution_information(ef_array, "infeasible", previous_solution_information)
+                self.save_solution_information(ef_array, "infeasible", previous_solution_information, min_sense)
                 exit_from_loop_with_acceleration = True
                 formatted_solution = None
                 self.solver.update_statistics(solution_sec)
@@ -120,9 +122,11 @@ class Saugmecon(FrontGeneratorStrategy):
                     # update previous_solutions
                     previous_solutions.add(str_solution_values)
                     one_solution = formatted_solution["objs"]
-                    self.save_solution_information(ef_array, one_solution, previous_solution_information)
                     # the line below is for testing purposes, uncomment when necessary
                     # self.solver.model.assert_solution(one_solution, formatted_solution["solution_values"])
+                # saved also when the solution was found before (as in Choco), so the next e-constraint problems
+                # it satisfies are not solved again
+                self.save_solution_information(ef_array, one_solution, previous_solution_information, min_sense)
             yield formatted_solution
         if exit_from_loop_with_acceleration:
             self.exit_from_loop_with_acceleration(ef_array, self.nadir_objectives_values, self.best_objective_values)
