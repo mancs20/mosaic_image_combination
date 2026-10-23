@@ -1,14 +1,13 @@
 import copy
 
 from model.mo.FrontGenerators.FrontGeneratorStrategy import FrontGeneratorStrategy
-from model.mo.FrontGenerators.SaugmeconAugmentation import compute_saugmecon_augmentation, DEFAULT_GUARD
+from model.mo.FrontGenerators.SaugmeconAugmentation import compute_saugmecon_augmentation
 import numpy as np
 
 
 class Saugmecon(FrontGeneratorStrategy):
-    def __init__(self, solver, timer, guard=DEFAULT_GUARD):
+    def __init__(self, solver, timer):
         super().__init__(solver, timer)
-        self.guard = guard
         self.constraint_objectives = [0] * (len(self.solver.model.objectives) - 1)  # all objectives except objective[0]
         # True when the objective is augmented: the solutions returned are Pareto optimal
         self.augmentation_active = False
@@ -305,7 +304,7 @@ class Saugmecon(FrontGeneratorStrategy):
 
     def build_augmented_objective(self, range_array):
         # objective = f_0 + delta * sum(f_i / r_i), see SaugmeconAugmentation
-        augmentation = compute_saugmecon_augmentation(range_array, self.guard)
+        augmentation = compute_saugmecon_augmentation(range_array)
         self.solver.configure_objective_resolution(augmentation.min_difference)
         self.solver.build_objective_with_delta(augmentation.delta, range_array)
         print(f"Saugmecon augmented objective: delta {augmentation.delta}, guard {augmentation.guard}, smallest "
