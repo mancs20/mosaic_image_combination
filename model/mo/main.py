@@ -30,9 +30,11 @@ from model.mo.FrontGenerators.CoverageGridPoint import CoverageGridPoint
 from model.mo.Instances.InstanceMIPMatrix import InstanceMIPMatrix
 from model.mo.Instances.InstanceMinizinc import InstanceMinizinc
 from model.mo.Instances.InstanceNQueens import InstanceNQueens
+from model.mo.Instances.InstanceRCPSP import InstanceRCPSP
 from model.mo.Instances.InstanceSIMS import InstanceSIMS
 from model.mo.Models.GurobiModels.MultiobjectiveKnapsackGurobiModel import MultiobjectiveKnapsackGurobiModel
 from model.mo.Models.GurobiModels.NQueensGurobiModel import NQueensGurobiModel
+from model.mo.Models.GurobiModels.RcpspGurobiModel import RcpspGurobiModel
 from model.mo.Models.GurobiModels.SatelliteImageMosaicSelectionGurobiModel import \
     SatelliteImageMosaicSelectionGurobiModel
 from model.mo.Models.OrtoolsCPModels.MultiobjectiveKnapsackOrtoolsCPModel import MultiobjectiveKnapsackOrtoolsCPModel
@@ -44,6 +46,7 @@ from model.mo.Models.OrtoolsCPModels.SatelliteImageMosaicSelectionOrtoolsCPModel
 from model.mo.Solvers.OrtoolsCPSolver import OrtoolsCPSolver
 from model.mo.Models.ScipModels.MultiobjectiveKnapsackScipModel import MultiobjectiveKnapsackScipModel
 from model.mo.Models.ScipModels.NQueensScipModel import NQueensScipModel
+from model.mo.Models.ScipModels.RcpspScipModel import RcpspScipModel
 from model.mo.Models.ScipModels.SatelliteImageMosaicSelectionScipModel import SatelliteImageMosaicSelectionScipModel
 from model.mo.Solvers.ScipSolver import ScipSolver
 
@@ -140,6 +143,8 @@ def build_instance_bench(config):
         model.add_file(config.input_dzn, parse_data=True)
         if config.problem_name.startswith("sims"):
             return InstanceSIMS(model)
+        if config.problem_name == constants.Problem.RCPSP_WET_MAKESPAN_PROBLEM.value:
+            return InstanceRCPSP(model)
     elif config.problem_name == "ukp":
         objective_matrix, constraints_matrix, rhs_constraints_vector = read_moolibrary_ukp_dat(config.input_dzn)
         return InstanceMIPMatrix(constants.Problem.MULTI_OBJECTIVE_KNAPSACK_PROBLEM.value, objective_matrix,
@@ -192,6 +197,8 @@ def build_instance_minizinc_data(config):
         config.initialize_cores(solver=None, check_solver=False)
         if problem_name.startswith("sims"):
             return InstanceSIMS(model)
+        if problem_name == constants.Problem.RCPSP_WET_MAKESPAN_PROBLEM.value:
+            return InstanceRCPSP(model)
         print(f"Error: problem {problem_name} is not supported with SCIP")
         sys.exit(1)
     if config.solver_name == "gurobi":
@@ -205,6 +212,8 @@ def build_instance_minizinc_data(config):
                             "sims_cost_clouds",
                             "sims_cost_clouds_angle"):
             instance = InstanceSIMS(instance)
+        elif problem_name == constants.Problem.RCPSP_WET_MAKESPAN_PROBLEM.value:
+            instance = InstanceRCPSP(instance)
     else:
         instance = InstanceMinizinc(mzn_solver, model, problem_name)
 
@@ -325,6 +334,11 @@ def get_model_by_problem_and_solver_name_(problem_name, solver_name, instance):
             return NQueensGurobiModel(instance)
         elif solver_name == constants.Solver.SCIP.value:
             return NQueensScipModel(instance)
+    elif problem_name == constants.Problem.RCPSP_WET_MAKESPAN_PROBLEM.value:
+        if solver_name == "gurobi":
+            return RcpspGurobiModel(instance)
+        elif solver_name == constants.Solver.SCIP.value:
+            return RcpspScipModel(instance)
 
 
 def build_osolver(model, instance, config, statistics):

@@ -101,9 +101,10 @@ class Config:
         return self.data_name + "_" + self.problem_name + "_" + self.solver_name + "_" + self.front_strategy + "_" + self.minizinc_model + "_" + self.solver_search_strategy + "_" + str(self.solver_timeout_sec) + "_" + str(self.fzn_optimisation_level) + "_" + str(self.cores)
 
     def initialize_cores(self, solver, check_solver = True):
-        """If the solver supports parallelization, use twice the number of available cores. By default, we assume that it does."""
-        if not check_solver:
-            print("Check if the solver supports parallelization. By default, we assume that it does.")
+        """Number of threads: the number of cores (--cores, all the cores of the machine if it is not given) if the
+        solver can run in parallel, 1 otherwise. With check_solver=False (Gurobi, SCIP... called directly, not through
+        MiniZinc) the solver is not checked: it receives --cores threads and the solver class applies them (ScipSolver
+        always uses one thread)."""
         if not check_solver or "-p" in solver.stdFlags:
             if self.cores is None:
                 self.cores = multiprocessing.cpu_count()
@@ -111,3 +112,4 @@ class Config:
         else:
             self.cores = 1
             self.threads = 1
+        print(f"Cores: {self.cores}, threads: {self.threads}")

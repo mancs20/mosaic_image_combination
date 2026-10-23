@@ -28,6 +28,14 @@ class ScipSolver(Solver):
         super().__init__(model, statistics, threads, free_search)
         self.objective_sense = "minimize"
         self.configure_feasibility_tolerance()
+        self.disable_flower_separator()
+
+    def disable_flower_separator(self):
+        """The flower separator (new in SCIP 10, cuts for products of binary variables found by presolve) fails with
+        "insufficient memory" on the large sims instances (tokyo_bay_200: about 600000 set packing constraints after
+        presolve), with only 5 GB in use: it requests a huge allocation for its hypergraph, more memory does not help.
+        The models are linear, they have no products of variables."""
+        self.model.solver_model.setParam("separating/flower/freq", -1)
 
     def configure_feasibility_tolerance(self):
         """SCIP checks the constraints with a relative tolerance: a <= b is satisfied if
